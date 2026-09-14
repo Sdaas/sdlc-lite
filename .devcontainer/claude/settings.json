@@ -13,9 +13,6 @@
     ],
     "defaultMode": "auto"
   },
-  "skillOverrides": {
-    "document-quality-pdf": "off"
-  },
   "statusLine": {
     "type": "command",
     "command": "/bin/bash /home/vscode/.claude/statusline-command.sh"
@@ -34,27 +31,13 @@
     ]
   },
   "enabledPlugins": {
-    "implement-feature@daas-plugins": true,
-    "mattpocock-skills@mattpocock": true,
-    "understand-anything@understand-anything": true
+    "implement-feature@daas-plugins": true
   },
   "extraKnownMarketplaces": {
     "daas-plugins": {
       "source": {
         "source": "directory",
         "path": "/workspaces/sdlc-lite"
-      }
-    },
-    "mattpocock": {
-      "source": {
-        "source": "github",
-        "repo": "mattpocock/skills"
-      }
-    },
-    "understand-anything": {
-      "source": {
-        "source": "github",
-        "repo": "Egonex-AI/Understand-Anything"
       }
     }
   },
