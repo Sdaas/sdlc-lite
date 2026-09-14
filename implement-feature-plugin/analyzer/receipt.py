@@ -17,8 +17,10 @@ TranscriptAnalysis (None when the transcript is absent/drifted/disabled), and do
 """
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 
+from .auditor import AuditResult
 from .runlog import CONDUCTOR, RunLogAnalysis
 from .transcript import TranscriptAnalysis
 
@@ -56,7 +58,13 @@ class AgentReceipt:
     requested_effort: str = UNKNOWN
     actual_effort: str = UNKNOWN
     # (a) isolation — the concrete file content that entered context, filled by #30.
+    # files_content_seen is the human display value; files_verdict is its PASS/FAIL/UNKNOWN
+    # glyph driver. A content leak (an artifact a role was forbidden to see, found in its
+    # tool output) is trust-voiding -> FAIL. "none" + PASS means the gate WAS scanned and
+    # no forbidden content reached it; UNKNOWN means it was not scanned (no transcript, or
+    # the conductor, which is not an isolated gate) — never a silent PASS.
     files_content_seen: str = UNKNOWN
+    files_verdict: str = UNKNOWN
     # grant/deny counts (the guard's own decision, #31 R4) — filled today from the run-log.
     grants: int = 0
     denies: int = 0
@@ -81,11 +89,30 @@ def _joined(values) -> str:
     return ", ".join(vals) if vals else UNKNOWN
 
 
+def _files_column(label: str, audit: AuditResult | None) -> tuple[str, str]:
+    """The (display, verdict) for one agent's 'Files seen' column, from the content auditor.
+
+    None audit (no transcript / disabled) -> UNKNOWN, never a silent PASS. A leak is
+    trust-voiding -> FAIL, naming the artifact(s). A scanned gate with no leak -> "none" /
+    PASS. A label the auditor never scanned (e.g. the conductor) -> UNKNOWN."""
+    if audit is None:
+        return UNKNOWN, UNKNOWN
+    leaked = sorted({os.path.basename(f.artifact)
+                     for f in audit.findings if f.agent_label == label})
+    if leaked:
+        return "LEAK: " + ", ".join(leaked), FAIL
+    if label in audit.scanned_agents:
+        return "none", PASS
+    return UNKNOWN, UNKNOWN
+
+
 def build_receipt(runlog: RunLogAnalysis,
-                  transcript: TranscriptAnalysis | None) -> list[AgentReceipt]:
+                  transcript: TranscriptAnalysis | None,
+                  audit: AuditResult | None = None) -> list[AgentReceipt]:
     """Assemble one receipt per agent, correlating the run-log and transcript on the
     de-namespaced agent label (e.g. 'test-writer', 'conductor'). Conductor first, then
-    subagents alphabetically (matching the run-log table's ordering)."""
+    subagents alphabetically (matching the run-log table's ordering). The optional `audit`
+    (transcript content-fingerprint, #30 R3) fills the isolation 'Files seen' column."""
     # Run-log side: grant/deny counts, keyed by de-namespaced label.
     grants: dict[str, tuple[int, int, int]] = {}
     for act in runlog.agents.values():
@@ -114,10 +141,12 @@ def build_receipt(runlog: RunLogAnalysis,
     out: list[AgentReceipt] = []
     for label in ordered:
         g, d, u = grants.get(label, (0, 0, 0))
+        files_seen, files_verdict = _files_column(label, audit)
         out.append(AgentReceipt(
             label=label,
             actual_model=actual_models.get(label, UNKNOWN),
             actual_effort=actual_efforts.get(label, UNKNOWN),
+            files_content_seen=files_seen, files_verdict=files_verdict,
             grants=g, denies=d, decision_unknown=u,
             transcript_file=source_files.get(label, UNKNOWN),
         ))

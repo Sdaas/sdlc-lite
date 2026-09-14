@@ -108,3 +108,50 @@ def test_receipt_without_transcript_actual_columns_unknown_grants_intact(tmp_pat
     r = build_receipt(runlog, None)[0]
     assert r.actual_model == UNKNOWN and r.actual_effort == UNKNOWN
     assert (r.grants, r.denies) == (2, 0)
+
+
+# --- #30 R4: the content audit fills the 'Files seen' column ----------------
+
+def _runlog_tw(tmp_path):
+    return parse_runlog(str(write_runlog(tmp_path / "rl.jsonl", [
+        call("implement-feature:test-writer", "Read", "handoff/x.md", guard_decision="allow"),
+    ])))
+
+
+def test_files_column_leak_is_fail(tmp_path):
+    from analyzer.auditor import AuditResult, LeakFinding
+    audit = AuditResult(
+        findings=[LeakFinding(agent_label="test-writer", artifact="/r/handoff/03-design-internal.md",
+                              rule="algorithm-blind", matched_excerpt="…", session_file="s.jsonl")],
+        scanned_agents=["test-writer"],
+        protected_artifacts=["/r/handoff/03-design-internal.md"])
+    r = {x.label: x for x in build_receipt(_runlog_tw(tmp_path), None, audit)}["test-writer"]
+    assert r.files_verdict == FAIL
+    assert r.files_content_seen == "LEAK: 03-design-internal.md"
+
+
+def test_files_column_scanned_clean_is_pass_none(tmp_path):
+    from analyzer.auditor import AuditResult
+    audit = AuditResult(scanned_agents=["test-writer"],
+                        protected_artifacts=["/r/handoff/03-design-internal.md"])
+    r = {x.label: x for x in build_receipt(_runlog_tw(tmp_path), None, audit)}["test-writer"]
+    assert r.files_verdict == PASS
+    assert r.files_content_seen == "none"
+
+
+def test_files_column_unscanned_agent_is_unknown(tmp_path):
+    # The auditor never scans the conductor (not an isolated gate) -> honest UNKNOWN, not PASS.
+    from analyzer.auditor import AuditResult
+    runlog = parse_runlog(str(write_runlog(tmp_path / "rl.jsonl", [
+        call("", "Read", "SKILL.md", guard_decision="allow"),
+        call("implement-feature:test-writer", "Read", "handoff/x.md", guard_decision="allow"),
+    ])))
+    audit = AuditResult(scanned_agents=["test-writer"])
+    cond = {x.label: x for x in build_receipt(runlog, None, audit)}["conductor"]
+    assert cond.files_verdict == UNKNOWN and cond.files_content_seen == UNKNOWN
+
+
+def test_files_column_no_audit_is_unknown(tmp_path):
+    # audit=None (no transcript) -> UNKNOWN, never a silent PASS.
+    r = build_receipt(_runlog_tw(tmp_path), None, None)[0]
+    assert r.files_verdict == UNKNOWN and r.files_content_seen == UNKNOWN

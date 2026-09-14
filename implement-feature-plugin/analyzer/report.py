@@ -12,6 +12,9 @@ one of three inputs the caller supplies after quarantining the satellite:
 """
 from __future__ import annotations
 
+import os
+
+from .auditor import AuditResult
 from .receipt import FAIL, PASS, UNKNOWN, WARN, AgentReceipt
 from .runlog import RunLogAnalysis
 from .transcript import ModelUsage, TranscriptAnalysis
@@ -136,6 +139,50 @@ def render_transcript_unavailable(mode: str, reason: str) -> str:
     ])
 
 
+def render_content_audit(audit: AuditResult | None) -> str:
+    """The AUTHORITATIVE isolation section (#30 R3/R4): did any content an isolated gate was
+    forbidden to see actually reach it? This reads the transcript's tool OUTPUT, so unlike
+    the run-log section it catches glob/indirect leaks. A finding marks the run UNTRUSTED.
+
+    `audit is None` (no transcript) is NOT a pass — it renders as UNKNOWN, because absence of
+    the transcript is absence of proof, never proof of innocence."""
+    head = "## Content isolation audit (authoritative — from transcript tool output)"
+    if audit is None:
+        lines = [head, "", (
+            "❔ **UNKNOWN — not run.** The content audit requires the session transcript "
+            "(it scans each gate's tool *output*). No transcript was available, so isolation "
+            "here is **unproven, not passed** — see the run-log section for the intent-level "
+            "checks that do not need the transcript."), ""]
+        return "\n".join(lines)
+    lines = [head, ""]
+    if audit.scanned_agents:
+        lines.append(f"- Isolated gates scanned: {', '.join(sorted(audit.scanned_agents))}")
+    if audit.protected_artifacts:
+        arts = ", ".join(f"`{os.path.basename(p)}`"
+                         for p in sorted(audit.protected_artifacts))
+        lines.append(f"- Content-protected artifacts checked: {arts}")
+    lines.append("")
+    if not audit.findings:
+        lines += [(
+            "✅ **No forbidden content reached any isolated gate.** For every gate scanned, "
+            "none of the artifacts its role must not see were found in its tool output."), ""]
+        return "\n".join(lines)
+    # Findings -> the run is untrusted. Make it unmissable.
+    lines += [(
+        "❌ **CONTENT LEAK DETECTED — THIS RUN IS UNTRUSTED.** An artifact a gate was "
+        "forbidden to see was found in its tool output (the isolation barrier was breached). "
+        "Investigate before trusting this run's result:"), ""]
+    for f in audit.findings:
+        lines.append(f"- ❌ **{f.agent_label}** saw `{os.path.basename(f.artifact)}` "
+                     f"(forbidden by rule *{f.rule}*)")
+        lines.append(f"    - matched content: `{f.matched_excerpt}`")
+        if f.corroboration:
+            lines.append(f"    - {f.corroboration}")
+        lines.append(f"    - evidence transcript: `{f.session_file}`")
+    lines.append("")
+    return "\n".join(lines)
+
+
 def _grant_deny_cell(r: AgentReceipt) -> str:
     cell = f"{r.grants} / {r.denies}"
     if r.decision_unknown:  # legacy (pre-R4) lines with no recorded decision
@@ -150,18 +197,18 @@ def render_receipt(receipts: list[AgentReceipt], runlog_path: str | None = None)
     A Sources block cites the exact files the receipt was derived from for manual cross-check."""
     lines = [
         "## Per-agent trust receipt", "",
-        "The receipt for the two guarantees — **(a) isolation** and **(b) bounded "
-        "model/effort**. `❔ UNKNOWN` is a valid, honest verdict: the columns below are filled "
-        "by their capability legs — **requested model/effort + match verdict by #22**, "
-        "**files-content-seen by #30**. A blind/absent transcript degrades the *actual* columns "
-        "to UNKNOWN too — never a silent PASS.", "",
+        ("The receipt for the two guarantees — **(a) isolation** and **(b) bounded "
+         "model/effort**. `❔ UNKNOWN` is a valid, honest verdict: the columns below are filled "
+         "by their capability legs — **requested model/effort + match verdict by #22**, "
+         "**files-content-seen by #30**. A blind/absent transcript degrades the *actual* "
+         "columns to UNKNOWN too — never a silent PASS."), "",
         "| Agent | Model (req → actual) | Effort (req → actual) | Files seen | Grants / Denies |",
         "|---|---|---|---|---|",
     ]
     for r in receipts:
         mg = _VERDICT_GLYPH[r.model_verdict]
         eg = _VERDICT_GLYPH[r.effort_verdict]
-        fg = _VERDICT_GLYPH[UNKNOWN if r.files_content_seen == UNKNOWN else PASS]
+        fg = _VERDICT_GLYPH[r.files_verdict]
         lines.append(
             f"| {r.label} "
             f"| {mg} {r.requested_model} → {r.actual_model} "
@@ -171,9 +218,10 @@ def render_receipt(receipts: list[AgentReceipt], runlog_path: str | None = None)
         )
     lines += [
         "",
-        "_Legend: ✅ matches pin · ⚠️ effort deviates (either direction) · ❌ model mismatch "
-        "· ❔ unknown (not yet filled, or transcript blind). Grants / Denies is the guard's own "
-        "decision per call; `(?N)` = N legacy calls with no recorded decision._",
+        ("_Legend: ✅ matches pin / no forbidden content · ⚠️ effort deviates (either "
+         "direction) · ❌ model mismatch or content leak (run untrusted) · ❔ unknown (not yet "
+         "filled, or transcript blind). Grants / Denies is the guard's own decision per call; "
+         "`(?N)` = N legacy calls with no recorded decision._"),
         "",
         "### Sources (for manual cross-check)", "",
         "The exact evidence this receipt was derived from — open these to verify any cell by hand:",

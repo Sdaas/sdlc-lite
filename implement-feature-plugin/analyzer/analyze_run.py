@@ -27,12 +27,13 @@ import sys
 from pathlib import Path
 
 from . import report
+from .auditor import audit_content_leaks
 from .receipt import build_receipt
 from .runlog import parse_runlog
 from .transcript import (
     TranscriptAbsent,
-    TranscriptFormatError,
     TranscriptAnalysis,
+    TranscriptFormatError,
     find_transcript,
     parse_transcript,
 )
@@ -84,9 +85,19 @@ def build_report(runlog_path: str, projects_root: Path | None, slug: str | None,
             sections.append(report.render_transcript_unavailable(
                 "drift", f"unexpected {type(e).__name__}: {e}"))
 
-    # 4. The trust receipt — ALWAYS rendered (the headline of the audit). Grant/deny come
-    #    from the run-log; actual model/effort from the transcript when available, else UNKNOWN.
-    sections.append(report.render_receipt(build_receipt(runlog, tanalysis), runlog.path))
+    # 4. Content isolation audit (#30 R3/R4) — the AUTHORITATIVE isolation signal: scan each
+    #    subagent transcript's tool OUTPUT for the content of any artifact its role was
+    #    forbidden to see. Needs the transcript (tool output), so it is None without one —
+    #    which renders as UNKNOWN (unproven), never a silent pass. The protected artifacts
+    #    live in the run's handoff dir (the dir holding the run-log).
+    handoff_dir = os.path.dirname(runlog_path)
+    audit = audit_content_leaks(tanalysis, handoff_dir) if tanalysis is not None else None
+    sections.append(report.render_content_audit(audit))
+
+    # 5. The trust receipt — ALWAYS rendered (the headline of the audit). Grant/deny come
+    #    from the run-log; actual model/effort from the transcript when available, else
+    #    UNKNOWN; the 'Files seen' column from the content audit (FAIL on a leak).
+    sections.append(report.render_receipt(build_receipt(runlog, tanalysis, audit), runlog.path))
 
     return report.assemble(sections)
 

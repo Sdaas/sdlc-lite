@@ -117,6 +117,19 @@ def test_implementer_writing_test_file_is_a_violation(tmp_path):
     assert c.evidence == ["tests/test_foo.py"]
 
 
+def test_implementer_sed_inplace_on_test_file_is_detected(tmp_path):
+    # #30 R2/detective: the in-place write FORM (`sed -i … tests/…`) is a Bash test-file
+    # write the plain redirect scan misses. The detective extracts it via the policy SSOT
+    # (bash_write_targets -> sed -i operand) and flags test-integrity, same as the guard.
+    log = write_runlog(tmp_path / "rl.jsonl", [
+        call("implement-feature:implementer", "Bash", "sed -i 's/x/y/' tests/test_foo.py"),
+    ])
+    a = parse_runlog(str(log))
+    c = _check(a, "implementer did not touch tests")
+    assert not c.passed
+    assert any("tests/test_foo.py" in e for e in c.evidence)
+
+
 def test_any_agent_reading_secrets_is_a_violation(tmp_path):
     log = write_runlog(tmp_path / "rl.jsonl", [
         call("implement-feature:verifier", "Read", "/repo/.env"),
