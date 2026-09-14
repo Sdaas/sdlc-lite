@@ -31,13 +31,48 @@ FAIL = "FAIL"
 WARN = "WARN"
 
 
+_FAMILIES = ("opus", "sonnet", "haiku", "fable")
+
+
+def _family(model: str) -> str | None:
+    """The model family named in a model string, or None. `claude-opus-4-8`, `opus`,
+    `claude-3-opus-20240229` all -> 'opus'."""
+    m = model.lower()
+    return next((f for f in _FAMILIES if f in m), None)
+
+
+def _is_alias(model: str) -> bool:
+    """A floating alias (`sonnet`, `opus`) carries NO version digits; an explicit/dated id
+    (`claude-opus-4-8`, `claude-sonnet-4-5-20250929`) does. This is the split the repo's own
+    pinning rationale rests on: reviewers pin a DATED id for reproducible behavior, producers
+    pin a floating alias for the-latest-tier."""
+    return not any(c.isdigit() for c in model)
+
+
+def model_matches(requested: str, actual: str) -> bool:
+    """Does the ACTUAL (transcript, always a resolved dated id) satisfy the REQUESTED pin?
+
+    Per the #22 decision (exact-if-dated, family-if-alias): an ALIAS pin (`sonnet`) is
+    satisfied by any model of the same family (the transcript reports a resolved dated id,
+    which an alias can never string-equal); an EXPLICIT/DATED pin (`claude-opus-4-8`) demands
+    an EXACT id match — a silent opus-4-8 -> opus-5 drift is a mismatch, honoring the dated
+    pin's reproducibility intent."""
+    r, a = requested.strip().lower(), actual.strip().lower()
+    if not r or not a:
+        return False
+    if _is_alias(r):
+        rf = _family(r)
+        return rf is not None and rf == _family(a)
+    return r == a
+
+
 def classify_model(requested: str, actual: str) -> str:
-    """Model integrity verdict. A mismatch is trust-voiding -> FAIL. UNKNOWN whenever
-    either side is unknown (the skeleton state: requested is always UNKNOWN until #22,
-    which also supplies the alias↔resolved-id comparison this placeholder equality lacks)."""
+    """Model integrity verdict. A mismatch is trust-voiding -> FAIL. UNKNOWN whenever either
+    side is unknown (e.g. no transcript, or the conductor, which has no agent-def pin). The
+    match itself is alias/dated-aware — see model_matches (#22)."""
     if requested == UNKNOWN or actual == UNKNOWN:
         return UNKNOWN
-    return PASS if requested == actual else FAIL
+    return PASS if model_matches(requested, actual) else FAIL
 
 
 def classify_effort(requested: str, actual: str) -> str:
@@ -108,11 +143,18 @@ def _files_column(label: str, audit: AuditResult | None) -> tuple[str, str]:
 
 def build_receipt(runlog: RunLogAnalysis,
                   transcript: TranscriptAnalysis | None,
-                  audit: AuditResult | None = None) -> list[AgentReceipt]:
+                  audit: AuditResult | None = None,
+                  pins: dict | None = None) -> list[AgentReceipt]:
     """Assemble one receipt per agent, correlating the run-log and transcript on the
     de-namespaced agent label (e.g. 'test-writer', 'conductor'). Conductor first, then
     subagents alphabetically (matching the run-log table's ordering). The optional `audit`
-    (transcript content-fingerprint, #30 R3) fills the isolation 'Files seen' column."""
+    (transcript content-fingerprint, #30 R3) fills the isolation 'Files seen' column.
+
+    `pins` (#22) is the agent-def MODEL/EFFORT SSOT keyed by role label (from
+    agentdefs.load_pins()); it fills the REQUESTED columns the model/effort verdicts compare
+    against. None (the default, and every role absent from it — e.g. the conductor, which has
+    no agent-def) leaves the requested side UNKNOWN: an honest 'no pin to check', never a
+    silent PASS."""
     # Run-log side: grant/deny counts, keyed by de-namespaced label.
     grants: dict[str, tuple[int, int, int]] = {}
     for act in runlog.agents.values():
@@ -138,13 +180,17 @@ def build_receipt(runlog: RunLogAnalysis,
     labels = set(grants) | set(actual_models) | set(actual_efforts)
     ordered = sorted(labels, key=lambda l: (l != CONDUCTOR, l))
 
+    pins = pins or {}
     out: list[AgentReceipt] = []
     for label in ordered:
         g, d, u = grants.get(label, (0, 0, 0))
         files_seen, files_verdict = _files_column(label, audit)
+        pin = pins.get(label)  # None for the conductor / any un-pinned role -> UNKNOWN
         out.append(AgentReceipt(
             label=label,
+            requested_model=(pin.model if pin and pin.model else UNKNOWN),
             actual_model=actual_models.get(label, UNKNOWN),
+            requested_effort=(pin.effort if pin and pin.effort else UNKNOWN),
             actual_effort=actual_efforts.get(label, UNKNOWN),
             files_content_seen=files_seen, files_verdict=files_verdict,
             grants=g, denies=d, decision_unknown=u,

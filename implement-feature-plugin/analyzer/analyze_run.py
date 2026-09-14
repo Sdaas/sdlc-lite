@@ -26,6 +26,8 @@ import os
 import sys
 from pathlib import Path
 
+import agentdefs
+
 from . import report
 from .auditor import audit_content_leaks
 from .receipt import build_receipt
@@ -96,8 +98,11 @@ def build_report(runlog_path: str, projects_root: Path | None, slug: str | None,
 
     # 5. The trust receipt — ALWAYS rendered (the headline of the audit). Grant/deny come
     #    from the run-log; actual model/effort from the transcript when available, else
-    #    UNKNOWN; the 'Files seen' column from the content audit (FAIL on a leak).
-    sections.append(report.render_receipt(build_receipt(runlog, tanalysis, audit), runlog.path))
+    #    UNKNOWN; REQUESTED model/effort from the agent-def pins (#22, the SSOT); the 'Files
+    #    seen' column from the content audit (FAIL on a leak). load_pins() never raises.
+    pins = agentdefs.load_pins()
+    sections.append(report.render_receipt(
+        build_receipt(runlog, tanalysis, audit, pins), runlog.path))
 
     return report.assemble(sections)
 

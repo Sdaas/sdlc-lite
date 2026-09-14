@@ -198,10 +198,11 @@ def render_receipt(receipts: list[AgentReceipt], runlog_path: str | None = None)
     lines = [
         "## Per-agent trust receipt", "",
         ("The receipt for the two guarantees — **(a) isolation** and **(b) bounded "
-         "model/effort**. `❔ UNKNOWN` is a valid, honest verdict: the columns below are filled "
-         "by their capability legs — **requested model/effort + match verdict by #22**, "
-         "**files-content-seen by #30**. A blind/absent transcript degrades the *actual* "
-         "columns to UNKNOWN too — never a silent PASS."), "",
+         "model/effort**. Each row compares the **requested** pin (agent-def frontmatter) "
+         "against the **actual** value (transcript): a model mismatch is trust-voiding (❌), an "
+         "effort deviation is a ⚠️ (the cost knob, not trust). `❔ UNKNOWN` is a valid, honest "
+         "verdict — a blind/absent transcript degrades the *actual* columns, and the conductor "
+         "has no agent-def pin to check; never a silent PASS."), "",
         "| Agent | Model (req → actual) | Effort (req → actual) | Files seen | Grants / Denies |",
         "|---|---|---|---|---|",
     ]
@@ -219,9 +220,11 @@ def render_receipt(receipts: list[AgentReceipt], runlog_path: str | None = None)
     lines += [
         "",
         ("_Legend: ✅ matches pin / no forbidden content · ⚠️ effort deviates (either "
-         "direction) · ❌ model mismatch or content leak (run untrusted) · ❔ unknown (not yet "
-         "filled, or transcript blind). Grants / Denies is the guard's own decision per call; "
-         "`(?N)` = N legacy calls with no recorded decision._"),
+         "direction) · ❌ model mismatch or content leak (run untrusted) · ❔ unknown (no pin, "
+         "or transcript blind). Model match is alias/dated-aware: an alias pin (`sonnet`) "
+         "accepts any same-family tier, a dated pin (`claude-opus-4-8`) demands an exact id. "
+         "Grants / Denies is the guard's own decision per call; `(?N)` = N legacy calls with "
+         "no recorded decision._"),
         "",
         "### Sources (for manual cross-check)", "",
         "The exact evidence this receipt was derived from — open these to verify any cell by hand:",
