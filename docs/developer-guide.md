@@ -188,6 +188,15 @@ The invariant these pins enforce: **design and every review use a higher model (
 implementation.** The two reviewers pin the *dated* `claude-opus-4-8` for reproducibility; the
 producer gates (`test-writer`, `implementer`, `verifier`) pin the floating `sonnet` alias.
 
+**The pins are the SSOT for two consumers (#22).** [`agentdefs.py`](../implement-feature-plugin/agentdefs.py)
+reads this frontmatter and hands the model/effort pins to both the guard's dispatch enforcer and the
+analyzer's receipt — the same seam-not-two-copies discipline `policy.py` gives the isolation rules.
+Because **model** has a rank-1 lever (the inline spawn param) but **effort** does not (frontmatter
+only, verified above), the two are treated asymmetrically: model is **enforced** at dispatch (the guard
+denies a dispatch that names no model, promoting the pin from silently-droppable frontmatter to a
+per-invocation argument), while effort can only be **audited** after the fact (the receipt WARNs on any
+deviation, either direction). See ADR-12.
+
 ---
 
 ## 4. The guard hook — isolation is enforced, not requested
@@ -278,8 +287,10 @@ drives a gate.
 **Why it exists — the receipt for the two guarantees.** `/implement-feature` makes two promises:
 **(a)** every gate is *isolated* — a subagent reads only the files curated for its role — and **(b)**
 every gate runs at a *pinned model/effort* so cost stays bounded. The guard hook prevents violations
-in real time (best-effort for `Bash`); the analyzer is the **detective** half that proves, after the
-fact, what actually happened — turning both guarantees from claims into per-run, checkable facts. Both
+in real time (isolation best-effort for `Bash`; the **model** pin enforced at dispatch, #22); the
+analyzer is the **detective** half that proves, after the fact, what actually happened — turning both
+guarantees from claims into per-run, checkable facts (and the effort pin, which has no dispatch lever,
+is proven *only* here). Both
 are runtime-verifiable from the session transcript: the resolved `message.model` and a per-turn
 top-level `effort` field are ground truth (conductor and every subagent). The field-by-field proof
 model — which transcript / `.meta.json` field substantiates which claim — is recorded in
@@ -306,6 +317,11 @@ Two independent readers, with the fragile one quarantined behind a boundary:
   wrapped in `try/except` at a single boundary in `analyze_run.py` and degrades two clearly-different
   ways: **absent** (soft "skipped" note) vs **drift/broken** (loud "format changed, update the parser"
   alarm). A schema self-check deliberately raises the loud error if the depended-on fields vanish.
+- **`receipt.py`** — the **headline**: one per-agent record attesting both guarantees. It fills the
+  *requested* model/effort from the agent-def pins ([`agentdefs.py`](../implement-feature-plugin/agentdefs.py))
+  and the *actual* from the transcript, then verdicts them — a model mismatch is trust-voiding (**FAIL**),
+  an effort deviation is a **WARN** (the cost knob, not trust). The match is alias/dated-aware: an alias
+  pin (`sonnet`) accepts any same-family resolved id; a dated pin (`claude-opus-4-8`) demands an exact id.
 - **`report.py`** pure Markdown rendering; **`_util.py`** tolerant UTC timestamp parsing.
 
 The two readers are correlated only by a **value** — the run-log's `[min ts, max ts]` window (padded
@@ -464,6 +480,36 @@ gate's tool *output*) is **authoritative / trust-voiding**; path extraction + li
   file leaked; it shares the command-string blind spot, so it never stands alone.
 - **Absence of proof is not proof of innocence.** The content audit needs the transcript, so without
   one it renders **UNKNOWN**, never PASS — the receipt stays honest about what was actually verified.
+
+### ADR-12 — Model is *enforced*; effort is *audited* — an honest two-tier receipt
+
+*Decision:* model/effort integrity is not one guarantee but two, split by what the platform actually
+allows. **Model** is enforced at dispatch: a `PreToolUse` hook on the `Task`/`Agent` tool
+([`guard.py`](../implement-feature-plugin/hooks/scripts/guard.py) `_dispatch_deny_reason`) reads the
+target subagent's `model:` pin (via [`agentdefs.py`](../implement-feature-plugin/agentdefs.py)) and
+**denies a dispatch that names no model**, forcing a re-dispatch with the model named — the Thomas-Witt
+technique. **Effort** is audit-only: the receipt WARNs on any deviation from the pin, in either
+direction, but nothing prevents it.
+*Why:*
+- **The asymmetry is the platform's, not a preference.** A subagent's model can be set at rank-1 (the
+  inline spawn param), so a frontmatter pin (rank-2, silently dropped if the dispatch omits a model) can
+  be *promoted* to rank-1 and thereby guaranteed. `effort` has **no** rank-1 slot — it is frontmatter-only
+  (verified against the current Claude Code platform, §3) — so it can be *proven* but never *forced*.
+  Claiming to enforce effort would be a lie the receipt can't back.
+- **Naming, not matching, is the hook's job.** The hook denies only an *unnamed* model dispatch; an
+  explicit-but-*wrong* model is allowed through and caught by the detective receipt as a pin↔actual
+  **FAIL**. Splitting it this way keeps the real-time hook simple and fail-open-friendly (a parse quirk
+  never blocks a correctly-named dispatch), while the authoritative mismatch verdict lives in the
+  transcript-based analyzer where the *actual* resolved model is ground truth.
+- **The two-tier honesty is itself the credibility signal.** The receipt says two structurally different
+  things — "model: enforced + verified" vs "effort: observed" — rather than flattening them into one
+  reassuring checkmark. A trust product that overstated a rank-2 pin as an invariant (the pre-#22
+  "reviewers are opus regardless…" prose) would be *less* trustworthy than one that names exactly what it
+  can and cannot guarantee. Model match is alias/dated-aware for the same reason: a dated pin demands an
+  exact id (honoring the reviewers' reproducibility intent, ADR-2), an alias accepts any same-family tier.
+- **The pins are one SSOT.** Both the enforcer and the receipt read the pins through `agentdefs.py`, so
+  what the guard forces and what the receipt verifies can never drift — the same discipline ADR-11 gives
+  the isolation rules via `policy.py`.
 
 ---
 

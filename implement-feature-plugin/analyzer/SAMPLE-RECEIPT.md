@@ -10,29 +10,29 @@ made up; the *shape* is exactly what the analyzer emits.
 
 ---
 
-## 1. What it looks like today (the #31 schema skeleton)
+## 1. A clean run — fully adjudicated
 
-In the skeleton state the columns that need a *requested* value (model / effort → **#22**) or
-content-level detection (files seen → **#30**) render `❔ UNKNOWN` — a deliberately honest verdict,
-never a silent PASS. The columns whose raw data already exists are filled: the **actual** model +
-effort (from the session transcript) and the guard's **grant/deny** counts (from the run-log). The
-effort spread below is the #28 dev-time configuration (`code-reviewer` high, `test-reviewer` low,
-the rest medium).
+Both capability legs have landed: **#22** fills the *requested* model/effort from the agent-def
+pins and verdicts them against the transcript *actual*; **#30** fills *Files seen* from the content
+auditor. In a clean run every scanned gate reads ✅. The effort spread below is the #28 dev-time
+configuration (`code-reviewer` high, `test-reviewer` low, the rest medium) — and since the pin *is*
+the spread, actual == pin, so effort reads ✅ too. The **conductor** has no agent-def pin (the plugin
+cannot pin the session model), so its requested side is an honest `❔ UNKNOWN` — never a silent PASS.
 
 ## Per-agent trust receipt
 
-The receipt for the two guarantees — **(a) isolation** and **(b) bounded model/effort**. `❔ UNKNOWN` is a valid, honest verdict: the columns below are filled by their capability legs — **requested model/effort + match verdict by #22**, **files-content-seen by #30**. A blind/absent transcript degrades the *actual* columns to UNKNOWN too — never a silent PASS.
+The receipt for the two guarantees — **(a) isolation** and **(b) bounded model/effort**. Each row compares the **requested** pin (agent-def frontmatter) against the **actual** value (transcript): a model mismatch is trust-voiding (❌), an effort deviation is a ⚠️ (the cost knob, not trust). `❔ UNKNOWN` is a valid, honest verdict — a blind/absent transcript degrades the *actual* columns, and the conductor has no agent-def pin to check; never a silent PASS.
 
 | Agent | Model (req → actual) | Effort (req → actual) | Files seen | Grants / Denies |
 |---|---|---|---|---|
 | conductor | ❔ UNKNOWN → claude-sonnet-5 | ❔ UNKNOWN → medium | ❔ UNKNOWN | 118 / 0 |
-| code-reviewer | ❔ UNKNOWN → claude-opus-4-8 | ❔ UNKNOWN → high | ❔ UNKNOWN | 22 / 0 |
-| implementer | ❔ UNKNOWN → claude-sonnet-5 | ❔ UNKNOWN → medium | ❔ UNKNOWN | 41 / 1 |
-| test-reviewer | ❔ UNKNOWN → claude-opus-4-8 | ❔ UNKNOWN → low | ❔ UNKNOWN | 17 / 0 |
-| test-writer | ❔ UNKNOWN → claude-sonnet-5 | ❔ UNKNOWN → medium | ❔ UNKNOWN | 29 / 0 |
-| verifier | ❔ UNKNOWN → claude-sonnet-5 | ❔ UNKNOWN → medium | ❔ UNKNOWN | 13 / 0 |
+| code-reviewer | ✅ claude-opus-4-8 → claude-opus-4-8 | ✅ high → high | ✅ none | 22 / 0 |
+| implementer | ✅ sonnet → claude-sonnet-5 | ✅ medium → medium | ✅ none | 41 / 1 |
+| test-reviewer | ✅ claude-opus-4-8 → claude-opus-4-8 | ✅ low → low | ✅ none | 17 / 0 |
+| test-writer | ✅ sonnet → claude-sonnet-5 | ✅ medium → medium | ✅ none | 29 / 0 |
+| verifier | ✅ sonnet → claude-sonnet-5 | ✅ medium → medium | ✅ none | 13 / 0 |
 
-_Legend: ✅ matches pin · ⚠️ effort deviates (either direction) · ❌ model mismatch · ❔ unknown (not yet filled, or transcript blind). Grants / Denies is the guard's own decision per call; `(?N)` = N legacy calls with no recorded decision._
+_Legend: ✅ matches pin / no forbidden content · ⚠️ effort deviates (either direction) · ❌ model mismatch or content leak (run untrusted) · ❔ unknown (no pin, or transcript blind). Model match is alias/dated-aware: an alias pin (`sonnet`) accepts any same-family tier, a dated pin (`claude-opus-4-8`) demands an exact id. Grants / Denies is the guard's own decision per call; `(?N)` = N legacy calls with no recorded decision._
 
 ### Sources (for manual cross-check)
 
@@ -47,28 +47,31 @@ The exact evidence this receipt was derived from — open these to verify any ce
     - test-writer: `~/.claude/projects/-Users-me-dev-myrepo/4667b56e-…/subagents/agent-7a8b.jsonl`
     - verifier: `~/.claude/projects/-Users-me-dev-myrepo/4667b56e-…/subagents/agent-9c0d.jsonl`
 
-The `implementer`'s `41 / 1` shows one **denied** call the guard blocked (e.g. an attempt to edit a
-test file). A denied call has no transcript effect, so the run-log is the only place it appears.
+Notes on reading the receipt:
+- The `implementer`'s `41 / 1` shows one **denied** call the guard blocked (e.g. an attempt to edit a
+  test file). A denied call has no transcript effect, so the run-log is the only place it appears.
+- The producers' `sonnet` (an **alias**) matches the transcript's resolved `claude-sonnet-5` because
+  the match is family-aware for aliases; the reviewers' **dated** `claude-opus-4-8` must match the
+  actual id **exactly** (a silent opus-tier drift would read ❌).
 
 ---
 
-## 2. What it will look like once the legs land (illustrative preview)
+## 2. An adversarial run — the real proof
 
-Once **#22** supplies the requested model/effort + match verdicts and **#30** supplies
-files-content-seen, the same run reads as a fully-adjudicated receipt. Note the ✅ verdicts, and how
-the `test-reviewer`'s `low` effort — a deliberate *deviation* from a `medium` pin — surfaces as a
-`⚠️` (the widened policy flags any deviation in either direction, but effort is the cost knob, so it
-is a WARN, never trust-voiding):
+A trust product shown only passing hasn't demonstrated the thing that makes it trustworthy. The
+**caught violation** is the proof. Deliberately injecting the plan's acceptance violations flips the
+offending cells to a trust-voiding verdict (the rest of the row still reports honestly):
 
 | Agent | Model (req → actual) | Effort (req → actual) | Files seen | Grants / Denies |
 |---|---|---|---|---|
-| conductor | ✅ sonnet → claude-sonnet-5 | ✅ medium → medium | ✅ 6 files | 118 / 0 |
-| code-reviewer | ✅ opus → claude-opus-4-8 | ✅ high → high | ✅ 4 files | 22 / 0 |
-| implementer | ✅ sonnet → claude-sonnet-5 | ✅ medium → medium | ✅ 5 files | 41 / 1 |
-| test-reviewer | ✅ opus → claude-opus-4-8 | ⚠️ medium → low | ✅ 3 files | 17 / 0 |
-| test-writer | ✅ sonnet → claude-sonnet-5 | ✅ medium → medium | ✅ 4 files | 29 / 0 |
-| verifier | ✅ sonnet → claude-sonnet-5 | ✅ medium → medium | ✅ 5 files | 13 / 0 |
+| code-reviewer | ❌ claude-opus-4-8 → claude-sonnet-5 | ✅ high → high | ✅ none | 22 / 0 |
+| test-writer | ✅ sonnet → claude-sonnet-5 | ✅ medium → medium | ❌ LEAK: 03-design-internal.md | 29 / 1 |
 
-And an **adversarial** run — the real proof — flips a cell to a trust-voiding verdict, e.g. a
-wrong-model launch (`❌ opus → claude-sonnet-5`) or a leaked-content read surfacing in `Files seen`.
-See `plan.md` → *v1 acceptance* for the injected-violation cases.
+- **`❌ claude-opus-4-8 → claude-sonnet-5`** — a wrong-model launch: the reviewer ran on Sonnet, not
+  its pinned Opus. (The dispatch hook denies an *unnamed* model; a deliberately *wrong* named model
+  gets here, and the receipt is the backstop that catches it — #22 / ADR-12.)
+- **`❌ LEAK: 03-design-internal.md`** — the content auditor found the internal design's text in the
+  algorithm-blind test-writer's tool output (e.g. via a `cat handoff/*.md` glob the run-log's
+  command-string view can't resolve). This **voids trust** for the run — #30 / ADR-11.
+
+See `plan.md` → *v1 acceptance* for driving these injected-violation cases end-to-end.

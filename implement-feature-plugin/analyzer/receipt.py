@@ -2,18 +2,19 @@
 
 The receipt is the headline of the audit: ONE record per agent (the conductor and each
 isolated gate) attesting to the two guarantees — (a) isolation and (b) bounded
-model/effort. This module fixes that record's SHAPE now, so the two legs each just fill
-their column later instead of inventing partial shapes reconciled at the end:
+model/effort. Each column is filled by its capability leg:
 
-  - #22 supplies the REQUESTED model/effort (agent-def pin / .meta.json) and the
-    match verdict against the actual values;
-  - #30 supplies which file *content* actually entered each agent's context.
+  - (b) model/effort — REQUESTED from the agent-def pins (agentdefs.py, #22), ACTUAL
+    from the transcript; the verdicts compare them (model mismatch = FAIL, effort
+    deviation = WARN, either direction). The conductor has no agent-def pin, so its
+    requested side stays UNKNOWN (an honest 'nothing to check', never a silent PASS).
+  - (a) isolation — which file *content* actually entered each agent's context (#30),
+    from the content auditor.
 
-Until then those columns render UNKNOWN — a deliberately honest verdict, never a
-silent PASS. The columns whose raw data already exists are filled today: the actual
-model + effort (from the transcript) and the guard's grant/deny counts (from the
-run-log). This module is PURE — it derives from a RunLogAnalysis plus an OPTIONAL
-TranscriptAnalysis (None when the transcript is absent/drifted/disabled), and does no I/O.
+A blind/absent transcript degrades the ACTUAL columns to UNKNOWN, and an un-passed leg
+renders UNKNOWN — never a silent PASS. This module is PURE — it derives from a
+RunLogAnalysis plus an OPTIONAL TranscriptAnalysis (None when the transcript is
+absent/drifted/disabled) plus the pins/audit passed in, and does no I/O.
 """
 from __future__ import annotations
 

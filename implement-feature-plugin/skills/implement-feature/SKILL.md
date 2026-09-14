@@ -225,13 +225,16 @@ Gate 0 below is the first application of this style; later STOP gates follow the
    | CODE-REVIEW | [I] `code-reviewer` | **`claude-opus-4-8`** (pinned), high | review > implementation |
    | REVIEW-GUIDE / COMMIT | [C] | Sonnet or Haiku (session) | mechanical presentation + commit |
 
-   The `[I]` subagent models are pinned in `agents/*.md` and **never deviate**, but in two
-   different ways: the two **reviewers** (`test-reviewer`, `code-reviewer`) pin the **explicit,
-   dated** `claude-opus-4-8` — on purpose, for **reproducible review behavior** (a floating
-   alias would silently change the reviewer as new Opus tiers ship); `test-writer` /
-   `implementer` / `verifier` pin the **`sonnet` alias** (whatever the latest Sonnet tier is).
-   So the reviewers are `claude-opus-4-8` regardless of what this environment resolves `opus`
-   to. **Conductor `[C]` gates run on the session's own model** (the plugin cannot pin it), so
+   The `[I]` subagent models are pinned in `agents/*.md`, in two different ways: the two
+   **reviewers** (`test-reviewer`, `code-reviewer`) pin the **explicit, dated** `claude-opus-4-8`
+   — on purpose, for **reproducible review behavior** (a floating alias would silently change the
+   reviewer as new Opus tiers ship); `test-writer` / `implementer` / `verifier` pin the **`sonnet`
+   alias** (whatever the latest Sonnet tier is). The pin is **enforced, then verified** (#22): you
+   name the model on every `[I]` dispatch and the guard denies an unnamed one (so the frontmatter
+   pin can't be silently dropped), and the post-run receipt compares the transcript's *actual*
+   model against the pin — a mismatch is a **FAIL**. (Effort has no dispatch lever, so it is
+   verified only — a deviation is a WARN, not enforced.) **Conductor `[C]` gates run on the
+   session's own model** (the plugin cannot pin it), so
    only the three `[C]` rows can be wrong — and only when the session's tier is *below* that
    row's required tier (INTERVIEW/DESIGN want Opus; REVIEW-GUIDE/COMMIT is *correct* on
    Sonnet/Haiku).
