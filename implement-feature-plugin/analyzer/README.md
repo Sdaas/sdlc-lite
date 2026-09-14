@@ -25,6 +25,10 @@ from `--workdir`, else `$IF_RUNLOG` / `$CLAUDE_PROJECT_DIR/if-runlog.jsonl` / `.
 The analyzer **never reads `.active-run`** — knowing the *active* run is a higher-layer
 concern (that pointer is the conductor↔guard channel, not the analyzer's).
 
+The report's headline is the **per-agent trust receipt** — see
+[`SAMPLE-RECEIPT.md`](SAMPLE-RECEIPT.md) for a rendered example (skeleton state + a preview of the
+fully-adjudicated form once #22/#30 land).
+
 ## Architecture — two independent readers
 
 ```

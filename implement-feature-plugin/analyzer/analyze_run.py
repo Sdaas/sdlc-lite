@@ -27,10 +27,12 @@ import sys
 from pathlib import Path
 
 from . import report
+from .receipt import build_receipt
 from .runlog import parse_runlog
 from .transcript import (
     TranscriptAbsent,
     TranscriptFormatError,
+    TranscriptAnalysis,
     find_transcript,
     parse_transcript,
 )
@@ -58,27 +60,33 @@ def build_report(runlog_path: str, projects_root: Path | None, slug: str | None,
     runlog = parse_runlog(runlog_path)
     sections = [report.render_runlog(runlog)]
 
-    # 3. Transcript: quarantined best-effort satellite.
+    # 3. Transcript: quarantined best-effort satellite. On any degradation the analysis
+    #    stays None so the receipt below still renders (with UNKNOWN actual columns).
+    tanalysis: TranscriptAnalysis | None = None
     if not use_transcript:
         sections.append(report.render_transcript_unavailable(
             "absent", "transcript analysis disabled (--no-transcript)."))
-        return report.assemble(sections)
+    else:
+        try:
+            projects_root = projects_root or _default_projects_dir()
+            slug = slug or _slug_for(Path.cwd())
+            project_dir = projects_root / slug
+            tpath = find_transcript(project_dir, runlog.window_start, runlog.window_end)
+            tanalysis = parse_transcript(tpath, runlog.window_start, runlog.window_end)
+            sections.append(report.render_transcript(tanalysis))
+        except TranscriptAbsent as e:
+            sections.append(report.render_transcript_unavailable("absent", str(e)))
+        except TranscriptFormatError as e:
+            sections.append(report.render_transcript_unavailable("drift", str(e)))
+        except Exception as e:  # noqa: BLE001 - deliberate: any unknown transcript
+            # failure must route to the LOUD path; silent degradation is worse.
+            tanalysis = None
+            sections.append(report.render_transcript_unavailable(
+                "drift", f"unexpected {type(e).__name__}: {e}"))
 
-    try:
-        projects_root = projects_root or _default_projects_dir()
-        slug = slug or _slug_for(Path.cwd())
-        project_dir = projects_root / slug
-        tpath = find_transcript(project_dir, runlog.window_start, runlog.window_end)
-        tanalysis = parse_transcript(tpath, runlog.window_start, runlog.window_end)
-        sections.append(report.render_transcript(tanalysis))
-    except TranscriptAbsent as e:
-        sections.append(report.render_transcript_unavailable("absent", str(e)))
-    except TranscriptFormatError as e:
-        sections.append(report.render_transcript_unavailable("drift", str(e)))
-    except Exception as e:  # noqa: BLE001 - deliberate: any unknown transcript
-        # failure must route to the LOUD path; silent degradation is worse.
-        sections.append(report.render_transcript_unavailable(
-            "drift", f"unexpected {type(e).__name__}: {e}"))
+    # 4. The trust receipt — ALWAYS rendered (the headline of the audit). Grant/deny come
+    #    from the run-log; actual model/effort from the transcript when available, else UNKNOWN.
+    sections.append(report.render_receipt(build_receipt(runlog, tanalysis), runlog.path))
 
     return report.assemble(sections)
 

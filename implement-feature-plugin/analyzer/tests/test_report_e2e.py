@@ -10,8 +10,9 @@ SLUG = "proj"
 
 def _runlog(tmp_path):
     return str(write_runlog(tmp_path / "rl.jsonl", [
-        call("implement-feature:test-writer", "Read", "handoff/design-interface.md"),
-        call("implement-feature:implementer", "Write", "src/foo.py"),
+        call("implement-feature:test-writer", "Read", "handoff/design-interface.md",
+             guard_decision="allow"),
+        call("implement-feature:implementer", "Write", "src/foo.py", guard_decision="allow"),
     ]))
 
 
@@ -44,6 +45,18 @@ def test_subagent_breakdown_rendered_in_report(tmp_path):
     assert "Subagent transcripts found: **1**" in out
 
 
+def test_receipt_rendered_with_actual_columns_from_transcript(tmp_path):
+    runlog = _runlog(tmp_path)
+    projects = tmp_path / "projects"
+    (projects / SLUG).mkdir(parents=True)
+    write_transcript(projects / SLUG / "s.jsonl",
+                     [assistant_turn("claude-opus-4-8", i=1, effort="medium")])
+    out = build_report(runlog, projects, SLUG)
+    assert "Per-agent trust receipt" in out
+    assert "UNKNOWN → claude-opus-4-8" in out   # requested still UNKNOWN (#22), actual filled
+    assert "UNKNOWN → medium" in out
+
+
 def test_missing_transcript_degrades_softly_runlog_intact(tmp_path):
     runlog = _runlog(tmp_path)
     projects = tmp_path / "projects"  # never created -> absent
@@ -51,6 +64,9 @@ def test_missing_transcript_degrades_softly_runlog_intact(tmp_path):
     assert "Run-log analysis" in out
     assert "Skipped — no transcript found" in out
     assert "TRANSCRIPT ANALYSIS UNAVAILABLE" not in out  # soft, not loud
+    # R5: the receipt still renders, with actual columns degraded to UNKNOWN (never PASS).
+    assert "Per-agent trust receipt" in out
+    assert "❔" in out
 
 
 def test_transcript_drift_degrades_loudly_runlog_intact(tmp_path):

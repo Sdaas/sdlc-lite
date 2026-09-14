@@ -12,12 +12,16 @@ one of three inputs the caller supplies after quarantining the satellite:
 """
 from __future__ import annotations
 
+from .receipt import FAIL, PASS, UNKNOWN, WARN, AgentReceipt
 from .runlog import RunLogAnalysis
 from .transcript import ModelUsage, TranscriptAnalysis
 
 
 def _fmt(n: int) -> str:
     return f"{n:,}"
+
+
+_VERDICT_GLYPH = {PASS: "✅", FAIL: "❌", WARN: "⚠️", UNKNOWN: "❔"}
 
 
 def render_runlog(a: RunLogAnalysis) -> str:
@@ -130,6 +134,57 @@ def render_transcript_unavailable(mode: str, reason: str) -> str:
         "    ► The run-log analysis above is unaffected and complete.",
         "",
     ])
+
+
+def _grant_deny_cell(r: AgentReceipt) -> str:
+    cell = f"{r.grants} / {r.denies}"
+    if r.decision_unknown:  # legacy (pre-R4) lines with no recorded decision
+        cell += f" (?{r.decision_unknown})"
+    return cell
+
+
+def render_receipt(receipts: list[AgentReceipt], runlog_path: str | None = None) -> str:
+    """The per-agent trust receipt (#31 schema). Columns needing a requested value (model /
+    effort → #22) or content-level detection (files seen → #30) render ❔ UNKNOWN — an honest
+    verdict, never a silent PASS. Each model/effort cell leads with its own deviation glyph.
+    A Sources block cites the exact files the receipt was derived from for manual cross-check."""
+    lines = [
+        "## Per-agent trust receipt", "",
+        "The receipt for the two guarantees — **(a) isolation** and **(b) bounded "
+        "model/effort**. `❔ UNKNOWN` is a valid, honest verdict: the columns below are filled "
+        "by their capability legs — **requested model/effort + match verdict by #22**, "
+        "**files-content-seen by #30**. A blind/absent transcript degrades the *actual* columns "
+        "to UNKNOWN too — never a silent PASS.", "",
+        "| Agent | Model (req → actual) | Effort (req → actual) | Files seen | Grants / Denies |",
+        "|---|---|---|---|---|",
+    ]
+    for r in receipts:
+        mg = _VERDICT_GLYPH[r.model_verdict]
+        eg = _VERDICT_GLYPH[r.effort_verdict]
+        fg = _VERDICT_GLYPH[UNKNOWN if r.files_content_seen == UNKNOWN else PASS]
+        lines.append(
+            f"| {r.label} "
+            f"| {mg} {r.requested_model} → {r.actual_model} "
+            f"| {eg} {r.requested_effort} → {r.actual_effort} "
+            f"| {fg} {r.files_content_seen} "
+            f"| {_grant_deny_cell(r)} |"
+        )
+    lines += [
+        "",
+        "_Legend: ✅ matches pin · ⚠️ effort deviates (either direction) · ❌ model mismatch "
+        "· ❔ unknown (not yet filled, or transcript blind). Grants / Denies is the guard's own "
+        "decision per call; `(?N)` = N legacy calls with no recorded decision._",
+        "",
+        "### Sources (for manual cross-check)", "",
+        "The exact evidence this receipt was derived from — open these to verify any cell by hand:",
+        "",
+        f"- Run-log (grants/denies): `{runlog_path or UNKNOWN}`",
+        "- Transcripts (actual model/effort), per agent:",
+    ]
+    for r in receipts:
+        lines.append(f"    - {r.label}: `{r.transcript_file}`")
+    lines.append("")
+    return "\n".join(lines)
 
 
 def assemble(sections: list[str]) -> str:
