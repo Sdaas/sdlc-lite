@@ -48,7 +48,7 @@ without revisiting the dependency reasoning in "The through-line."
 | #28 | v1 · step 1 | **DONE** | effort reconcile + dev-spread test-design; dev-spread = code-review `high` / test-review `low` / rest `medium` |
 | #31 (skeleton) | v1 · step 2 | **DONE** | receipt schema (`analyzer/receipt.py`) rendered always, all-`UNKNOWN` verdicts; R3 effort-extraction + R4 `guard_decision` plumbing landed; effort policy widened to WARN-both-directions; Sources block + `SAMPLE-RECEIPT.md`. Issue **stays open** for the close phase (step 5) |
 | #30a (enforcer) | v1 · step 3a | **DONE** | policy SSOT (`policy.py`) + guard rewired onto it (R1 enforcer side, R2) + Bash write-forms (sed -i/cp/mv) + full-length run-log (R3 intent half) + R6 wildcard-ban + #29 (verifier/code-reviewer write-confinement). Commits: R1 `9c96c8e`, R2 `b2a7184`, R6 `518c5aa` |
-| #30b (auditor) | v1 · step 3b | **NEXT** | **Resume #30 here.** See the split note in the #30 section. Two parts: (B) `analyzer/runlog.py` dedup — import `policy`, delete its duplicate predicates (finishes R1's "KEEP IN SYNC" fix); then (R3/R4) the transcript-based auditor + Gate-11 FAIL + receipt `Files seen` column + DG/ADR + R5 auditor-layer tests |
+| #30b (auditor) | v1 · step 3b | **DONE** | (B) `runlog.py` imports `policy` SSOT + anchored critic confinement (`c663e09`); (R3) transcript content-fingerprint auditor + `TRANSCRIPT-FORMAT.md` §5 (`0f95d10`); (R4) wired into receipt `Files seen` + Gate-11 `UNTRUSTED` verdict + R5 tests (`a495ff1`); DG §4 rewrite + ADR-11. **#30 complete.** Full host suite 138 green |
 | #22 | v1 · step 4 | pending | model-enforce (Witt) + effort-audit; **un-deferred** |
 | #31 (close) | v1 · step 5 | pending | framing + docs; v1 acceptance dry runs |
 | #35 | v1 · release | pending | flip all effort pins → `medium`; **blocked by #31** (must observe the dev-spread first) |
@@ -128,7 +128,7 @@ Ship as **one coherent release**. Order is load-bearing (schema before the legs 
     minus a deny set"; deny-by-default is honored structurally in `decide()` (reads can be tightened
     per role later) but today only the deny set bites. Documented in `policy.py`'s docstring.
 
-- **#30b — auditor (NEXT — resume here).** Two parts, in order:
+- **#30b — auditor (DONE).** Shipped on `v1-trust-claim` (`c663e09`, `0f95d10`, `a495ff1`). Two parts:
   1. **(B) `analyzer/runlog.py` dedup** — finish R1's detective side: `import policy`, delete
      `runlog.py`'s duplicated `looks_secret`/`is_test_path`/`reviewer_write_denied`/heredoc/bash-parse
      copies, and route its isolation checks through `policy.decide()`. ⚠️ `runlog.py`'s

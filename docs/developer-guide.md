@@ -225,37 +225,47 @@ subagent. Reliability-critical config ships with the plugin.
 Keep `guard.py` and the analyzer's isolation predicates in sync — they implement the same secret /
 test-path / reviewer-write rules (preventive vs detective).
 
-### Known limitation — Bash enforcement is best-effort
+### Bash enforcement is best-effort — and the transcript auditor closes it (#30)
 
 The guard is a **string-inspecting PreToolUse hook**, not an OS-level sandbox. For `Read`, `Write`,
 `Glob`, and `Grep` the tool names a single, inspectable target, so the allow/deny rules are precise.
-For **`Bash`, enforcement is best-effort**, and this is a deliberate, documented boundary:
+For **`Bash` the *real-time* enforcer is best-effort** — inherently, because you cannot know from a
+shell string the full set of files a `python -c …`, an `xargs` pipeline, or a `cd handoff && cat *`
+will actually touch. The design accepts this and closes it with a second, independent leg. Two things
+changed from the earlier enforcer-only state:
 
-- **Reads through Bash are unbounded.** The algorithm-blind rule matches the literal substring
-  `design-internal` in the command string, so a *wildcard* read — `cat handoff/*.md`, `head
-  handoff/0[23]-*` — does not contain the literal and is **not denied**. There is no way to know, by
-  inspecting a shell string, the full set of files a command like `python -c …` or a pipeline will
-  read.
-- **Writes through Bash are only partially covered.** The test-integrity rule (implementer must not
-  edit tests) and reviewer write-confinement fire for `Write`/`Edit`/`NotebookEdit`. A `Bash` write to
-  a test file — `sed -i … tests/test_foo.py`, a `cat > … <<EOF` heredoc — is currently **audited but
-  not denied** for the implementer (reviewer-confinement *does* resolve Bash redirect targets, but
-  does not yet cover `sed -i`/`cp`/`mv` forms).
-- **The audit inherits the same blind spot.** The analyzer's isolation checks read the same run-log
-  through the same substring predicates, and the run-log records the Bash *command string* (today
-  truncated to 300 chars), not the files the command actually touched — so a Bash bypass is invisible
-  to the detective leg too.
+- **One policy, two legs, no drift (the SSOT).** The per-agent allow/deny rules now live once in
+  [`implement-feature-plugin/policy.py`](../implement-feature-plugin/policy.py) — shared predicates
+  (`looks_secret`, `is_test_path`, the design-internal/draft tests, the Bash parsing) plus a
+  data-driven rule table and a single `decide(agent_type, access, path)` authority. **Both** the
+  in-hook enforcer (`guard.py`) and the detective analyzer (`runlog.py`) *import* it. Previously each
+  kept its own copy under a "KEEP IN SYNC" comment, so a single Bash trick bypassed both at once —
+  they shared one blind spot. They can no longer disagree.
+- **The enforcer got wider, but is still not airtight.** It now resolves the in-place/copy write
+  *forms* (`sed -i`, `cp`, `mv`) as well as `>`/`>>`/`tee` redirects, and it **bans** an
+  algorithm-blind agent's wildcard read over `handoff/` (`cat handoff/*.md` could expand to
+  `03-design-internal.md`). Write-confinement covers all three read-only critics (test-reviewer,
+  verifier, code-reviewer). But an indirect read or a segment-hiding `cd` still slips the *real-time*
+  check — by design, because the backstop is the auditor, not more parsing.
 
-**Why this is acceptable for v1:** the guard is **defense-in-depth** — each isolated agent's role
-instructions already tell it what it may read/write, and the agent usually declines on its own; the
-hook is a backstop, not the sole line of defense. The bar for this plugin is *best-effort isolation,
-enforced and audited*, not cryptographic airtightness.
+**The authoritative leg reads the *effect*, not the intent.** The analyzer's transcript auditor
+([`analyzer/auditor.py`](../implement-feature-plugin/analyzer/auditor.py)) fingerprints each
+content-protected artifact (e.g. `03-design-internal.md`) and scans each subagent transcript's **tool
+output** for it. Because a leak lands in *some* string leaf of the transcript's `toolUseResult` (Read
+→ `file.content`, Bash → `stdout`, Edit → `originalFile`) *however* it was read, this catches the
+glob/indirect leak the command-string legs cannot see, and it is **method-agnostic**. A hit is
+**trust-voiding**: the Gate-11 report prints `THIS RUN IS UNTRUSTED` and the receipt's *Files seen*
+column shows `❌ LEAK`. *Which* artifact a role is forbidden is decided by `policy.decide()`, so the
+auditor and the guard agree on "protected" by construction. (On-disk record shapes: see
+[`analyzer/TRANSCRIPT-FORMAT.md`](../implement-feature-plugin/analyzer/TRANSCRIPT-FORMAT.md) §5.)
 
-**The real fix is a redesign, not more parsing.** Closing this class of bug means a single declarative
-per-agent **policy** (deny-by-default allow-lists) feeding two mechanisms — a fast in-hook enforcer and
-an **independent** post-hoc auditor that keys off the *session transcript* (what each agent actually
-saw), not the command string. That work is tracked in #30, which subsumes the ad-hoc findings #27 and
-#29.
+**Honesty over false comfort.** The content audit needs the session transcript (it reads tool output),
+so when the transcript is absent/drifted the audit renders **UNKNOWN — not run**, never a silent PASS:
+absence of the transcript is absence of proof, not proof of innocence. The bar for this plugin is
+*best-effort prevention + authoritative detection*, not cryptographic airtightness — the guard is
+still defense-in-depth (each agent's role body also tells it what it may touch), and the auditor turns
+a Bash bypass from an invisible gap into a caught, trust-voiding finding. (#30 subsumed the earlier
+ad-hoc findings #27 and #29.)
 
 ---
 
@@ -283,8 +293,13 @@ sidecar, with real snippets — see the field guide
 Two independent readers, with the fragile one quarantined behind a boundary:
 
 - **`runlog.py`** — **load-bearing**. Parses `handoff/run-log.jsonl` (or the `if-runlog.jsonl`
-  fallback) → per-agent activity + the isolation verdicts. Zero knowledge of the transcript; cannot be
-  broken by it.
+  fallback) → per-agent activity + the *intent-level* isolation verdicts (attempts the guard recorded).
+  Imports `policy.py` for its predicates (the same SSOT the guard enforces). Zero knowledge of the
+  transcript; cannot be broken by it.
+- **`auditor.py`** — the **authoritative isolation leg** (#30 R3). Fingerprints each content-protected
+  artifact and scans each subagent transcript's *tool output* for it — catching the glob/indirect Bash
+  leak the run-log's command-string view cannot see. A hit voids trust. Best-effort satellite (it needs
+  the transcript), so no transcript → UNKNOWN, never a false PASS.
 - **`transcript.py`** — **best-effort satellite**. Parses the Claude Code session transcript for
   per-model tokens (main thread + each subagent under `<uuid>/subagents/*.jsonl`, attributed via the
   sibling `.meta.json`). The transcript format is officially internal/unstable, so this reader is
@@ -296,18 +311,25 @@ Two independent readers, with the fragile one quarantined behind a boundary:
 The two readers are correlated only by a **value** — the run-log's `[min ts, max ts]` window (padded
 ±5 min) selects the overlapping transcript file — not by shared code or imports.
 
-The isolation verdicts, computed from the run-log alone:
+Two kinds of verdict, by which evidence backs them. **Intent-level**, from the run-log alone
+(`runlog.py`) — these record *attempts* the guard logged before it could deny them, so a forbidden
+entry means an agent *tried* and the guard blocked it live:
 
 1. test-writer never *attempted* to read `03-design-internal.md`;
-2. implementer never *attempted* to write/edit a test file;
+2. implementer never *attempted* to write/edit a test file (incl. Bash `sed -i`/`cp`/`mv` forms);
 3. no agent *attempted* to read secrets/`.env`;
-4. test-reviewer never *attempted* to write into the product tree;
+4. the read-only critics (test-reviewer, verifier, code-reviewer) never *attempted* to write into the
+   product tree (anchored to *this* run's handoff outbox, not a loose substring);
 5. the distinct expected subagents actually ran.
 
-The analyzer records *attempts* (the guard logs every call before it may deny it) — a forbidden entry
-here means an agent *tried* and the guard blocked it live. It runs automatically at Gate 11, and its
-fast isolation pass runs again just before Gate 9 (so a breach is surfaced for explicit human
-acknowledgement before shipping). It can also be run on any past run via
+**Effect-level / authoritative**, from the transcript (`auditor.py`): did any content a gate was
+forbidden to see actually *reach* it? This is the only leg that catches a Bash glob/indirect leak, and
+a finding is trust-voiding — the report prints `THIS RUN IS UNTRUSTED` and the receipt's *Files seen*
+column flips to `❌ LEAK`.
+
+The analyzer runs automatically at Gate 11 (full pass, incl. the transcript auditor), and its fast
+intent-level pass runs again just before Gate 9 (`--no-transcript`, so a breach is surfaced for
+explicit human acknowledgement before shipping). It can also be run on any past run via
 `/implement-feature:analyze-run`. Full detail: `analyzer/README.md`.
 
 ---
@@ -416,6 +438,32 @@ secret *file* — never a bare identifier.
 *Why:* substring-matching `.env`/`key`/`credentials` against a Bash command's whole string false-denies
 `python -c "os.environ.get('X')"`, and one false hit flips the analyzer's whole-run verdict to
 VIOLATION, burying real signal. Guard and analyzer must share the identical predicate, tool included.
+
+### ADR-11 — Isolation is proven by intent *and* effect: one policy, two legs
+
+*Decision:* isolation is not a single mechanism but a **policy** feeding two independent legs. One
+declarative per-agent policy ([`policy.py`](../implement-feature-plugin/policy.py) — a data rule table
+plus `decide(agent_type, access, path)`) is imported by **both** a real-time in-hook *enforcer*
+(`guard.py`, prevention, best-effort for Bash) and a post-hoc *auditor* (`analyzer/`, detection). The
+auditor itself uses two signals with fixed roles: the transcript **content-fingerprint** (reads each
+gate's tool *output*) is **authoritative / trust-voiding**; path extraction + literal-glob "unglob"
+(reads the command *intent*) is **corroborating only**.
+*Why:*
+- **One SSOT kills the shared blind spot.** The enforcer and detective used to keep hand-copied
+  predicates under "KEEP IN SYNC" comments, so a single Bash trick bypassed both at once — they were
+  the *same* check twice, not two checks. Importing one definition means they cannot drift, and the
+  policy becomes the seam where a role's rules are tightened once.
+- **Best-effort Bash prevention is a real boundary, not a bug.** A string-inspecting hook cannot know
+  what a `python -c …` or a `cd handoff && cat *` actually reads. Rather than pretend otherwise, the
+  design pairs best-effort *prevention* with authoritative *detection*.
+- **Effect beats intent for the trust claim.** The command string (what the run-log and guard see) is
+  blind to a glob/indirect read; the tool *output* (what the transcript records) is not. Fingerprinting
+  the protected artifact against each subagent's `toolUseResult` string leaves is **method-agnostic** —
+  a leak via Bash `stdout`, Read `file.content`, or Edit `originalFile` all land in one scan — which is
+  why it, not the path heuristic, is the authority. The path/unglob signal is kept only to *name* which
+  file leaked; it shares the command-string blind spot, so it never stands alone.
+- **Absence of proof is not proof of innocence.** The content audit needs the transcript, so without
+  one it renders **UNKNOWN**, never PASS — the receipt stays honest about what was actually verified.
 
 ---
 
