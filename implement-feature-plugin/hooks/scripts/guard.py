@@ -163,6 +163,15 @@ def _bash_deny_reason(agent_type: str, command: str, handoff: str) -> str | None
     if "test-writer" in agent_type and policy.is_design_internal(command):
         return (_DENY_PREFIX + "the test-writer is algorithm-blind and must not read "
                 "design-internal.md.")
+    # R6 wildcard-ban: an algorithm-blind agent may not run an UNRESOLVABLE wildcard read
+    # over handoff/ — the glob (`cat handoff/*.md`) could expand to design-internal.md, and
+    # the literal-substring rule above can't see it. Ban the glob; read files by exact name.
+    if policy.is_algorithm_blind(agent_type):
+        globs = policy.bash_wildcard_handoff_reads(command)
+        if globs:
+            return (_DENY_PREFIX + "the test-writer is algorithm-blind; a wildcard read over "
+                    "handoff/ could resolve to design-internal.md. Read the files you need by "
+                    f"exact name instead (offending: {', '.join(globs)[:120]}).")
     if agent_type and policy.is_draft(command):
         return (_DENY_PREFIX + "handoff/draft/ holds unapproved drafts. Subagents read "
                 "only promoted files under handoff/. (Conductor promotes on approval.)")

@@ -133,3 +133,18 @@ def test_bash_write_targets_in_place_and_copy_forms():
     # A plain sed (no -i) writes nothing; a read-only grep writes nothing.
     assert policy.bash_write_targets("sed 's/a/b/' file.py") == []
     assert policy.bash_write_targets("grep -r x src/") == []
+
+
+# --- R6 wildcard-ban helpers -----------------------------------------------
+def test_is_algorithm_blind():
+    assert policy.is_algorithm_blind(TW)
+    assert not policy.is_algorithm_blind(IMPL)   # implementer may read design-internal
+    assert not policy.is_algorithm_blind(CONDUCTOR)
+
+
+def test_bash_wildcard_handoff_reads():
+    assert policy.bash_wildcard_handoff_reads("cat handoff/*.md") == ["handoff/*.md"]
+    assert policy.bash_wildcard_handoff_reads("head .../handoff/0[23]-*") == [".../handoff/0[23]-*"]
+    # An explicit (non-glob) handoff read is fine; a glob NOT over handoff is fine.
+    assert policy.bash_wildcard_handoff_reads("cat handoff/01-requirements.md") == []
+    assert policy.bash_wildcard_handoff_reads("ls tests/*.py") == []

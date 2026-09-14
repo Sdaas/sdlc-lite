@@ -130,6 +130,47 @@ def test_test_writer_denied_numbered_design_internal(tmp_path):
     assert json.loads(out)["hookSpecificOutput"]["permissionDecision"] == "deny"
 
 
+TW = "implement-feature:test-writer"
+
+
+# --- #30 R6: wildcard-ban for the algorithm-blind test-writer ---------------
+
+@pytest.mark.parametrize("cmd", [
+    "cat /repo/.implement-feature/r/handoff/*.md",
+    "head /repo/.implement-feature/r/handoff/0[23]-*",
+    "cat handoff/*",
+])
+def test_test_writer_denied_wildcard_read_over_handoff(cmd, tmp_path):
+    # The glob could resolve to 03-design-internal.md; the literal-substring rule can't
+    # see it, so R6 bans the wildcard outright.
+    rc, out = run_guard(call("Bash", cmd, agent_type=TW),
+                        env_extra={"IF_RUNLOG": str(tmp_path / "l.jsonl")})
+    assert rc == 2, f"wildcard handoff read NOT denied: {cmd!r}"
+    assert "algorithm-blind" in json.loads(out)["hookSpecificOutput"]["permissionDecisionReason"]
+
+
+def test_test_writer_may_read_handoff_file_by_exact_name(tmp_path):
+    rc, _ = run_guard(
+        call("Bash", "cat /repo/.implement-feature/r/handoff/01-requirements.md", agent_type=TW),
+        env_extra={"IF_RUNLOG": str(tmp_path / "l.jsonl")})
+    assert rc == 0
+
+
+def test_test_writer_wildcard_outside_handoff_allowed(tmp_path):
+    # A glob that does NOT reference handoff is fine (the test-writer globs its own tests).
+    rc, _ = run_guard(call("Bash", "ls tests/*.py", agent_type=TW),
+                      env_extra={"IF_RUNLOG": str(tmp_path / "l.jsonl")})
+    assert rc == 0
+
+
+def test_non_blind_agent_wildcard_over_handoff_allowed(tmp_path):
+    # The implementer MAY read design-internal, so its handoff glob is not banned.
+    rc, _ = run_guard(call("Bash", "cat handoff/*.md",
+                           agent_type="implement-feature:implementer"),
+                      env_extra={"IF_RUNLOG": str(tmp_path / "l.jsonl")})
+    assert rc == 0
+
+
 def test_implementer_denied_writing_test_file(tmp_path):
     rc, out = run_guard(
         call("Write", "/repo/tests/test_foo.py", agent_type="implement-feature:implementer"),

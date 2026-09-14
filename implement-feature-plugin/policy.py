@@ -288,6 +288,32 @@ POLICY: dict[str, AgentPolicy] = {
 }
 
 
+def is_algorithm_blind(agent_type: str) -> bool:
+    """True if this agent must not see the internal design (the test-writer). Used by the
+    R6 wildcard-ban: such an agent may not run an unresolvable wildcard read over handoff/,
+    since the glob could expand to 03-design-internal.md."""
+    pol = POLICY.get(role_of(agent_type) or "")
+    return bool(pol and _DESIGN_INTERNAL in pol.read_denied)
+
+
+_GLOB_CHARS = ("*", "?", "[")
+
+
+def bash_wildcard_handoff_reads(command: str) -> list[str]:
+    """#30 R6 (best-effort): glob tokens in a Bash command that reference the handoff dir.
+    The literal design-internal substring rule cannot see `03-design-internal.md` through a
+    wildcard (`cat handoff/*.md`, `head handoff/0[23]-*`), so for an algorithm-blind agent
+    we BAN the wildcard rather than allow-and-hope — read the needed files by exact name.
+    Returns the offending glob tokens (empty = none). Cannot catch a `cd handoff && cat *`
+    that hides the segment; the transcript auditor is the authoritative backstop."""
+    out: list[str] = []
+    for tok in bash_tokens(command):
+        t = tok.strip().strip("'\"").replace("\\", "/")
+        if any(c in t for c in _GLOB_CHARS) and "handoff/" in (t + "/"):
+            out.append(tok)
+    return out
+
+
 @dataclass
 class Decision:
     allowed: bool
