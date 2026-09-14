@@ -53,6 +53,10 @@ inside `try/except` and degrades two ways:
 `transcript.py` runs a **schema self-check**: assistant turns present but none
 carrying `message.model` / `message.usage` ⇒ deliberate `TranscriptFormatError`.
 
+> **Working on `transcript.py`?** [`TRANSCRIPT-FORMAT.md`](TRANSCRIPT-FORMAT.md) is a field guide to
+> the on-disk layout and record shapes (main transcript, `<uuid>/subagents/*.jsonl`, and the
+> `.meta.json` sidecar), with real snippets and which field proves which claim — start there.
+
 ### Transcript↔run selection
 The main transcript file is chosen by **time-window correlation** (option *b*):
 the file whose assistant turns most overlap the run-log's `[min ts, max ts]`
