@@ -1,7 +1,8 @@
 """Tests for the load-bearing run-log reader."""
 from __future__ import annotations
 
-from analyzer.runlog import bash_write_targets, parse_runlog, reviewer_write_denied
+from analyzer.runlog import parse_runlog
+from policy import bash_write_targets, confined_write_denied
 
 from .conftest import call, write_runlog
 
@@ -14,7 +15,8 @@ def test_heredoc_body_blockquotes_not_parsed_as_redirections():
            "# Findings\n> Canonical handoff file: `06`\n> Reviewer did not write.\nEOF")
     targets = bash_write_targets(cmd)
     assert targets == ["/x/handoff/06-test-review-findings.md"]
-    assert not any(reviewer_write_denied(t) for t in targets)
+    # The outbox is inside the run's handoff dir -> the anchored confinement clears it.
+    assert not any(confined_write_denied(t, "/x/handoff") for t in targets)
 
 
 def test_real_redirection_before_heredoc_still_detected():
@@ -151,20 +153,50 @@ def test_reviewer_writing_product_tree_is_a_violation(tmp_path):
         call("implement-feature:test-reviewer", "Bash", "cat > tests/test_x.py <<EOF\nx\nEOF"),
     ])
     a = parse_runlog(str(log))
-    c = _check(a, "test-reviewer stayed out of the product tree")
+    c = _check(a, "read-only critics stayed out of the product tree")
     assert not c.passed
     assert len(c.evidence) == 2
 
 
+def test_confinement_generalizes_to_verifier_and_code_reviewer(tmp_path):
+    # #29: the verifier and code-reviewer are write-confined exactly like the test-reviewer;
+    # the detective now adjudicates all three read-only critics through the policy SSOT.
+    log = write_runlog(tmp_path / "rl.jsonl", [
+        call("implement-feature:verifier", "Write", "/repo/src/patch.py"),
+        call("implement-feature:code-reviewer", "Edit", "/repo/src/other.py"),
+    ])
+    a = parse_runlog(str(log))
+    c = _check(a, "read-only critics stayed out of the product tree")
+    assert not c.passed
+    assert len(c.evidence) == 2
+    assert any("verifier" in e for e in c.evidence)
+    assert any("code-reviewer" in e for e in c.evidence)
+
+
 def test_reviewer_outbox_and_probe_are_clean(tmp_path):
+    # The run-log lives at <handoff>/rl.jsonl, so the derived handoff dir is tmp_path; the
+    # sanctioned outbox is a file directly inside it. Anchored confinement clears both the
+    # real outbox and a /tmp scratch probe.
     log = write_runlog(tmp_path / "rl.jsonl", [
         call("implement-feature:test-reviewer", "Write",
-             "/repo/.implement-feature/r/handoff/06-test-review-findings.md"),
+             str(tmp_path / "06-test-review-findings.md")),
         call("implement-feature:test-reviewer", "Bash", "cat > /tmp/scratchpad/p.py <<EOF\nx\nEOF"),
         call("implement-feature:test-reviewer", "Bash", "python -m pytest -q"),
     ])
     a = parse_runlog(str(log))
-    assert _check(a, "test-reviewer stayed out of the product tree").passed
+    assert _check(a, "read-only critics stayed out of the product tree").passed
+
+
+def test_reviewer_outbox_outside_handoff_dir_is_a_violation(tmp_path):
+    # The verdict shift the dedup buys (#30 R1): the OLD loose rule cleared any path merely
+    # containing "/handoff/". The anchored rule denies an outbox-looking path that is NOT
+    # inside THIS run's handoff dir — a stale/other-run outbox no longer escapes.
+    log = write_runlog(tmp_path / "rl.jsonl", [
+        call("implement-feature:test-reviewer", "Write",
+             "/some/other/run/handoff/06-test-review-findings.md"),
+    ])
+    a = parse_runlog(str(log))
+    assert not _check(a, "read-only critics stayed out of the product tree").passed
 
 
 def test_reviewer_fd_dup_redirect_not_a_violation(tmp_path):
@@ -174,7 +206,7 @@ def test_reviewer_fd_dup_redirect_not_a_violation(tmp_path):
              "python -m pytest tests/ --collect-only -q 2>&1 | tail -20"),
     ])
     a = parse_runlog(str(log))
-    c = _check(a, "test-reviewer stayed out of the product tree")
+    c = _check(a, "read-only critics stayed out of the product tree")
     assert c.passed, f"fd-dup flagged as product write: {c.evidence}"
 
 

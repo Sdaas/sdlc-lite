@@ -21,6 +21,15 @@ at runtime (guard_decision="deny"), and this layer *detects* the attempt after t
 fact. A denied call has no transcript effect, so `guard_decision` is the only place
 a denial is visible. Preventive (guard) + detective (analyzer) together.
 
+The isolation verdicts are adjudicated by the SAME authority the guard uses —
+`policy.decide()` and the shared predicates in `policy.py` (the #30 SSOT). This
+module no longer keeps its own copy of `looks_secret` / `is_test_path` / the
+reviewer write-confinement test / the Bash parsing: those lived here under a
+"KEEP IN SYNC" comment and drifted from the guard. Importing the one definition
+is the whole point of the seam — the preventive and detective legs can no longer
+disagree. The detective inherits the guard's Bash best-effort blind spot by design;
+the transcript-based auditor (#30 R3) is the authoritative backstop.
+
 This module has ZERO knowledge of transcript.py.
 """
 from __future__ import annotations
@@ -28,9 +37,9 @@ from __future__ import annotations
 import datetime as _dt
 import json
 import os
-import re
-import shlex
 from dataclasses import dataclass, field
+
+import policy
 
 from ._util import parse_ts
 
@@ -50,122 +59,6 @@ EXPECTED_AGENTS = (
     "implement-feature:code-reviewer",
 )
 
-# --- predicates mirrored from guard.py -------------------------------------
-# KEEP IN SYNC with hooks/scripts/guard.py (looks_secret / is_test_path). The
-# detective checks here must match the preventive rules there, or the report could
-# pass a run the guard would actually have blocked — or, worse (#16), FAIL a run the
-# guard correctly allowed. The secret predicate is PATH-aware and tool-split: for a
-# Bash call the target is the whole command string, so we scan path-like tokens, never
-# substring-match the command body (that flagged `os.environ.get(...)` as a `.env` read).
-_SECRET_EXTS = (".pem", ".key")
-_SECRET_NAMES = ("id_rsa", "id_ed25519", "credentials", ".netrc", ".pgpass")
-_SECRET_FRAGMENTS = (".ssh/", ".aws/credentials")
-
-
-def _is_secret_component(comp: str) -> bool:
-    return (comp == ".env" or comp.startswith(".env.")
-            or comp.startswith("secrets.")
-            or comp.endswith(_SECRET_EXTS)
-            or any(n in comp for n in _SECRET_NAMES))
-
-
-def _is_secret_path(target: str) -> bool:
-    t = target.strip().strip("'\"").lower().replace("\\", "/")
-    if not t:
-        return False
-    if any(frag in t for frag in _SECRET_FRAGMENTS):
-        return True
-    return any(_is_secret_component(c) for c in t.split("/") if c)
-
-
-def _bash_token_is_secret(token: str) -> bool:
-    t = token.strip().strip("'\"").lower().replace("\\", "/")
-    if not t:
-        return False
-    pathlike = ("/" in t) or t.startswith(".") or t.endswith(_SECRET_EXTS)
-    return pathlike and _is_secret_path(t)
-
-
-def _bash_tokens(command: str) -> list[str]:
-    try:
-        return shlex.split(command, posix=True)
-    except ValueError:
-        return command.split()
-
-
-def looks_secret(tool: str, target: str) -> bool:
-    """Secret-read predicate, split by tool (mirrors guard.py). Bash scans path-like
-    tokens; every other tool's target is a path -> path-component match."""
-    if tool == "Bash":
-        return any(_bash_token_is_secret(tok) for tok in _bash_tokens(target))
-    return _is_secret_path(target)
-
-
-def is_test_path(target: str) -> bool:
-    base = os.path.basename(target)
-    return ("/tests/" in target or "/test/" in target
-            or base.startswith("test_") or base.endswith("_test.py")
-            or base == "conftest.py")
-
-
-# test-reviewer write-confinement mirror (#12). KEEP IN SYNC with guard.py.
-def _is_scratch_path(t: str) -> bool:
-    return ("/tmp/" in t or t.startswith("/tmp") or "/private/tmp/" in t
-            or "/var/folders/" in t or "scratchpad" in t or "/scratch/" in t)
-
-
-def reviewer_write_denied(target: str) -> bool:
-    t = target.strip().strip("'\"").replace("\\", "/")
-    if not t:
-        return False
-    if t.startswith("/dev/"):
-        return False   # /dev/null etc. are the bit bucket, not the product tree
-    if "/handoff/" in t or t.startswith("handoff/"):
-        return False
-    if _is_scratch_path(t):
-        return False
-    return True
-
-
-# Heredoc start: `<<`, optional `-`, optional ws, optional quote, delimiter word.
-_HEREDOC_RE = re.compile(r"<<-?\s*(['\"]?)([A-Za-z_][A-Za-z0-9_]*)\1")
-
-
-def _strip_heredocs(command: str) -> str:
-    """Drop heredoc *bodies* so their literal text (e.g. markdown `>` blockquotes) is never
-    mistaken for shell redirections. The `cmd > file <<EOF` redirection sits OUTSIDE the
-    body and is preserved. KEEP IN SYNC with guard.py."""
-    lines = command.split("\n")
-    out: list[str] = []
-    i = 0
-    while i < len(lines):
-        out.append(lines[i])
-        m = _HEREDOC_RE.search(lines[i])
-        i += 1
-        if m:
-            delim = m.group(2)
-            while i < len(lines) and lines[i].strip() != delim:
-                i += 1
-            i += 1  # consume the terminator line (not a command)
-    return "\n".join(out)
-
-
-def bash_write_targets(command: str) -> list[str]:
-    toks = _bash_tokens(_strip_heredocs(command))
-    targets: list[str] = []
-    for i, tok in enumerate(toks):
-        stripped = tok.lstrip("012")
-        if stripped in (">", ">>", ">|") and i + 1 < len(toks):
-            targets.append(toks[i + 1])
-        elif stripped.startswith(">") and len(stripped) > 1:
-            targets.append(stripped.lstrip(">|"))
-        elif tok == "tee" and i + 1 < len(toks):
-            nxt = toks[i + 1]
-            targets.append(nxt if not nxt.startswith("-")
-                           else (toks[i + 2] if i + 2 < len(toks) else ""))
-    # Drop fd-duplication targets (`2>&1`, `>&2`): `&N` is a descriptor, not a file write.
-    return [t for t in targets if t and not t.startswith("&")]
-
 
 # --- data model ------------------------------------------------------------
 @dataclass
@@ -183,6 +76,10 @@ class AgentActivity:
     # (tool, target) for each read-ish call — the tool is needed to mirror guard.py's
     # tool-split secret detection faithfully (a Bash target is a command, not a path).
     read_calls: list[tuple[str, str]] = field(default_factory=list)
+    # (tool, target) for each write-ish call — the tool distinguishes a single-target
+    # Write/Edit (target IS a path) from a Bash write (target is a command whose write
+    # redirect/copy destinations must be extracted before the policy can adjudicate them).
+    write_calls: list[tuple[str, str]] = field(default_factory=list)
 
     @property
     def label(self) -> str:
@@ -216,6 +113,14 @@ class RunLogAnalysis:
 
 
 # --- parsing ---------------------------------------------------------------
+def _handoff_dir(runlog_path: str) -> str:
+    """The run's real handoff dir: the directory holding the run-log (by convention
+    <artifact_dir>/handoff/run-log.jsonl). Anchors the reviewer write-confinement check,
+    exactly as guard.py's _handoff_dir() anchors the preventive side — same value, same
+    seam, so the two legs agree on what counts as 'inside the outbox'."""
+    return os.path.normpath(os.path.dirname(runlog_path))
+
+
 def parse_runlog(path: str) -> RunLogAnalysis:
     """Read if-runlog.jsonl and compute per-agent activity + isolation verdicts.
 
@@ -256,6 +161,7 @@ def parse_runlog(path: str) -> RunLogAnalysis:
                 act.read_calls.append((tool, target))
             elif tool in WRITEISH:
                 act.writes.append(target)
+                act.write_calls.append((tool, target))
 
             # #31 R4: the guard's own decision. Absent (legacy line) => unknown, not a guess.
             decision = rec.get("guard_decision")
@@ -270,7 +176,7 @@ def parse_runlog(path: str) -> RunLogAnalysis:
             if ts is not None:
                 times.append(ts)
 
-    checks = _run_isolation_checks(agents)
+    checks = _run_isolation_checks(agents, _handoff_dir(path))
     return RunLogAnalysis(
         path=path,
         total_entries=total,
@@ -282,14 +188,52 @@ def parse_runlog(path: str) -> RunLogAnalysis:
     )
 
 
-def _run_isolation_checks(agents: dict[str, AgentActivity]) -> list[IsolationCheck]:
-    """The four detective verdicts, derived purely from per-agent activity."""
+def _denied_reads(act: AgentActivity, handoff_dir: str, rule: str) -> list[str]:
+    """Read targets of `act` that policy.decide() denies with the given rule slug. Bash
+    read targets are command strings; the design-internal / draft READ invariants are
+    substring-visible in the command, so decide() on the raw command is faithful for those
+    rules (secrets are handled separately via the tool-split looks_secret, below)."""
+    hits: list[str] = []
+    for _tool, t in act.read_calls:
+        if policy.decide(act.agent_type, policy.READ, t, handoff_dir).rule == rule:
+            hits.append(t)
+    return hits
+
+
+def _denied_writes(act: AgentActivity, handoff_dir: str, rule: str) -> list[str]:
+    """Write targets of `act` that policy.decide() denies with the given rule slug. A
+    single-target Write/Edit names one path; a Bash write hides its destinations inside a
+    command, so those are extracted (policy.bash_write_targets — best-effort, the guard's
+    same blind spot) before each is adjudicated."""
+    hits: list[str] = []
+    for tool, t in act.write_calls:
+        targets = policy.bash_write_targets(t) if tool == "Bash" else [t]
+        for w in targets:
+            if policy.decide(act.agent_type, policy.WRITE, w, handoff_dir).rule == rule:
+                hits.append(w)
+    # A confined reviewer can also smuggle a write through a Bash *read-ish* call (its Bash
+    # calls are logged as reads); the guard extracts redirect targets from those too.
+    for tool, t in act.read_calls:
+        if tool != "Bash":
+            continue
+        for w in policy.bash_write_targets(t):
+            if policy.decide(act.agent_type, policy.WRITE, w, handoff_dir).rule == rule:
+                hits.append(w)
+    return hits
+
+
+def _run_isolation_checks(agents: dict[str, AgentActivity],
+                          handoff_dir: str) -> list[IsolationCheck]:
+    """The four detective verdicts, derived purely from per-agent activity + the policy
+    SSOT. Each verdict asks policy.decide() (or, for secrets, the tool-split predicate) the
+    SAME question the guard asked at runtime — so the report can never pass a run the guard
+    would have blocked, nor fail one it correctly allowed."""
     checks: list[IsolationCheck] = []
 
-    # 1. test-writer must not have attempted to read design-internal.md
+    # 1. test-writer must not have attempted to read the internal design (algorithm-blind).
     tw_hits = [
         t for a in agents.values() if "test-writer" in a.agent_type
-        for t in a.reads if "design-internal" in t
+        for t in _denied_reads(a, handoff_dir, "algorithm-blind")
     ]
     checks.append(IsolationCheck(
         name="test-writer stayed algorithm-blind",
@@ -300,10 +244,10 @@ def _run_isolation_checks(agents: dict[str, AgentActivity]) -> list[IsolationChe
         evidence=tw_hits,
     ))
 
-    # 2. implementer must not have attempted to write/edit a test file
+    # 2. implementer must not have attempted to write/edit a test file (test-integrity).
     impl_hits = [
         t for a in agents.values() if "implementer" in a.agent_type
-        for t in a.writes if is_test_path(t)
+        for t in _denied_writes(a, handoff_dir, "test-integrity")
     ]
     checks.append(IsolationCheck(
         name="implementer did not touch tests",
@@ -314,10 +258,12 @@ def _run_isolation_checks(agents: dict[str, AgentActivity]) -> list[IsolationChe
         evidence=impl_hits,
     ))
 
-    # 3. no agent must have attempted to read secrets/.env (tool-aware, mirrors guard.py)
+    # 3. no agent must have attempted to read secrets/.env. Uses the tool-split predicate
+    #    directly (a Bash target is a command, so scan path-like tokens — never the raw
+    #    command body, #16; decide()'s path-form secret rule is for resolved paths only).
     secret_hits = [
         f"{a.label}: {t}" for a in agents.values()
-        for (tool, t) in a.read_calls if looks_secret(tool, t)
+        for (tool, t) in a.read_calls if policy.looks_secret(tool, t)
     ]
     checks.append(IsolationCheck(
         name="no secret/.env access by any agent",
@@ -328,23 +274,21 @@ def _run_isolation_checks(agents: dict[str, AgentActivity]) -> list[IsolationChe
         evidence=secret_hits,
     ))
 
-    # 3c. test-reviewer must not have written into the product tree (#12). Its Write/Edit
-    #     targets and any Bash write-redirection are checked against its sanctioned outputs
-    #     (handoff/ outbox + scratch dir).
-    reviewer_hits: list[str] = []
-    for a in agents.values():
-        if "test-reviewer" not in a.agent_type:
-            continue
-        reviewer_hits += [t for t in a.writes if reviewer_write_denied(t)]
-        for tool, t in a.read_calls:
-            if tool == "Bash":
-                reviewer_hits += [w for w in bash_write_targets(t) if reviewer_write_denied(w)]
+    # 3c. the read-only critics (test-reviewer + verifier + code-reviewer, #29) must not have
+    #     written into the product tree. Their Write/Edit targets and any Bash write-redirect
+    #     are checked against their sanctioned outputs (the run's ACTUAL handoff outbox +
+    #     scratch) — the ANCHORED policy rule, not a loose "/handoff/" substring.
+    reviewer_hits = [
+        f"{a.label}: {t}" for a in agents.values()
+        if policy.role_of(a.agent_type) in ("test-reviewer", "verifier", "code-reviewer")
+        for t in _denied_writes(a, handoff_dir, "write-confinement")
+    ]
     checks.append(IsolationCheck(
-        name="test-reviewer stayed out of the product tree",
+        name="read-only critics stayed out of the product tree",
         passed=not reviewer_hits,
-        detail=("no product-tree writes by the test-reviewer"
+        detail=("no product-tree writes by the read-only critics"
                 if not reviewer_hits else
-                f"{len(reviewer_hits)} product-tree write(s) by the test-reviewer "
+                f"{len(reviewer_hits)} product-tree write(s) by a read-only critic "
                 "(guard blocks at runtime)"),
         evidence=reviewer_hits,
     ))
