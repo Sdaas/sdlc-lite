@@ -4,7 +4,7 @@ from __future__ import annotations
 from analyzer.runlog import parse_runlog
 from policy import bash_write_targets, confined_write_denied
 
-from .conftest import call, write_runlog
+from .conftest import call, gate, write_runlog
 
 
 def test_heredoc_body_blockquotes_not_parsed_as_redirections():
@@ -235,3 +235,41 @@ def test_malformed_lines_are_skipped_and_counted(tmp_path):
     a = parse_runlog(str(p))
     assert a.total_entries == 1
     assert a.malformed_lines == 2
+
+
+# --- M-06: the heterogeneous run-log (guard audit + conductor orchestration) ---
+def test_orchestration_records_not_counted_as_tool_calls(tmp_path):
+    # Before #22 leg B a conductor gate record was mis-parsed as a conductor "tool call" with
+    # an empty tool name (inflating counts, printing a garbage ×N cell). It must now be counted
+    # apart and excluded from the tool aggregation entirely.
+    a = parse_runlog(str(write_runlog(tmp_path / "rl.jsonl", [
+        gate("WRITE-TESTS", "test-writer"),
+        call("implement-feature:test-writer", "Read", "handoff/x.md", guard_decision="allow"),
+        gate("IMPLEMENT", "implementer", result="GREEN"),
+    ])))
+    assert a.total_entries == 1            # only the one real tool call
+    assert a.orchestration_entries == 2    # both gate records, counted apart
+    # No phantom empty-tool bucket, and no conductor AgentActivity from the gate records.
+    tw = next(v for v in a.agents.values() if "test-writer" in v.agent_type)
+    assert tw.tool_counts == {"Read": 1}
+    assert "" not in a.agents             # gate `agent` field never made a conductor bucket
+
+
+def test_orchestration_timestamps_still_bound_the_window(tmp_path):
+    # A run that logged ONLY gate records (e.g. an aborted run before any tool call) still has
+    # a usable window from their timestamps — needed to correlate the transcript.
+    a = parse_runlog(str(write_runlog(tmp_path / "rl.jsonl", [
+        gate("INTERVIEW", "conductor", mode="[C]"),
+        gate("DESIGN", "conductor", mode="[C]"),
+    ])))
+    assert a.total_entries == 0 and a.orchestration_entries == 2
+    assert a.window_start is not None and a.window_end is not None
+
+
+def test_legacy_gate_record_with_guessed_model_still_not_a_tool_call(tmp_path):
+    # A pre-m-09 gate record that still carries a guessed model/effort is STILL orchestration
+    # (discriminated on `gate` + no `tool`), never a tool call — the fix is robust to old logs.
+    a = parse_runlog(str(write_runlog(tmp_path / "rl.jsonl", [
+        gate("TEST-REVIEW", "test-reviewer", model="claude-opus-4-8", effort="low"),
+    ])))
+    assert a.total_entries == 0 and a.orchestration_entries == 1

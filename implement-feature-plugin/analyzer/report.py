@@ -35,6 +35,8 @@ def render_runlog(a: RunLogAnalysis) -> str:
     lines += [
         f"- Source: `{a.path}`",
         f"- Tool calls: **{_fmt(a.total_entries)}**"
+        + (f"  ({_fmt(a.orchestration_entries)} orchestration record(s))"
+           if a.orchestration_entries else "")
         + (f"  ({a.malformed_lines} malformed line(s) skipped)" if a.malformed_lines else ""),
         f"- Run window: {window}",
         "",

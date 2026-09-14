@@ -102,8 +102,12 @@ Two records, plus a hard guard, run alongside every gate:
 
 1. **Gate run-log (conductor-written).** Append one line to
    `<artifact_dir>/handoff/run-log.jsonl` as each gate completes:
-   `{gate, mode, agent, model, effort, inbox:[...], outbox:[...], result, ts}` — the
-   orchestration story.
+   `{gate, mode, agent, inbox:[...], outbox:[...], result, ts}` — the orchestration story.
+   **Do not write `model`/`effort` for an `[I]` gate** — a subagent's *resolved* model/effort
+   is unobservable to the conductor, so a written value would be a guess. The receipt sources
+   the **requested** model/effort from the agent-def pins (`agents/*.md`) and the **actual**
+   from the transcript; the run-log is not a model source. A `[C]` gate *may* add its own
+   observed `model` (the conductor runs it, so it knows) — never a guess.
 2. **Guard hook audit (automatic).** The plugin ships a **PreToolUse hook**
    (`hooks/hooks.json` → `hooks/scripts/guard.py`) that fires for the conductor **and
    every subagent**, appending `{ts, agent_type, agent_id, tool, target}` for every

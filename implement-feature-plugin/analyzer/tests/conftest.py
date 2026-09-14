@@ -32,6 +32,19 @@ def call(agent_type: str, tool: str, target: str, ts: str | None = None,
     return rec
 
 
+def gate(name: str, agent: str, *, mode: str = "[I]", result: str = "APPROVE",
+         ts: str | None = None, **extra) -> dict:
+    """A conductor ORCHESTRATION record (one per gate) — the heterogeneous run-log's second
+    shape (M-06). Note: no `tool`/`agent_type`/`target`, and (m-09) no guessed model/effort
+    for an [I] gate. `extra` lets a test simulate a legacy record that still carries them."""
+    rec = {"gate": name, "mode": mode, "agent": agent, "result": result,
+           "inbox": [], "outbox": []}
+    if ts is not None:
+        rec["ts"] = ts
+    rec.update(extra)
+    return rec
+
+
 def assistant_turn(model: str, *, sidechain: bool = False, i: int = 0,
                    input_tokens: int = 100, output_tokens: int = 50,
                    thinking: int = 10, with_usage: bool = True,

@@ -1,12 +1,26 @@
 """Run-log reader — the LOAD-BEARING half of the analyzer.
 
-Parses the guard hook's audit log (if-runlog.jsonl): one JSON object per line,
-one line per tool call, written by hooks/scripts/guard.py. Schema:
+The run-log (`run-log.jsonl`) is HETEROGENEOUS — two record shapes interleaved in one file:
+
+  1. GUARD AUDIT records (one per tool call, written by hooks/scripts/guard.py):
 
     {"ts": "<UTC ISO>", "agent_type": "<str>", "agent_id": "<str>",
      "tool": "Read|Bash|Grep|Glob|Edit|Write|...", "target": "<path/cmd>",
      "guard_decision": "allow|deny"}   # the guard's OWN pre-execution decision (#31 R4);
                                        # absent on legacy lines -> counted as unknown
+
+  2. CONDUCTOR ORCHESTRATION records (one per gate, written by the SKILL conductor):
+
+    {"gate": "<name>", "mode": "[C]|[I]", "agent": "<role>", "inbox":[...],
+     "outbox":[...], "result": "<str>", "ts": "<UTC ISO>"}   # the orchestration story
+
+Discriminated on read by shape (a `gate` key with no `tool` = orchestration). Orchestration
+records are counted separately (`orchestration_entries`) and EXCLUDED from tool-call
+aggregation and the isolation buckets — before #22 leg B they were mis-parsed as conductor
+"tool calls" with an empty tool name (M-06), inflating counts and printing a garbage `×N`
+cell. Their timestamps still bound the run window (they are part of the run). The conductor
+no longer writes a guessed `model`/`effort` into these records for `[I]` gates (m-09): the
+receipt's requested model/effort come from the agent-def pins (agentdefs.py), not a guess.
 
 From this it derives, WITHOUT ever touching the transcript:
   - per-agent activity (tool-call counts, files read / written)
@@ -100,12 +114,13 @@ class IsolationCheck:
 @dataclass
 class RunLogAnalysis:
     path: str
-    total_entries: int
+    total_entries: int          # GUARD AUDIT records only (one per tool call)
     malformed_lines: int
     window_start: _dt.datetime | None
     window_end: _dt.datetime | None
     agents: dict[str, AgentActivity]
     checks: list[IsolationCheck]
+    orchestration_entries: int = 0   # CONDUCTOR gate records (excluded from tool counts, M-06)
 
     @property
     def all_passed(self) -> bool:
@@ -130,6 +145,7 @@ def parse_runlog(path: str) -> RunLogAnalysis:
     agents: dict[str, AgentActivity] = {}
     times: list[_dt.datetime] = []
     total = 0
+    orchestration = 0
     malformed = 0
 
     with open(path, encoding="utf-8") as f:
@@ -144,6 +160,17 @@ def parse_runlog(path: str) -> RunLogAnalysis:
                 continue
             if not isinstance(rec, dict):
                 malformed += 1
+                continue
+
+            # M-06: the run-log is heterogeneous. A conductor ORCHESTRATION record (a `gate`
+            # key, no `tool`) is the run's story, NOT a tool call — count it apart and skip the
+            # tool aggregation, so it never becomes a phantom empty-tool "call" in the
+            # conductor bucket. Its timestamp still bounds the run window (below).
+            if "gate" in rec and "tool" not in rec:
+                orchestration += 1
+                ts = parse_ts(str(rec.get("ts") or ""))
+                if ts is not None:
+                    times.append(ts)
                 continue
 
             total += 1
@@ -185,6 +212,7 @@ def parse_runlog(path: str) -> RunLogAnalysis:
         window_end=max(times) if times else None,
         agents=agents,
         checks=checks,
+        orchestration_entries=orchestration,
     )
 
 
