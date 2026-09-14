@@ -21,10 +21,14 @@ What that buys you:
   acceptance criterion and exercises every external boundary un-mocked.
 - **You own the ship decision.** Nothing is committed until you review the real artifacts and approve.
 - **Two guarantees, proven — not just claimed.** Every gate is *isolated* (it reads only the files
-  curated for its role) and runs at a *pinned model/effort* (so cost stays bounded). The guard hook
-  prevents violations in real time; after each run a deterministic audit produces a **receipt** that
-  verifies both from the ground-truth session transcript — turning "we isolate and we bound cost"
-  from a claim into a per-run, checkable fact.
+  curated for its role) and runs at a *pinned model/effort*. After each run a deterministic audit
+  produces a **receipt** that verifies both from the ground-truth session transcript — turning "we
+  isolate and we bound the reasoning budget" from a claim into a per-run, checkable fact. The pieces
+  are honest about *how* each is held: the model pin is **enforced** at dispatch (the guard denies a
+  subagent launch that drops it) and then **verified**; effort and isolation are **verified** by the
+  receipt with **best-effort real-time prevention** by the guard. This is **observability plus
+  best-effort prevention — not a hard cost cap**: the receipt tells you exactly what happened and
+  flips to *untrusted* on any violation, which is the property a reviewer of the run actually needs.
 
 ---
 

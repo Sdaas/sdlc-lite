@@ -50,8 +50,9 @@ without revisiting the dependency reasoning in "The through-line."
 | #30a (enforcer) | v1 · step 3a | **DONE** | policy SSOT (`policy.py`) + guard rewired onto it (R1 enforcer side, R2) + Bash write-forms (sed -i/cp/mv) + full-length run-log (R3 intent half) + R6 wildcard-ban + #29 (verifier/code-reviewer write-confinement). Commits: R1 `9c96c8e`, R2 `b2a7184`, R6 `518c5aa` |
 | #30b (auditor) | v1 · step 3b | **DONE** | (B) `runlog.py` imports `policy` SSOT + anchored critic confinement (`c663e09`); (R3) transcript content-fingerprint auditor + `TRANSCRIPT-FORMAT.md` §5 (`0f95d10`); (R4) wired into receipt `Files seen` + Gate-11 `UNTRUSTED` verdict + R5 tests (`a495ff1`); DG §4 rewrite + ADR-11. **#30 complete.** Full host suite 138 green |
 | #22 | v1 · step 4 | **DONE** | (A) `agentdefs.py` pin SSOT + receipt fills req model/effort; (B) run-log gate-record hygiene (M-06) + conductor stops guessing (m-09); (C) Witt deny-if-unnamed model-enforce hook on Task/Agent dispatch; (D) ADR-12 + fixed overstated "never deviate" prose. Effort-frontmatter-only premise **verified** on current platform (Agent/Task exposes `model`, not `effort`) — asymmetry stands. Commits `0479d31`/`1e05e72`/`8f825a6`/`517c1d8`. Host suite 160 green |
-| #31 (close) | v1 · step 5 | pending | framing + docs; v1 acceptance dry runs |
-| #35 | v1 · release | pending | flip all effort pins → `medium`; **blocked by #31** (must observe the dev-spread first) |
+| #31a (close-docs) | v1 · step 5a | pending | R1 framing/docs only (DG + README state the audit's purpose: the receipt for guarantees (a)+(b), framed as **observability + best-effort prevention, not cost enforcement**). Cheap, host-only |
+| #31b (close-accept) | v1 · step 5b | pending | v1 **acceptance dry runs** (clean all-PASS + adversarial FAIL). **Expensive** — 2× full end-to-end runs, 6 subagents each incl. Opus reviewers; dev container. **Defer to post weekly-quota-reset.** Closes #31 |
+| #35 | v1 · release | pending | flip all effort pins → `medium`; **blocked by #31b** (must observe the dev-spread end-to-end first). Rides with #31b post-reset |
 | #32 | v2 | pending | `/plan-feature`; first task = falsification run |
 | #34 | v2 (indep.) | pending | agent-driven regression harness; supersedes #18 D5c, needs #21 |
 | #18 | support | partial | D1–D4 stand; **D5c superseded by #34** |
@@ -178,9 +179,17 @@ Ship as **one coherent release**. Order is load-bearing (schema before the legs 
 - Conductor **stops writing guessed `model` fields** into the run-log for `[I]` gates; the
   transcript-derived model is the single source of truth. No guesses anywhere human-facing.
 
-### 5. #31 (close) — framing + docs
-- DG + README state the audit's purpose: the **receipt** proving guarantees (a) isolation and
-  (b) bounded model/effort — **observability with best-effort prevention, not enforcement of cost.**
+### 5. #31 (close) — framing + docs, then acceptance
+**⟶ SPLIT ACROSS SESSIONS (2026-09-14, by quota).** Split by cost profile (same pattern as #30):
+
+- **#31a — close-docs (cheap, host-only).** DG + README state the audit's purpose: the **receipt**
+  proving guarantees (a) isolation and (b) bounded model/effort — **observability with best-effort
+  prevention, not enforcement of cost.** No container, no model spend beyond writing.
+- **#31b — close-accept (expensive, defer to post weekly-quota-reset).** The v1 acceptance dry runs
+  (clean all-PASS + adversarial FAIL) — 2× full end-to-end runs, 6 subagents each incl. the Opus
+  reviewers. This is the single most quota-heavy activity in v1; it must *complete* to be meaningful,
+  so it waits for a fresh weekly budget. Carries **#35** (flip effort pins → `medium`) with it, since
+  #35 only needs the dev-spread observed end-to-end first. Closing #31b closes #31 and completes v1.
 
 ### v1 acceptance — driven **manually**, once, for the release
 - **Clean run** → all-PASS receipt (isolation held; model == pin; effort spread == configured;

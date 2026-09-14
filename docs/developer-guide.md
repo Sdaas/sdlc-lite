@@ -296,7 +296,17 @@ top-level `effort` field are ground truth (conductor and every subagent). The fi
 model — which transcript / `.meta.json` field substantiates which claim — is recorded in
 [`design/audit-observability-findings.md`](../design/audit-observability-findings.md); the audit
 phase as a first-class feature is tracked in [issue #31](../../issues/31) (with #30 and #22 as its
-isolation and model/effort-integrity capabilities). For the concrete on-disk layout and record
+isolation and model/effort-integrity capabilities).
+
+**What the receipt is — and is not.** It is **observability plus best-effort prevention, not a hard
+cost cap.** The guard prevents in real time where it can (isolation, best-effort for `Bash`; the model
+pin, enforced at dispatch), and the receipt then *verifies* from ground truth and marks the run
+**untrusted** on any violation. It does **not** guarantee a run cannot exceed a token/dollar budget —
+effort has no enforcement lever at all (ADR-12), and Bash isolation is best-effort (ADR-11). The value
+is a per-run, checkable record of exactly what the barriers and the reasoning budget actually did — the
+thing a person deciding whether to trust a run's output needs — not a promise the platform can't keep.
+
+For the concrete on-disk layout and record
 shapes those fields live in — main transcript, `<uuid>/subagents/*.jsonl`, and the `.meta.json`
 sidecar, with real snippets — see the field guide
 [`implement-feature-plugin/analyzer/TRANSCRIPT-FORMAT.md`](../implement-feature-plugin/analyzer/TRANSCRIPT-FORMAT.md).
