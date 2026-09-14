@@ -205,10 +205,10 @@ Gate 0 below is the first application of this style; later STOP gates follow the
    | INTERVIEW | [C] | Opus (session), medium | requirements reasoning = strong model |
    | DESIGN / SPEC | [C] | Opus (session), medium | design = strong model |
    | WRITE-TESTS | [I] `test-writer` | `sonnet` alias, medium | writing tests = implementation |
-   | TEST-REVIEW | [I] `test-reviewer` | **`claude-opus-4-8`** (pinned) | review > implementation |
+   | TEST-REVIEW | [I] `test-reviewer` | **`claude-opus-4-8`** (pinned), low | review > implementation |
    | IMPLEMENT | [I] `implementer` | `sonnet` alias, medium | implementation |
    | VERIFY | [I] `verifier` | `sonnet` alias, medium | verification |
-   | CODE-REVIEW | [I] `code-reviewer` | **`claude-opus-4-8`** (pinned) | review > implementation |
+   | CODE-REVIEW | [I] `code-reviewer` | **`claude-opus-4-8`** (pinned), high | review > implementation |
    | REVIEW-GUIDE / COMMIT | [C] | Sonnet or Haiku (session) | mechanical presentation + commit |
 
    The `[I]` subagent models are pinned in `agents/*.md` and **never deviate**, but in two
@@ -408,7 +408,7 @@ findings file added to its inbox.)*
 
 An **independent** critic reviews the tests **before** any implementation exists. Spawn a
 **different** agent than the writer — `subagent_type: implement-feature:test-reviewer`
-(Opus/high per the model plan; pinned in `agents/test-reviewer.md`).
+(Opus/low per the model plan; pinned in `agents/test-reviewer.md`).
 
 **Its inbox (it sees more than the writer):** `01-requirements.md`, the **full** design
 (`02-design-interface.md` **and** `03-design-internal.md`), `04-test-plan.md`, the tests,
@@ -440,7 +440,7 @@ the changes on the next loop.
 
 ## Gate 5 — IMPLEMENT  [I] `implementer`  (inner loop)
 
-Delegate to `subagent_type: implement-feature:implementer` (Sonnet/high; has
+Delegate to `subagent_type: implement-feature:implementer` (Sonnet/medium; has
 Write/Edit/Bash, pinned in `agents/implementer.md`). Its inbox is `01-requirements.md` +
 the **tests** + the **full** design (`02-design-interface.md` + `03-design-internal.md`) +
 the standards file.
@@ -464,7 +464,7 @@ are the slow checks, enforced at CODE-REVIEW — not here.)
 ## Gate 6 — VERIFY  [I] `verifier`  (outer loop)
 
 **Green unit tests are not Done.** Spawn a **fresh, read-only** verifier —
-`subagent_type: implement-feature:verifier` (Sonnet/high; observes, cannot fix — pinned in
+`subagent_type: implement-feature:verifier` (Sonnet/medium; observes, cannot fix — pinned in
 `agents/verifier.md`). It did not write the code, so it won't drive it the way the author
 expects. Its inbox: `01-requirements.md` (the ACs + boundary inventory) and `<code_root>/`
 (to invoke the real thing, not to trust it).
