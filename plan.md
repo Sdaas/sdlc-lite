@@ -46,8 +46,8 @@ without revisiting the dependency reasoning in "The through-line."
 | Issue | Stream | State | Notes |
 |---|---|---|---|
 | #28 | v1 · step 1 | **DONE** | effort reconcile + dev-spread test-design; dev-spread = code-review `high` / test-review `low` / rest `medium` |
-| #31 (skeleton) | v1 · step 2 | **NEXT** | receipt schema, all `UNKNOWN` |
-| #30 | v1 · step 3 | pending | isolation column + policy SSOT + auditor; subsumes #27/#29 |
+| #31 (skeleton) | v1 · step 2 | **DONE** | receipt schema (`analyzer/receipt.py`) rendered always, all-`UNKNOWN` verdicts; R3 effort-extraction + R4 `guard_decision` plumbing landed; effort policy widened to WARN-both-directions; Sources block + `SAMPLE-RECEIPT.md`. Issue **stays open** for the close phase (step 5) |
+| #30 | v1 · step 3 | **NEXT** | isolation column + policy SSOT + auditor; subsumes #27/#29. Fills the receipt's `files seen` column + R6 wildcard-ban |
 | #22 | v1 · step 4 | pending | model-enforce (Witt) + effort-audit; **un-deferred** |
 | #31 (close) | v1 · step 5 | pending | framing + docs; v1 acceptance dry runs |
 | #35 | v1 · release | pending | flip all effort pins → `medium`; **blocked by #31** (must observe the dev-spread first) |
