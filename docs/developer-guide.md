@@ -188,17 +188,17 @@ The invariant these pins enforce: **design and every review use a higher model (
 implementation.** The two reviewers pin the *dated* `claude-opus-4-8` for reproducibility; the
 producer gates (`test-writer`, `implementer`, `verifier`) pin the floating `sonnet` alias.
 
-**The pins are the SSOT for two consumers (#22).** [`agentdefs.py`](../implement-feature-plugin/agentdefs.py)
-reads this frontmatter and hands the model/effort pins to both the guard's dispatch enforcer and the
-analyzer's receipt — the same seam-not-two-copies discipline `policy.py` gives the isolation rules.
-The receipt (the analyzer half) is authoritative and unaffected by what follows. The **enforcement**
-half, however, is being reverted: model was treated as "enforced at dispatch" (the guard denies a
-dispatch that names no model), on the premise that a frontmatter pin is silently droppable. **That
-premise is false** — a bare-dispatch frontmatter pin is honored — and the deny-if-unnamed hook breaks
-the *dated* reviewer pins by forcing an alias-only inline model that overrides them. See the ADR-12
-correction and [#36](https://github.com/Sdaas/sdlc-lite/issues/36). **Effort** genuinely has no
-rank-1 lever (frontmatter only, verified above), so it is audit-only regardless: the receipt WARNs on
-any deviation, either direction.
+**The pins are the SSOT for the receipt (#22).** [`agentdefs.py`](../implement-feature-plugin/agentdefs.py)
+reads this frontmatter and hands the model/effort pins to the analyzer's receipt — the same
+seam-not-two-copies discipline `policy.py` gives the isolation rules. **Pinned gates are dispatched
+bare** (no inline `model`) so the frontmatter pin — including the *dated* reviewer pin — is honored;
+the receipt then **verifies** the actual resolved model against the pin (a mismatch is a FAIL). #22
+originally also *enforced* the model at dispatch (deny a dispatch that names no model), on the premise
+that a frontmatter pin is silently droppable; **that premise is false** — a bare-dispatch frontmatter
+pin is honored — and the deny-if-unnamed hook broke the *dated* reviewer pins by forcing an alias-only
+inline model that overrode them, so #36 reverted it. See the ADR-12 correction and
+[#36](https://github.com/Sdaas/sdlc-lite/issues/36). **Effort** has no rank-1 lever (frontmatter only,
+verified above), so it is audit-only: the receipt WARNs on any deviation, either direction.
 
 ---
 
@@ -289,11 +289,11 @@ drives a gate.
 
 **Why it exists — the receipt for the two guarantees.** `/implement-feature` makes two promises:
 **(a)** every gate is *isolated* — a subagent reads only the files curated for its role — and **(b)**
-every gate runs at a *pinned model/effort* so cost stays bounded. The guard hook prevents violations
-in real time (isolation best-effort for `Bash`; the **model** pin enforced at dispatch, #22); the
-analyzer is the **detective** half that proves, after the fact, what actually happened — turning both
-guarantees from claims into per-run, checkable facts (and the effort pin, which has no dispatch lever,
-is proven *only* here). Both
+every gate runs at a *pinned model/effort* so cost stays bounded. The guard hook prevents isolation
+violations in real time (best-effort for `Bash`); the **model/effort** pins are governed by the
+honored frontmatter (bare dispatch, #22/#36) and **proven** by the analyzer — the **detective** half
+that reads the transcript after the fact and turns both guarantees from claims into per-run, checkable
+facts. Both
 are runtime-verifiable from the session transcript: the resolved `message.model` and a per-turn
 top-level `effort` field are ground truth (conductor and every subagent). The field-by-field proof
 model — which transcript / `.meta.json` field substantiates which claim — is recorded in
@@ -304,11 +304,11 @@ isolation and model/effort-integrity capabilities).
 **What the receipt is — and is not.** It is **observability plus best-effort prevention, not a hard
 cost cap.** The guard prevents in real time where it can (isolation, best-effort for `Bash`), and the
 receipt then *verifies* the model/effort/isolation from ground truth and marks the run **untrusted**
-on any violation. It does **not** guarantee a run cannot exceed a token/dollar budget — effort has no
-enforcement lever at all (ADR-12), and Bash isolation is best-effort (ADR-11). The model pin was
-*also* claimed to be enforced at dispatch, but that leg rests on a false premise and is being reverted
-([#36](https://github.com/Sdaas/sdlc-lite/issues/36)); the model guarantee is what the receipt
-**verifies**, not what the dispatch hook forces. The value
+on any violation. It does **not** guarantee a run cannot exceed a token/dollar budget — neither model
+nor effort has a dispatch-time enforcement lever (ADR-12), and Bash isolation is best-effort (ADR-11).
+The model pin is honored by the *bare* dispatch and the model guarantee is what the receipt
+**verifies** — not something the dispatch hook forces (#22 once tried; that leg rested on a false
+premise and was reverted in [#36](https://github.com/Sdaas/sdlc-lite/issues/36)). The value
 is a per-run, checkable record of exactly what the barriers and the reasoning budget actually did — the
 thing a person deciding whether to trust a run's output needs — not a promise the platform can't keep.
 
@@ -497,52 +497,44 @@ gate's tool *output*) is **authoritative / trust-voiding**; path extraction + li
 - **Absence of proof is not proof of innocence.** The content audit needs the transcript, so without
   one it renders **UNKNOWN**, never PASS — the receipt stays honest about what was actually verified.
 
-### ADR-12 — Model and effort integrity: an honest two-tier receipt
+### ADR-12 — Model and effort integrity: honored pins, verified by the receipt
 
-> **⚠️ Correction (2026-09-14, tracked in [#36](https://github.com/Sdaas/sdlc-lite/issues/36)).**
-> ADR-12 originally claimed the model is *enforced* at dispatch via a deny-if-unnamed hook (the
-> "Witt" technique), on the premise that *"a frontmatter pin is silently dropped if the dispatch
-> omits a model."* **That premise is false on this platform** — a frontmatter model pin **is
-> honored** on a bare dispatch (proven across four real sessions in
-> [`model-pinning-findings.md`](../design/model-pinning-findings.md) §2 and re-probed 2026-09-14, §7).
-> The hook is therefore redundant for **alias** pins and **actively counterproductive for dated
-> pins**: it forces an inline model, the inline `model` slot accepts only family aliases
-> `{sonnet, opus, haiku, fable}`, and that alias is a **rank-1** argument that *overrides* the rank-2
-> dated frontmatter pin (`claude-opus-4-8` → the floating `claude-opus-5`) — destroying the
-> exact-version reproducibility the dated pins exist for. The corrective direction is the **inverse**
-> (dispatch pinned agents **bare**); see #36. The text below is retained for the audit trail but no
-> longer describes the intended design.
+*Decision:* both model and effort are governed by the **agent-def frontmatter pin** and **proven**
+by the post-run receipt — neither is enforced at dispatch. Pinned gates are dispatched **bare** (no
+inline `model`); the frontmatter pin — including the *dated* reviewer pin `claude-opus-4-8` — is
+honored, and the analyzer compares the transcript's *actual* resolved model against the pin: a
+mismatch is a **FAIL**, a resolved model that matches is a PASS. **Effort** is likewise audit-only:
+the receipt WARNs on any deviation from the pin, in either direction, but nothing prevents it. Both
+pins come from one SSOT ([`agentdefs.py`](../implement-feature-plugin/agentdefs.py)), so what is
+promised and what is verified cannot drift — the discipline ADR-11 gives the isolation rules via
+`policy.py`.
 
-*Decision (superseded — see the correction above):* model/effort integrity is not one guarantee but
-two, split by what the platform actually allows. **Model** was enforced at dispatch: a `PreToolUse`
-hook on the `Task`/`Agent` tool ([`guard.py`](../implement-feature-plugin/hooks/scripts/guard.py)
-`_dispatch_deny_reason`) reads the target subagent's `model:` pin (via
-[`agentdefs.py`](../implement-feature-plugin/agentdefs.py)) and **denies a dispatch that names no
-model**, forcing a re-dispatch with the model named — the Thomas-Witt technique. **Effort** is
-audit-only: the receipt WARNs on any deviation from the pin, in either direction, but nothing
-prevents it. *(The effort leg stands; the model leg is corrected by #36.)*
-*Why (the effort half stands; the model half rests on the false premise corrected above):*
-- **The asymmetry is the platform's, not a preference.** A subagent's model can be set at rank-1 (the
-  inline spawn param); a frontmatter pin is rank-2. **`effort` has no rank-1 slot** — it is
-  frontmatter-only (verified against the current Claude Code platform, §3) — so it can be *proven*
-  but never *forced*. Claiming to enforce effort would be a lie the receipt can't back. *(The
-  original text here also asserted the rank-2 model pin is "silently dropped if the dispatch omits a
-  model" and must be promoted to rank-1; that assertion is **false** — see the correction — which is
-  why the model-enforcement leg is being reverted in #36.)*
-- **Naming, not matching, is the hook's job.** The hook denies only an *unnamed* model dispatch; an
-  explicit-but-*wrong* model is allowed through and caught by the detective receipt as a pin↔actual
-  **FAIL**. Splitting it this way keeps the real-time hook simple and fail-open-friendly (a parse quirk
-  never blocks a correctly-named dispatch), while the authoritative mismatch verdict lives in the
-  transcript-based analyzer where the *actual* resolved model is ground truth.
-- **The two-tier honesty is itself the credibility signal.** The receipt says two structurally different
-  things — "model: enforced + verified" vs "effort: observed" — rather than flattening them into one
-  reassuring checkmark. A trust product that overstated a rank-2 pin as an invariant (the pre-#22
-  "reviewers are opus regardless…" prose) would be *less* trustworthy than one that names exactly what it
-  can and cannot guarantee. Model match is alias/dated-aware for the same reason: a dated pin demands an
-  exact id (honoring the reviewers' reproducibility intent, ADR-2), an alias accepts any same-family tier.
-- **The pins are one SSOT.** Both the enforcer and the receipt read the pins through `agentdefs.py`, so
-  what the guard forces and what the receipt verifies can never drift — the same discipline ADR-11 gives
-  the isolation rules via `policy.py`.
+*Why bare dispatch, not a dispatch-time enforcement hook:*
+- **A frontmatter model pin is honored on a bare dispatch** — verified across four real sessions in
+  [`model-pinning-findings.md`](../design/model-pinning-findings.md) §2 and re-probed 2026-09-14 (§7):
+  a `claude-opus-4-8`-pinned agent dispatched by `subagent_type` alone ran on exactly
+  `claude-opus-4-8` while its parent ran `claude-sonnet-5`. The documented resolution order is inline
+  (1) > **frontmatter (2)** > `CLAUDE_CODE_SUBAGENT_MODEL` (3) > session (4) > account (5); with 1
+  and 3 absent, the frontmatter pin governs.
+- **Naming a model inline would break the dated pins.** The inline `model` slot is enum-restricted to
+  family aliases `{sonnet, opus, haiku, fable}` — it cannot carry a dated id. Forcing a
+  `claude-opus-4-8` reviewer to be named inline collapses it to the `opus` alias (a rank-1 argument
+  that *overrides* the rank-2 frontmatter pin) → the floating `claude-opus-5`, destroying the
+  exact-version reproducibility the dated pin exists for (ADR-2). Bare dispatch is the only way to
+  honor a dated pin.
+- **Historical note (#22 → #36).** #22 originally added a `PreToolUse` deny-if-unnamed hook (the
+  Thomas-Witt technique, `guard.py::_dispatch_deny_reason`) on the premise that a frontmatter pin is
+  *"silently dropped if the dispatch omits a model."* That premise is **false** on this platform (see
+  above), and the hook was not merely redundant but **counterproductive for dated pins** — it forced
+  the alias-only inline model that overrode them, re-creating the very wrong-model failure it meant to
+  prevent (observed live in the #31b-i acceptance run). [#36](https://github.com/Sdaas/sdlc-lite/issues/36)
+  reverted it: pinned gates dispatch bare.
+- **The receipt is the guarantee, and it stays honest.** Model integrity is what the analyzer
+  **verifies** from ground truth (the transcript's resolved `message.model`), not what a hook forces.
+  Match is alias/dated-aware: a dated pin demands an exact id (ADR-2), an alias accepts any same-family
+  tier. The receipt reports the *actual* resolved model/effort regardless, so a broken pin is never
+  hidden — observability holds even where prevention is not possible (effort has no rank-1 lever at
+  all, so it can only ever be proven, never forced).
 
 ---
 

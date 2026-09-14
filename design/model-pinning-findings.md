@@ -145,19 +145,19 @@ parameters" trying to honor the dated pin inline, fell back to `opus`, and the r
 | Knob | Guarantee | Mechanism |
 |---|---|---|
 | **Family model** (`sonnet` / `opus` / `haiku`) | ✅ Can pin **and** verify | Frontmatter pin honored; the conductor may also name the same-family alias inline; the receipt confirms actual == family. |
-| **Exact dated model** (`claude-opus-4-8`) | ⚠️ *Achievable* via frontmatter (dispatch **bare**), but **currently broken** by the #22 deny-if-unnamed hook | Rank-2 frontmatter is honored **only if** no inline model is named; the hook forces an inline (alias-only) name that overrides it. Fix: **#36**. |
+| **Exact dated model** (`claude-opus-4-8`) | ✅ Achievable via frontmatter (dispatch **bare**) — restored by **#36** | Rank-2 frontmatter is honored when no inline model is named; #36 removed the deny-if-unnamed hook that had forced an overriding alias-only inline name. |
 | **Effort** (`low` / `medium` / `high`) | ❌ Cannot enforce; **audit-only** | Frontmatter-only, no inline lever on this platform; the receipt WARNs on deviation but nothing prevents it. |
 
 In **all** cases the post-run receipt reports the **actual** resolved model/effort from the
 transcript — so a broken pin is never hidden; it surfaces as a ❌/⚠️. **Observability holds even where
 prevention does not.**
 
-### Fix direction (deferred to #36, supersedes #22's model-enforcement leg)
+### Fix (#36, done 2026-09-14 — supersedes #22's model-enforcement leg)
 
-The corrective direction is the **inverse** of deny-if-unnamed: dispatch a pinned subagent **bare**
-(no inline model) and let the honored frontmatter pin govern; remove or invert the guard's
-`_dispatch_deny_reason`, and stop instructing the conductor to name the model inline. Tracked in
-**#36**.
+The correction was the **inverse** of deny-if-unnamed: dispatch a pinned subagent **bare** (no inline
+model) and let the honored frontmatter pin govern. Shipped in #36 — the guard's `_dispatch_deny_reason`
+was removed (Task/Agent dispatches are audited but never model-enforced), and the conductor's SKILL.md
+instruction now says to dispatch bare. The receipt remains the authoritative model/effort verifier.
 
 ## Sources
 

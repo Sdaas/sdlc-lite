@@ -53,11 +53,11 @@ Notes on reading the receipt:
 - The producers' `sonnet` (an **alias**) matches the transcript's resolved `claude-sonnet-5` because
   the match is family-aware for aliases; the reviewers' **dated** `claude-opus-4-8` must match the
   actual id **exactly** (a silent opus-tier drift would read ❌).
-- ⚠️ **The clean reviewer rows above (`✅ claude-opus-4-8 → claude-opus-4-8`) are currently NOT
-  achievable as shipped** — the #22 deny-if-unnamed hook forces an alias-only inline model that
-  overrides the dated pin, so the reviewers presently resolve to `claude-opus-5` and read ❌. This
-  sample reflects the intended state after the [#36](https://github.com/Sdaas/sdlc-lite/issues/36)
-  fix (dispatch pinned gates bare). See `design/model-pinning-findings.md` §7.
+- The clean reviewer rows above (`✅ claude-opus-4-8 → claude-opus-4-8`) hold because pinned gates are
+  **dispatched bare** (#36): the dated frontmatter pin is honored, not overridden by an alias-only
+  inline model. (#22 once forced an inline model via a deny-if-unnamed hook, which broke exactly these
+  dated pins → `claude-opus-5`; that leg was reverted in
+  [#36](https://github.com/Sdaas/sdlc-lite/issues/36).) See `design/model-pinning-findings.md` §7.
 
 ---
 
@@ -74,9 +74,10 @@ offending cells to a trust-voiding verdict (the rest of the row still reports ho
 
 - **`❌ claude-opus-4-8 → claude-sonnet-5`** — a wrong-model launch: the reviewer ran on Sonnet, not
   its pinned Opus. The receipt is the backstop that catches it — and the receipt is the *real*
-  guarantee. (The dispatch-time enforcement leg of #22 is being reverted in
-  [#36](https://github.com/Sdaas/sdlc-lite/issues/36): its premise is false and it breaks the dated
-  pins; the receipt/audit leg is unaffected and remains authoritative.)
+  guarantee. (#22 once tried to *enforce* the model at dispatch via a deny-if-unnamed hook; that leg
+  rested on a false premise and broke the dated pins, so it was reverted in
+  [#36](https://github.com/Sdaas/sdlc-lite/issues/36). The receipt/audit leg is authoritative and
+  unaffected.)
 - **`❌ LEAK: 03-design-internal.md`** — the content auditor found the internal design's text in the
   algorithm-blind test-writer's tool output (e.g. via a `cat handoff/*.md` glob the run-log's
   command-string view can't resolve). This **voids trust** for the run — #30 / ADR-11.
