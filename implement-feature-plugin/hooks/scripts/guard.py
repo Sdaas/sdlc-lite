@@ -21,10 +21,11 @@ the audit still logs every call regardless of the decision.
      the secret DIRECTORY scan (a recursive search over a dir that merely CONTAINS a secret
      file) and the R6 wildcard-ban.
   3. MODEL ENFORCE (#22 (a)) — on a Task/Agent dispatch the hook reads the target subagent's
-     agent-def `model:` pin (via agentdefs.py) and DENIES a dispatch that names no model,
-     forcing a re-dispatch with the model named explicitly. This promotes the pin from rank-2
-     (frontmatter, silently droppable) to rank-1 (a per-invocation argument). Effort has no
-     inline dispatch lever on this platform, so it is audited (analyzer), never enforced here.
+     agent-def `model:` pin (via agentdefs.py) and DENIES a dispatch that names no model.
+     !!! BEING REVERTED (#36): its premise ("frontmatter pin silently droppable") is false and
+     it breaks the dated reviewer pins — see the block comment on _dispatch_deny_reason below.
+     Effort has no inline dispatch lever on this platform, so it is audited (analyzer), never
+     enforced here (this half stands).
 
 Reads the hook JSON on stdin. To DENY: print a hookSpecificOutput deny decision and
 exit 2. To ALLOW: exit 0.
@@ -156,14 +157,21 @@ def _deny_reason(tool: str, ti: dict, agent_type: str, target: str) -> str | Non
 
 
 # --- #22 (a): model enforcement on a Task/Agent dispatch --------------------
-# The Thomas-Witt technique: an agent-def `model:` pin is rank-2 (frontmatter, silently
-# droppable if the dispatch omits a model). Promote it to rank-1 (a per-invocation argument)
-# by DENYING a dispatch of a pinned subagent that carries no explicit `model` — the conductor
-# must re-dispatch naming the model. Contract (M-08): pinned + no model -> deny; ANY explicit
-# model -> allow (a *wrong* named model is not the hook's job — the transcript-based receipt
-# flags a pin/actual mismatch as FAIL); unpinned -> allow; unparseable -> fail open.
+# !!! BEING REVERTED — see #36 and design/model-pinning-findings.md §7. !!!
+# This implements the Thomas-Witt "deny-if-unnamed" technique on the PREMISE that an agent-def
+# `model:` pin is rank-2 (frontmatter, "silently droppable if the dispatch omits a model") and so
+# must be promoted to rank-1 by naming it per-invocation. THAT PREMISE IS FALSE on this platform:
+# a bare-dispatch frontmatter pin IS honored (proven across four real sessions + a 2026-09-14
+# re-probe). Worse, this rule BREAKS the dated reviewer pins: the inline `model` slot is enum-only
+# {sonnet,opus,haiku,fable}, so a forced inline name of a `claude-opus-4-8` reviewer can only be the
+# `opus` alias, which (rank-1) OVERRIDES the dated frontmatter pin -> the reviewer runs
+# `claude-opus-5`. The #36 fix is the inverse (dispatch pinned gates bare); this function will be
+# removed/inverted then. Left in place for now (behavior unchanged this commit).
+# Contract (M-08, current): pinned + no model -> deny; ANY explicit model -> allow (a *wrong* named
+# model is caught by the transcript-based receipt as a pin/actual FAIL); unpinned -> allow;
+# unparseable -> fail open.
 # Effort has NO inline dispatch lever on this platform (verified 2026-09), so it cannot be
-# enforced here — only audited by the analyzer. See agentdefs.py / the developer-guide ADR.
+# enforced here — only audited by the analyzer. See agentdefs.py / the developer-guide ADR-12.
 def _dispatch_deny_reason(ti: dict) -> str | None:
     """Deny a pinned-model dispatch that names no model; else allow. Fail open on anything
     unexpected (never break a dispatch we can't confidently adjudicate)."""

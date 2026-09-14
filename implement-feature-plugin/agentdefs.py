@@ -14,19 +14,26 @@ seam-not-two-copies discipline as `policy.py` for the isolation rules):
 
   - the PREVENTIVE guard hook (`hooks/scripts/guard.py`, #22 leg (a)) — on a
     `Task`/`Agent` dispatch it looks up the pinned model and DENIES a dispatch that
-    carries no explicit `model` (forcing a re-dispatch with the model named), so a
-    frontmatter pin (rank 2, silently droppable) is promoted to a per-invocation
-    argument (rank 1);
+    carries no explicit `model`. NOTE (#36): this leg is being reverted. Its premise —
+    "a frontmatter pin is rank-2 and silently droppable, so promote it to a rank-1
+    per-invocation argument" — is FALSE on this platform (a bare-dispatch frontmatter
+    pin IS honored), and it BREAKS the dated reviewer pins: the inline `model` lever
+    accepts only family aliases {sonnet,opus,haiku,fable}, so a forced inline name can
+    only be the `opus` alias, which (rank-1) overrides the dated `claude-opus-4-8`
+    frontmatter pin -> the reviewer resolves to `claude-opus-5`. See
+    design/model-pinning-findings.md §7.
   - the DETECTIVE analyzer (`analyzer/receipt.py`, #22 legs (b)/(c)) — it fills the
     receipt's REQUESTED model/effort columns from these pins and compares them
     against the transcript's ACTUAL values (model mismatch = FAIL; effort deviation
-    = WARN, either direction).
+    = WARN, either direction). This half is authoritative and unaffected by #36.
 
-Deliberate asymmetry (verified against the current Claude Code platform, 2026-09):
-the dispatch tool exposes an inline `model` lever but NO `effort` lever — `effort`
-is frontmatter-only. So model can be ENFORCED at launch, but effort can only be
-AUDITED after the fact. This module carries both pins; the enforcement lives in the
-guard (model only), the audit in the analyzer (both). See the developer-guide ADR.
+Effort asymmetry (verified against the current Claude Code platform, 2026-09): the
+dispatch tool exposes an inline `model` lever but NO `effort` lever — `effort` is
+frontmatter-only, so it can only be AUDITED after the fact. (Model does have an inline
+lever, but it is alias-only and — per #36 — need not and should not be used: the
+frontmatter pin is honored on a bare dispatch.) This module carries both pins; the
+audit lives in the analyzer (both), and the model-enforcement leg in the guard is
+being removed (#36). See the developer-guide ADR-12.
 
 Frontmatter is parsed by hand (no PyYAML dependency): the guard hook must stay
 dependency-free, and the frontmatter we read is flat `key: value` lines. Pure w.r.t.

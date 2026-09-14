@@ -49,12 +49,13 @@ without revisiting the dependency reasoning in "The through-line."
 | #31 (skeleton) | v1 · step 2 | **DONE** | receipt schema (`analyzer/receipt.py`) rendered always, all-`UNKNOWN` verdicts; R3 effort-extraction + R4 `guard_decision` plumbing landed; effort policy widened to WARN-both-directions; Sources block + `SAMPLE-RECEIPT.md`. Issue **stays open** for the close phase (step 5) |
 | #30a (enforcer) | v1 · step 3a | **DONE** | policy SSOT (`policy.py`) + guard rewired onto it (R1 enforcer side, R2) + Bash write-forms (sed -i/cp/mv) + full-length run-log (R3 intent half) + R6 wildcard-ban + #29 (verifier/code-reviewer write-confinement). Commits: R1 `9c96c8e`, R2 `b2a7184`, R6 `518c5aa` |
 | #30b (auditor) | v1 · step 3b | **DONE** | (B) `runlog.py` imports `policy` SSOT + anchored critic confinement (`c663e09`); (R3) transcript content-fingerprint auditor + `TRANSCRIPT-FORMAT.md` §5 (`0f95d10`); (R4) wired into receipt `Files seen` + Gate-11 `UNTRUSTED` verdict + R5 tests (`a495ff1`); DG §4 rewrite + ADR-11. **#30 complete.** Full host suite 138 green |
-| #22 | v1 · step 4 | **DONE** | (A) `agentdefs.py` pin SSOT + receipt fills req model/effort; (B) run-log gate-record hygiene (M-06) + conductor stops guessing (m-09); (C) Witt deny-if-unnamed model-enforce hook on Task/Agent dispatch; (D) ADR-12 + fixed overstated "never deviate" prose. Effort-frontmatter-only premise **verified** on current platform (Agent/Task exposes `model`, not `effort`) — asymmetry stands. Commits `0479d31`/`1e05e72`/`8f825a6`/`517c1d8`. Host suite 160 green |
+| #22 | v1 · step 4 | **DONE (leg C being reverted → #36)** | (A) `agentdefs.py` pin SSOT + receipt fills req model/effort; (B) run-log gate-record hygiene (M-06) + conductor stops guessing (m-09); (C) ~~Witt deny-if-unnamed model-enforce hook~~ **premise FALSE — reverting in #36** (bare-dispatch frontmatter pin IS honored; the hook breaks dated reviewer pins by forcing an alias-only inline model → `opus-5`, discovered via #31b-i); (D) ADR-12 + fixed overstated "never deviate" prose. Effort-frontmatter-only premise **verified** (Agent/Task exposes `model`, not `effort`) — effort-audit-only stands. Commits `0479d31`/`1e05e72`/`8f825a6`/`517c1d8`. Host suite 160 green |
 | #31a (close-docs) | v1 · step 5a | **DONE** | R1 framing/docs: DG §5 "What the receipt is — and is not" + README "Two guarantees" bullet state the audit's purpose as **observability + best-effort prevention, not cost enforcement**. Commit `95e3ccc`. Host-only |
-| #31b-i (accept: wrong-model) | v1 · step 5b-i | pending | **Cheapest, one clean session.** Real run; at the first `[I]` dispatch name the WRONG model, let that one Sonnet subagent run, abort, run analyzer → receipt flips to **❌ model mismatch / untrusted**. Validates the whole #22 chain (dispatch hook → transcript model → receipt verdict) end-to-end. Prereq: dev container up |
+| #31b-i (accept: wrong-model) | v1 · step 5b-i | **DONE** | Real run (`/tmp/pd-run3`, 2026-09-14): injected `model: haiku` at the Gate-3 test-writer → receipt `test-writer: ❌ sonnet → claude-haiku-4-5` = **untrusted**. Whole #22 chain (dispatch hook allows named model → transcript extraction → receipt verdict) fired end-to-end. **Bonus discovery:** the reviewer row also read `❌ claude-opus-4-8 → claude-opus-5` — the dated pin is unsatisfiable via the alias-only inline `model` the Witt hook forces → **filed #36** (revert the model-enforce leg; dispatch pinned gates bare). Also: the dated frontmatter pin IS honored on a bare dispatch (probe confirmed). Caveat: a round-2 sonnet test-writer also ran; the ❌ held only because haiku was keyed last (analyzer last-write-wins) — a robustness note, not a failure |
 | #31b-ii (accept: isolation) | v1 · step 5b-ii | pending | **Moderate, one clean session.** Two injected isolation violations: test-writer content-leak via a guard-missed read (`python -c`/indirect) → **auditor FAIL**; implementer `sed -i … tests/` → **run-log detective FAIL**. Each caught early (reaches at most the low-effort test-reviewer). Prereq: dev container up |
-| #31b-iii (accept: clean run) | v1 · step 5b-iii | pending | **Expensive, one clean session post weekly-reset.** The clean all-PASS run: full pipeline incl. BOTH Opus reviewers → all-✅ receipt, committed. Observes the #28 dev-spread end-to-end. **Closing this closes #31 and completes v1.** Prereq: dev container up |
-| #35 | v1 · release | pending | flip all effort pins → `medium`; **blocked by #31b-iii** (the clean run must observe the dev-spread end-to-end first). Rides with / immediately after #31b-iii |
+| #31b-iii (accept: clean run) | v1 · step 5b-iii | pending | **Expensive, one clean session post weekly-reset.** The clean all-PASS run: full pipeline incl. BOTH Opus reviewers → all-✅ receipt, committed. Observes the #28 dev-spread end-to-end. **Closing this closes #31 and completes v1.** Prereq: dev container up **+ #36 landed** (the reviewers can't read all-✅ while the Witt hook forces them onto `opus-5`) |
+| #36 (revert Witt model-enforce) | v1 | **pending — NEW** | Revert #22's deny-if-unnamed hook (`guard.py::_dispatch_deny_reason`) + stop the conductor naming the model inline; dispatch pinned gates **bare** so the honored frontmatter pin governs (incl. the dated reviewer pins). Premise "frontmatter silently droppable" is false (proven). **Blocks #31b-iii** (and thus #35). Discovered via #31b-i |
+| #35 | v1 · release | pending | flip all effort pins → `medium`; **blocked by #31b-iii** (itself now blocked by #36). Rides with / immediately after #31b-iii |
 | #32 | v2 | pending | `/plan-feature`; first task = falsification run |
 | #34 | v2 (indep.) | pending | agent-driven regression harness; supersedes #18 D5c, needs #21 |
 | #18 | support | partial | D1–D4 stand; **D5c superseded by #34** |
@@ -159,14 +160,20 @@ Ship as **one coherent release**. Order is load-bearing (schema before the legs 
        (the enforcer layer is already covered by the #30a tests).
 
 ### 4. #22 — model/effort column + enforcement (un-deferred)
+> **⚠️ CORRECTION (2026-09-14) — the model-enforcement leg is being reverted; see #36.** The premise
+> below ("frontmatter pin silently droppable → must promote to rank-1 by naming inline") is **false**
+> on this platform: a bare-dispatch frontmatter pin **is** honored (proven in
+> `design/model-pinning-findings.md` §2 + a §7 re-probe). The deny-if-unnamed hook is redundant for
+> alias pins and **breaks the dated reviewer pins** (inline `model` is alias-only, so the forced name
+> overrides `claude-opus-4-8` → `claude-opus-5`). The fix is the inverse (dispatch pinned gates
+> bare). **The audit/receipt leg (b)/(c) stands and is authoritative; only the enforcement leg (a) is
+> wrong.** Discovered via the #31b-i acceptance run.
 - **Same problem statement as the Thomas-Witt article** (subagents silently launched on the wrong
-  model → cost/usage surprises). Adopt his technique.
-- **Model = enforced:** a `PreToolUse` hook on the `Task`/`Agent` dispatch reads the agent-def
-  `model:` pin; if the dispatch carries no explicit model, **deny (exit 2) → forced re-dispatch
-  with the model named explicitly**, promoting the pin from rank 2 (frontmatter, silently
-  droppable) → rank 1 (per-invocation). Wrong-model launch becomes impossible; a
-  transcript/pin mismatch is a **FAIL** (on the tool). Fail-open on unparseable payloads.
-  Integrate into `guard.py` (add a Task/Agent branch), not a separate script.
+  model → cost/usage surprises). ~~Adopt his technique.~~ *(His premise doesn't hold here — see #36.)*
+- **Model = ~~enforced~~ verified:** a `PreToolUse` hook on the `Task`/`Agent` dispatch reads the
+  agent-def `model:` pin; if the dispatch carries no explicit model, **deny (exit 2) → forced
+  re-dispatch**. *(Reverting in #36 — the premise is false and this breaks dated pins.)* The real
+  guarantee is the **transcript/pin mismatch = FAIL** on the receipt, which is unaffected.
 - **Effort = audit-only (documented asymmetry):** `effort` has **no rank-1 slot**
   (`effort` is frontmatter-only per this repo's platform rule). So effort can only be **proven**,
   never forced. The receipt says two structurally different things, and that honesty is itself a

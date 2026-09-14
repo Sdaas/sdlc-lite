@@ -24,9 +24,11 @@ What that buys you:
   curated for its role) and runs at a *pinned model/effort*. After each run a deterministic audit
   produces a **receipt** that verifies both from the ground-truth session transcript — turning "we
   isolate and we bound the reasoning budget" from a claim into a per-run, checkable fact. The pieces
-  are honest about *how* each is held: the model pin is **enforced** at dispatch (the guard denies a
-  subagent launch that drops it) and then **verified**; effort and isolation are **verified** by the
-  receipt with **best-effort real-time prevention** by the guard. This is **observability plus
+  are honest about *how* each is held: the model, effort, and isolation are all **verified** by the
+  receipt from the transcript, with **best-effort real-time prevention** by the guard (isolation).
+  (An earlier claim that the model pin is *enforced* at dispatch is being reverted — see
+  [#36](https://github.com/Sdaas/sdlc-lite/issues/36); the model guarantee is what the receipt
+  verifies, not what a dispatch hook forces.) This is **observability plus
   best-effort prevention — not a hard cost cap**: the receipt tells you exactly what happened and
   flips to *untrusted* on any violation, which is the property a reviewer of the run actually needs.
 

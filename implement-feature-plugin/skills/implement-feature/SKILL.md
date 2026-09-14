@@ -23,11 +23,18 @@ downstream gate see a prior gate's raw transcript — only the **curated handoff
   `implement-feature:code-reviewer` — never the bare name. (Verified empirically.)
 - **Always name the model on every `[I]` dispatch (#22).** Read the gate's pinned `model`
   from its `agents/*.md` frontmatter and pass it **explicitly** as the dispatch `model`
-  argument (e.g. `model: "claude-opus-4-8"` for the reviewers, `model: "sonnet"` for the
-  producers). The guard hook **denies a dispatch that names no model** and asks you to
-  re-dispatch — a frontmatter pin alone is silently droppable, so naming it per-invocation is
-  what actually guarantees the gate runs on its pinned model. (`effort` has no dispatch lever;
-  it stays frontmatter-only and is audited, not enforced.)
+  argument (e.g. `model: "sonnet"` for the producers). The guard hook **denies a dispatch that
+  names no model** and asks you to re-dispatch. (`effort` has no dispatch lever; it stays
+  frontmatter-only and is audited, not enforced.)
+  > **⚠️ Under revision ([#36](https://github.com/Sdaas/sdlc-lite/issues/36)).** The premise here
+  > — "a frontmatter pin alone is silently droppable, so name it per-invocation" — is **false** on
+  > this platform: a bare-dispatch frontmatter pin **is** honored. Worse, for the **dated** reviewer
+  > pins (`claude-opus-4-8`) this rule is impossible to satisfy: the inline `model` slot accepts only
+  > family aliases `{sonnet, opus, haiku, fable}`, so naming the reviewer's model inline can only be
+  > the `opus` **alias**, which overrides the dated frontmatter pin → the reviewer runs
+  > `claude-opus-5`, not `claude-opus-4-8`, and the receipt flags `❌`. The #36 fix is the inverse:
+  > **dispatch pinned gates bare** and let the honored frontmatter pin govern. Until then the receipt
+  > still catches any mismatch.
 
 ### Two trees: product code vs process artifacts (P48)
 
@@ -132,8 +139,9 @@ Two records, plus a hard guard, run alongside every gate:
    - any write outside its `handoff/` outbox + a scratch dir — for the **test-reviewer**
      (it must not mutate the product tree / build a reference implementation); and
    - a **Task/Agent dispatch of a pinned subagent that names no `model`** (#22) — forcing a
-     re-dispatch with the model named explicitly, so the agent-def pin (silently droppable)
-     is promoted to a per-invocation argument and the gate provably runs on its pinned model.
+     re-dispatch with the model named explicitly. *(The premise that the frontmatter pin is
+     "silently droppable" is false, and this rule breaks the dated reviewer pins — being reverted
+     in [#36](https://github.com/Sdaas/sdlc-lite/issues/36).)*
    Each is defense-in-depth with the agents' own role instructions.
 
 The deterministic analyzer reads the hook audit (stable source of reads) and cross-checks
@@ -229,11 +237,15 @@ Gate 0 below is the first application of this style; later STOP gates follow the
    **reviewers** (`test-reviewer`, `code-reviewer`) pin the **explicit, dated** `claude-opus-4-8`
    — on purpose, for **reproducible review behavior** (a floating alias would silently change the
    reviewer as new Opus tiers ship); `test-writer` / `implementer` / `verifier` pin the **`sonnet`
-   alias** (whatever the latest Sonnet tier is). The pin is **enforced, then verified** (#22): you
-   name the model on every `[I]` dispatch and the guard denies an unnamed one (so the frontmatter
-   pin can't be silently dropped), and the post-run receipt compares the transcript's *actual*
-   model against the pin — a mismatch is a **FAIL**. (Effort has no dispatch lever, so it is
-   verified only — a deviation is a WARN, not enforced.) **Conductor `[C]` gates run on the
+   alias** (whatever the latest Sonnet tier is). The pin is **verified** (#22): the post-run receipt
+   compares the transcript's *actual* model against the pin — a mismatch is a **FAIL**. (Effort has
+   no dispatch lever, so it is verified only — a deviation is a WARN, not enforced.)
+   > **⚠️ [#36](https://github.com/Sdaas/sdlc-lite/issues/36):** #22 also added a dispatch-time
+   > *enforcement* leg (deny an unnamed dispatch, name the model inline). That leg is being reverted
+   > — its premise ("frontmatter pin silently dropped") is false, and it **breaks the dated reviewer
+   > pins** (inline is alias-only, so the reviewers currently resolve to `claude-opus-5`, flagged ❌).
+   > The fix dispatches pinned gates **bare** so the honored frontmatter dated pin governs.
+   **Conductor `[C]` gates run on the
    session's own model** (the plugin cannot pin it), so
    only the three `[C]` rows can be wrong — and only when the session's tier is *below* that
    row's required tier (INTERVIEW/DESIGN want Opus; REVIEW-GUIDE/COMMIT is *correct* on

@@ -1,8 +1,10 @@
 # Finding: the dated reviewer pin (`claude-opus-4-8`) IS honored in the dev container
 
-**Date:** 2026-09-11 · **Branch:** `refactor/shippable-plugin` · **Status:** ✅ RESOLVED
-(re-audited from raw transcripts across all four sessions; earlier "not honored" claim was a
-misattribution — see §5).
+**Date:** 2026-09-11 · **Updated:** 2026-09-14 · **Branch:** `refactor/shippable-plugin` (orig),
+`v1-trust-claim` (close-out) · **Status:** ✅ RESOLVED as a *platform* fact (the frontmatter pin
+**is** honored) — but a later change (#22's "Witt" hook) **regressed** it for dated pins. See the
+**§7 close-out** for the settled conclusion; fix tracked in **#36**. (Earlier "not honored" claim in
+§5 was a transcript misattribution, unrelated to the #22 regression.)
 
 Feeds the Developer Guide's **model-pinning ADR** (Phase 3), alongside
 [`isolation-experiments.md`](./isolation-experiments.md).
@@ -99,13 +101,63 @@ runs — and the pin comes out honored.
 feature identity / workdir slug / commit SHA in the *main* transcript before reading its
 subagents — a reused project dir mixes sessions from multiple runs, and mtime alone is not proof.
 
-## 6. Consequences
+## 6. Consequences (as of 2026-09-11 — later partially reversed, see §7)
 
 - Commit `e093182`'s reproducibility goal (a dated reviewer version) **is achieved** in this
-  environment.
-- The Gate 0 SKILL.md note from commit `133025c` is **correct** — no edit needed.
-- No product change required. Carry the §2 evidence table and the §5 lesson into the Phase 3
-  model-pinning ADR.
+  environment **when the subagent is dispatched bare** (no inline model). ⚠️ Later regressed by the
+  #22 hook — see §7.
+- The Gate 0 SKILL.md note from commit `133025c` was **correct** at the time.
+- No product change was required *then*. Carry the §2 evidence table and the §5 lesson into the
+  model-pinning ADR (ADR-12).
+
+## 7. Close-out (2026-09-14): the #22 "Witt" hook regressed this; its premise was false
+
+This capture concluded — **correctly** — that a **frontmatter** model pin is honored on this
+platform with no inline override (rank-2 in the resolution order, §3), proven across four real
+sessions (§2). A clean **re-probe on 2026-09-14** (Claude Code 2.1.266) reconfirms it: an agent-def
+pinning `model: claude-opus-4-8`, dispatched **by `subagent_type` alone with no inline `model`**, ran
+on exactly `claude-opus-4-8` while its parent session ran `claude-sonnet-5` — the pin applied,
+distinct from the session default.
+
+**But issue #22 (closed 2026-09-14) shipped a guard hook built on the *opposite* premise** — that a
+"frontmatter pin is silently droppable if the dispatch omits a model" (the Thomas-Witt technique) —
+and it **denies any dispatch of a pinned subagent that names no model**, forcing the conductor to
+name the model inline. That premise is **false here** (this capture + the re-probe both show a
+bare-dispatch pin is honored), and the hook is **actively counterproductive for the dated reviewer
+pins**:
+
+- The Agent/Task tool's **inline `model` is enum-restricted to family aliases** `{sonnet, opus,
+  haiku, fable}` — it cannot carry a dated id.
+- So a hook-forced re-dispatch of a `claude-opus-4-8`-pinned reviewer can only name the `opus`
+  **alias** — a **rank-1** per-invocation argument that **overrides** the rank-2 frontmatter pin →
+  the reviewer runs the *floating latest* Opus (`claude-opus-5`), not the pinned `claude-opus-4-8`.
+- Net: the deny-if-unnamed hook **destroys the exact-version reproducibility (ADR-2) the dated
+  reviewer pins exist to guarantee** — it re-creates the very "wrong model" failure it was meant to
+  prevent, but only for dated pins. For **alias** pins it is harmless (the conductor names the
+  same-family alias, which matches) and merely redundant.
+
+Observed live in the **#31b-i acceptance run (2026-09-14)**: the conductor hit "Invalid tool
+parameters" trying to honor the dated pin inline, fell back to `opus`, and the receipt flagged
+`test-reviewer: ❌ claude-opus-4-8 → claude-opus-5`.
+
+### What the plugin *can* and *cannot* guarantee about model/effort — the honest statement
+
+| Knob | Guarantee | Mechanism |
+|---|---|---|
+| **Family model** (`sonnet` / `opus` / `haiku`) | ✅ Can pin **and** verify | Frontmatter pin honored; the conductor may also name the same-family alias inline; the receipt confirms actual == family. |
+| **Exact dated model** (`claude-opus-4-8`) | ⚠️ *Achievable* via frontmatter (dispatch **bare**), but **currently broken** by the #22 deny-if-unnamed hook | Rank-2 frontmatter is honored **only if** no inline model is named; the hook forces an inline (alias-only) name that overrides it. Fix: **#36**. |
+| **Effort** (`low` / `medium` / `high`) | ❌ Cannot enforce; **audit-only** | Frontmatter-only, no inline lever on this platform; the receipt WARNs on deviation but nothing prevents it. |
+
+In **all** cases the post-run receipt reports the **actual** resolved model/effort from the
+transcript — so a broken pin is never hidden; it surfaces as a ❌/⚠️. **Observability holds even where
+prevention does not.**
+
+### Fix direction (deferred to #36, supersedes #22's model-enforcement leg)
+
+The corrective direction is the **inverse** of deny-if-unnamed: dispatch a pinned subagent **bare**
+(no inline model) and let the honored frontmatter pin govern; remove or invert the guard's
+`_dispatch_deny_reason`, and stop instructing the conductor to name the model inline. Tracked in
+**#36**.
 
 ## Sources
 

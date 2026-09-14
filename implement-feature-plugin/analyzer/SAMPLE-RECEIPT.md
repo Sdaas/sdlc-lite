@@ -53,6 +53,11 @@ Notes on reading the receipt:
 - The producers' `sonnet` (an **alias**) matches the transcript's resolved `claude-sonnet-5` because
   the match is family-aware for aliases; the reviewers' **dated** `claude-opus-4-8` must match the
   actual id **exactly** (a silent opus-tier drift would read ❌).
+- ⚠️ **The clean reviewer rows above (`✅ claude-opus-4-8 → claude-opus-4-8`) are currently NOT
+  achievable as shipped** — the #22 deny-if-unnamed hook forces an alias-only inline model that
+  overrides the dated pin, so the reviewers presently resolve to `claude-opus-5` and read ❌. This
+  sample reflects the intended state after the [#36](https://github.com/Sdaas/sdlc-lite/issues/36)
+  fix (dispatch pinned gates bare). See `design/model-pinning-findings.md` §7.
 
 ---
 
@@ -68,8 +73,10 @@ offending cells to a trust-voiding verdict (the rest of the row still reports ho
 | test-writer | ✅ sonnet → claude-sonnet-5 | ✅ medium → medium | ❌ LEAK: 03-design-internal.md | 29 / 1 |
 
 - **`❌ claude-opus-4-8 → claude-sonnet-5`** — a wrong-model launch: the reviewer ran on Sonnet, not
-  its pinned Opus. (The dispatch hook denies an *unnamed* model; a deliberately *wrong* named model
-  gets here, and the receipt is the backstop that catches it — #22 / ADR-12.)
+  its pinned Opus. The receipt is the backstop that catches it — and the receipt is the *real*
+  guarantee. (The dispatch-time enforcement leg of #22 is being reverted in
+  [#36](https://github.com/Sdaas/sdlc-lite/issues/36): its premise is false and it breaks the dated
+  pins; the receipt/audit leg is unaffected and remains authoritative.)
 - **`❌ LEAK: 03-design-internal.md`** — the content auditor found the internal design's text in the
   algorithm-blind test-writer's tool output (e.g. via a `cat handoff/*.md` glob the run-log's
   command-string view can't resolve). This **voids trust** for the run — #30 / ADR-11.
