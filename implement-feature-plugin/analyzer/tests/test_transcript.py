@@ -80,6 +80,43 @@ def test_no_assistant_turns_is_absent_not_drift(tmp_path):
         parse_transcript(tpath, WIN_START, WIN_END)
 
 
+# --- #31 R3: per-turn top-level `effort` extraction ------------------------
+
+def test_effort_extracted_and_split_main_vs_sidechain(tmp_path):
+    tpath = write_transcript(tmp_path / "s.jsonl", [
+        assistant_turn("claude-opus-4-8", i=1, effort="high"),
+        assistant_turn("claude-opus-4-8", i=2, effort="high"),
+        assistant_turn("claude-opus-4-8", i=3, effort="medium"),
+        assistant_turn("claude-sonnet-5", sidechain=True, i=4, effort="low"),
+    ])
+    a = parse_transcript(tpath, WIN_START, WIN_END)
+    assert a.main_efforts == {"high": 2, "medium": 1}
+    assert a.sidechain_efforts == {"low": 1}
+
+
+def test_effort_absent_leaves_empty_not_invented(tmp_path):
+    # No top-level effort field at all -> no buckets (verdict later degrades to UNKNOWN).
+    tpath = write_transcript(tmp_path / "s.jsonl", [assistant_turn("claude-opus-4-8", i=1)])
+    a = parse_transcript(tpath, WIN_START, WIN_END)
+    assert a.main_efforts == {}
+    assert a.sidechain_efforts == {}
+
+
+def test_subagent_effort_captured_and_folded_into_sidechain(tmp_path):
+    main = write_transcript(tmp_path / "abc.jsonl",
+                            [assistant_turn("claude-opus-4-8", i=1, effort="medium")])
+    write_subagent(main, "agent-1", [
+        assistant_turn("claude-opus-5", i=2, effort="high"),
+        assistant_turn("claude-opus-5", i=3, effort="high"),
+    ], agent_type="implement-feature:code-reviewer")
+    a = parse_transcript(main, WIN_START, WIN_END)
+    labels = {s.agent_label: s for s in a.subagents}
+    assert labels["code-reviewer"].efforts == {"high": 2}
+    # Folded into the sidechain effort aggregate; the main thread keeps its own.
+    assert a.sidechain_efforts == {"high": 2}
+    assert a.main_efforts == {"medium": 1}
+
+
 # --- #15: subagent transcripts under <uuid>/subagents/*.jsonl --------------
 
 def test_subagents_parsed_and_attributed_and_folded_into_sidechain(tmp_path):

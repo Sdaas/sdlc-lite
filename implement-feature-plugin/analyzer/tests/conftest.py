@@ -31,7 +31,8 @@ def call(agent_type: str, tool: str, target: str, ts: str | None = None) -> dict
 
 def assistant_turn(model: str, *, sidechain: bool = False, i: int = 0,
                    input_tokens: int = 100, output_tokens: int = 50,
-                   thinking: int = 10, with_usage: bool = True) -> dict:
+                   thinking: int = 10, with_usage: bool = True,
+                   effort: str | None = None) -> dict:
     message: dict[str, object] = {"model": model}
     if with_usage:
         message["usage"] = {
@@ -41,12 +42,15 @@ def assistant_turn(model: str, *, sidechain: bool = False, i: int = 0,
             "cache_creation_input_tokens": 300,
             "output_tokens_details": {"thinking_tokens": thinking},
         }
-    return {
+    rec: dict[str, object] = {
         "type": "assistant",
         "timestamp": BASE_TRANSCRIPT_TS.format(i % 10),
         "isSidechain": sidechain,
         "message": message,
     }
+    if effort is not None:  # top-level, sibling of `message` (matches real transcripts)
+        rec["effort"] = effort
+    return rec
 
 
 def write_transcript(path: Path, turns: list[dict], extra_lines: list[dict] | None = None) -> Path:
