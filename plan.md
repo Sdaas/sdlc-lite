@@ -47,7 +47,8 @@ without revisiting the dependency reasoning in "The through-line."
 |---|---|---|---|
 | #28 | v1 · step 1 | **DONE** | effort reconcile + dev-spread test-design; dev-spread = code-review `high` / test-review `low` / rest `medium` |
 | #31 (skeleton) | v1 · step 2 | **DONE** | receipt schema (`analyzer/receipt.py`) rendered always, all-`UNKNOWN` verdicts; R3 effort-extraction + R4 `guard_decision` plumbing landed; effort policy widened to WARN-both-directions; Sources block + `SAMPLE-RECEIPT.md`. Issue **stays open** for the close phase (step 5) |
-| #30 | v1 · step 3 | **NEXT** | isolation column + policy SSOT + auditor; subsumes #27/#29. Fills the receipt's `files seen` column + R6 wildcard-ban |
+| #30a (enforcer) | v1 · step 3a | **DONE** | policy SSOT (`policy.py`) + guard rewired onto it (R1 enforcer side, R2) + Bash write-forms (sed -i/cp/mv) + full-length run-log (R3 intent half) + R6 wildcard-ban + #29 (verifier/code-reviewer write-confinement). Commits: R1 `9c96c8e`, R2 `b2a7184`, R6 `518c5aa` |
+| #30b (auditor) | v1 · step 3b | **NEXT** | **Resume #30 here.** See the split note in the #30 section. Two parts: (B) `analyzer/runlog.py` dedup — import `policy`, delete its duplicate predicates (finishes R1's "KEEP IN SYNC" fix); then (R3/R4) the transcript-based auditor + Gate-11 FAIL + receipt `Files seen` column + DG/ADR + R5 auditor-layer tests |
 | #22 | v1 · step 4 | pending | model-enforce (Witt) + effort-audit; **un-deferred** |
 | #31 (close) | v1 · step 5 | pending | framing + docs; v1 acceptance dry runs |
 | #35 | v1 · release | pending | flip all effort pins → `medium`; **blocked by #31** (must observe the dev-spread first) |
@@ -110,6 +111,49 @@ Ship as **one coherent release**. Order is load-bearing (schema before the legs 
 - Fix the 300-char run-log truncation (data-loss bug).
 - A detected violation flips Gate 11's isolation verdict to **FAIL** and marks the run
   **untrusted**. Subsumes #27 and #29.
+
+**⟶ SPLIT ACROSS SESSIONS (2026-09-14).** #30 was split at ~15% context into an enforcer half
+(shipped) and an auditor half (next). No issue-body change; this note is the SSOT for the split.
+
+- **#30a — enforcer (DONE).** Shipped on `v1-trust-claim`:
+  - `implement-feature-plugin/policy.py` — the SSOT: shared predicates (`looks_secret`,
+    `is_test_path`, design-internal/draft tests, write-confinement, Bash command parsing) + a
+    per-agent rule table (`POLICY`) + the one authority `decide(agent_type, access, path, handoff_dir)`.
+  - `guard.py` rewired onto it (deleted its duplicate predicates); Bash write-forms extended to
+    `sed -i`/`cp`/`mv`; run-log now logs full-length command strings (R3's *intent* half); R6
+    wildcard-ban (algorithm-blind agent can't glob-read over `handoff/`); #29 generalization
+    (verifier + code-reviewer write-confined like the test-reviewer). All host tests green (119).
+  - **Design note (deny-by-default):** a literal restrictive *read* allow-list is impossible for
+    the producer roles (implementer/verifier read the whole repo + stdlib), so `readable` = "everything
+    minus a deny set"; deny-by-default is honored structurally in `decide()` (reads can be tightened
+    per role later) but today only the deny set bites. Documented in `policy.py`'s docstring.
+
+- **#30b — auditor (NEXT — resume here).** Two parts, in order:
+  1. **(B) `analyzer/runlog.py` dedup** — finish R1's detective side: `import policy`, delete
+     `runlog.py`'s duplicated `looks_secret`/`is_test_path`/`reviewer_write_denied`/heredoc/bash-parse
+     copies, and route its isolation checks through `policy.decide()`. ⚠️ `runlog.py`'s
+     `reviewer_write_denied` currently uses a loose substring (`"/handoff/"`, `"scratchpad"`); the
+     policy version is **anchored** (real handoff dir / temp-root prefix). Unifying may shift a
+     detective verdict — read `analyzer/tests/test_runlog.py` first and refactor carefully.
+  2. **(R3/R4) transcript-based auditor** — the authoritative *effect* leg. **Agreed design
+     (2026-09-14):** the auditor uses **two signals**, roles fixed —
+     - **content-fingerprint = authoritative / trust-voiding.** Read the protected artifacts (e.g.
+       `handoff/03-design-internal.md`) from the run's workdir, fingerprint them, and scan each
+       subagent's transcript `tool_result` output for that content. This is the ONLY signal that
+       catches the `cat handoff/*.md` glob leak (a glob exposes no resolved path in `tool_use`, only
+       the command — same blind spot as the run-log) and is **method-agnostic** (python/xargs/indirect
+       reads all land as output). A hit **voids trust**.
+     - **path extraction + best-effort "unglob" = precise, corroborating.** Explicit `file_path` from
+       Read/Edit/Write `tool_use` is exact; the user's unglob idea (resolve a literal glob against the
+       filesystem) is kept as a "name which file leaked / catch writes" helper — supporting detail,
+       NOT the trust authority (it shares the command-string blind spot and drifts at audit time).
+     - Then wire R4: a detected violation flips **Gate 11**'s isolation verdict to **FAIL** / run
+       **untrusted**, and fills the receipt's `Files seen` column (currently UNKNOWN in `receipt.py`).
+     - Docs: `developer-guide.md` §4 "Known limitation — Bash enforcement is best-effort" describes the
+       *current* (enforcer-only) state; update it to the shipped enforcer + auditor whole, and write the
+       ADR (intent-vs-effect split, policy-as-seam, best-effort-Bash boundary, content-fingerprint authority).
+     - R5 tests: the `cat handoff/*.md` read-leak and `sed -i … tests/…` at the **auditor** layer
+       (the enforcer layer is already covered by the #30a tests).
 
 ### 4. #22 — model/effort column + enforcement (un-deferred)
 - **Same problem statement as the Thomas-Witt article** (subagents silently launched on the wrong
