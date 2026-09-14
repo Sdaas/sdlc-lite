@@ -20,15 +20,13 @@ What that buys you:
 - **Not "done" on green tests.** A separate verifier drives the *real* feature against every
   acceptance criterion and exercises every external boundary un-mocked.
 - **You own the ship decision.** Nothing is committed until you review the real artifacts and approve.
-- **Two guarantees, proven — not just claimed.** Every gate is *isolated* (it reads only the files
+- **Two guarantees.** Every gate is *isolated* (it reads only the files
   curated for its role) and runs at a *pinned model/effort*. After each run a deterministic audit
   produces a **receipt** that verifies both from the ground-truth session transcript — turning "we
   isolate and we bound the reasoning budget" from a claim into a per-run, checkable fact. The pieces
   are honest about *how* each is held: the model, effort, and isolation are all **verified** by the
   receipt from the transcript, with **best-effort real-time prevention** by the guard (isolation).
-  (An earlier claim that the model pin is *enforced* at dispatch is being reverted — see
-  [#36](https://github.com/Sdaas/sdlc-lite/issues/36); the model guarantee is what the receipt
-  verifies, not what a dispatch hook forces.) This is **observability plus
+  This is observability plus
   best-effort prevention — not a hard cost cap**: the receipt tells you exactly what happened and
   flips to *untrusted* on any violation, which is the property a reviewer of the run actually needs.
 
