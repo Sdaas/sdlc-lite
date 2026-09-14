@@ -120,7 +120,77 @@ launch** (intent), as opposed to the transcript's record of what actually **ran*
   is defensive: it tries several likely keys (`agentType`, `subagent_type`, `type`, `name`, …),
   strips any `plugin:` namespace, and falls back to the file stem if the meta is missing/unparseable.
 
-## 5. If you're here because the parser broke
+## 5. Tool *results* — where the content actually is (`user` records)
+
+§2–§4 cover *intent* (what an agent asked for) and *metadata* (model/effort/tokens), all on
+`assistant` records. The content auditor (`auditor.py`, #30 R3) needs the opposite: the
+*effect* — the actual bytes a tool returned into an agent's context. That lives on
+**`user`-type records**, not assistant ones, in **two** places per tool call:
+
+```json
+{
+  "type": "user",
+  "isSidechain": true,
+  "timestamp": "2026-09-12T02:19:00.501Z",
+  "message": {
+    "role": "user",
+    "content": [
+      { "type": "tool_result",
+        "tool_use_id": "toolu_01C7z…",
+        "content": "1\t---\n2\tname: …" }      // model-facing view (see the gotcha below)
+    ]
+  },
+  "toolUseResult": {                             // structured, RAW — the primary source
+    "type": "text",
+    "file": { "filePath": "…/03-design-internal.md", "content": "---\nname: …", "numLines": 53 }
+  }
+}
+```
+
+- **`toolUseResult` (top-level) is the primary content source** and its shape is
+  **tool-specific** — but the real bytes are always in **string leaves**:
+
+  | Tool | String leaf holding the content |
+  |---|---|
+  | `Read` | `toolUseResult.file.content` (raw) + `.file.filePath` |
+  | `Bash` | `toolUseResult.stdout` + `.stderr` ← catches `cat handoff/*.md`, `python -c open(...)`, xargs |
+  | `Edit` | `toolUseResult.originalFile` (the whole pre-edit file) + `.filePath` |
+  | `Write` | `toolUseResult.content` + `.filePath` |
+  | `Agent` | `toolUseResult` is a plain **string** (the subagent's final report) |
+
+  Because a leak lands in *some* string leaf whatever the tool, `auditor.py` does **not**
+  special-case tools — it recursively collects every string leaf (`_string_leaves`). That
+  is what makes the content signal **method-agnostic**, and the whole reason it is the
+  *authoritative* isolation check: a glob or indirect read exposes no path on the
+  `assistant` `tool_use` (only the command), but its output still shows up here.
+
+- **`message.content[]` `tool_result` blocks are the secondary source** (the model-facing
+  view). `content` is usually a **string** but can be a **list** of blocks (images,
+  `tool_reference` metadata) — handle both; only text carries leakable content.
+
+- **Gotcha — two views of the same file differ.** A `Read` shows up line-number-prefixed
+  (`1\t…`, `cat -n` style) in the `tool_result` block, but **raw** in
+  `toolUseResult.file.content`; a `cat` in Bash `stdout` is raw. So a content fingerprint
+  **must be line-number- and whitespace-agnostic** — `auditor._normalize` strips a leading
+  `\d+\t` per line and squeezes whitespace so all three views match one fingerprint.
+
+- **Attribution.** These `user` records live in the **same file** as the turns that caused
+  them: subagent tool results are in `<uuid>/subagents/<agent>.jsonl` (§3), with
+  `isSidechain: true`. The auditor scans each subagent file for the artifacts that agent's
+  role was forbidden to see — *which* artifact is decided by `policy.decide()`, so the
+  auditor and the guard agree on what "protected" means by construction.
+
+- **Field the auditor depends on:** `toolUseResult` (any tool) and, secondarily,
+  `message.content[].content` for `type:"tool_result"` blocks. If `toolUseResult` disappears
+  or moves, the content signal silently finds nothing — so treat its absence as **UNKNOWN,
+  never PASS** at the receipt layer (an unavailable transcript is not proof of innocence).
+
+> Discovery note (2026-09-14): `Grep`/`Glob` results did not appear in the sampled
+> transcripts, so their `toolUseResult` shape is unconfirmed. The recursive-string-leaf
+> collector needs no per-tool schema, so it handles them regardless; document their shape
+> here if you capture a real one.
+
+## 6. If you're here because the parser broke
 
 1. Grab a real transcript from a recent dev-container run under `~/.claude/projects/<slug>/`.
 2. Diff a `type:"assistant"` record against §2 — which depended-on field moved or renamed?
