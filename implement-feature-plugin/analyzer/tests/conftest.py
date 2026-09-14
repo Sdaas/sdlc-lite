@@ -22,10 +22,13 @@ def write_runlog(path: Path, records: list[dict]) -> Path:
     return path
 
 
-def call(agent_type: str, tool: str, target: str, ts: str | None = None) -> dict:
+def call(agent_type: str, tool: str, target: str, ts: str | None = None,
+         guard_decision: str | None = None) -> dict:
     rec = {"agent_type": agent_type, "tool": tool, "target": target}
     if ts is not None:
         rec["ts"] = ts
+    if guard_decision is not None:  # omit to simulate a legacy (pre-R4) line
+        rec["guard_decision"] = guard_decision
     return rec
 
 

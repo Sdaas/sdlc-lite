@@ -32,6 +32,30 @@ def _check(analysis, name):
     return next(c for c in analysis.checks if c.name == name)
 
 
+# --- #31 R4: guard_decision -> per-agent grant/deny counts -----------------
+
+def test_guard_decision_counted_per_agent(tmp_path):
+    log = write_runlog(tmp_path / "rl.jsonl", [
+        call("implement-feature:implementer", "Read", "src/foo.py", guard_decision="allow"),
+        call("implement-feature:implementer", "Write", "src/foo.py", guard_decision="allow"),
+        call("implement-feature:test-writer", "Read", "handoff/03-design-internal.md",
+             guard_decision="deny"),
+    ])
+    a = parse_runlog(str(log))
+    impl = next(x for x in a.agents.values() if "implementer" in x.agent_type)
+    tw = next(x for x in a.agents.values() if "test-writer" in x.agent_type)
+    assert (impl.grants, impl.denies, impl.decision_unknown) == (2, 0, 0)
+    assert (tw.grants, tw.denies, tw.decision_unknown) == (0, 1, 0)
+
+
+def test_legacy_line_without_decision_is_unknown_not_guessed(tmp_path):
+    # Pre-R4 lines have no guard_decision field: counted as unknown, never as allow.
+    log = write_runlog(tmp_path / "rl.jsonl", [call("", "Read", "SKILL.md")])
+    a = parse_runlog(str(log))
+    cond = a.agents[""]
+    assert (cond.grants, cond.denies, cond.decision_unknown) == (0, 0, 1)
+
+
 def test_parse_counts_and_per_agent_activity(tmp_path):
     log = write_runlog(tmp_path / "rl.jsonl", [
         call("", "Read", "SKILL.md"),                                  # conductor

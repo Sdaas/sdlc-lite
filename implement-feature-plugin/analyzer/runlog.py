@@ -4,7 +4,9 @@ Parses the guard hook's audit log (if-runlog.jsonl): one JSON object per line,
 one line per tool call, written by hooks/scripts/guard.py. Schema:
 
     {"ts": "<UTC ISO>", "agent_type": "<str>", "agent_id": "<str>",
-     "tool": "Read|Bash|Grep|Glob|Edit|Write|...", "target": "<path/cmd>"}
+     "tool": "Read|Bash|Grep|Glob|Edit|Write|...", "target": "<path/cmd>",
+     "guard_decision": "allow|deny"}   # the guard's OWN pre-execution decision (#31 R4);
+                                       # absent on legacy lines -> counted as unknown
 
 From this it derives, WITHOUT ever touching the transcript:
   - per-agent activity (tool-call counts, files read / written)
@@ -12,10 +14,12 @@ From this it derives, WITHOUT ever touching the transcript:
     transcript layer for correlation (a value, never code or shared state)
   - isolation-compliance verdicts — the proof that the guard's invariants held
 
-IMPORTANT — the audit records ATTEMPTS, not outcomes. guard.py logs every call
-(job #1) BEFORE it may deny it (jobs #2-4). So a forbidden entry appearing here
-means an agent *tried* — the guard blocks it at runtime; this layer *detects*
-the attempt after the fact. Preventive (guard) + detective (analyzer) together.
+IMPORTANT — the audit records ATTEMPTS, not outcomes. guard.py logs EVERY call
+(allowed or denied), stamping its own pre-execution decision as `guard_decision`.
+So a forbidden entry appearing here means an agent *tried* — the guard blocks it
+at runtime (guard_decision="deny"), and this layer *detects* the attempt after the
+fact. A denied call has no transcript effect, so `guard_decision` is the only place
+a denial is visible. Preventive (guard) + detective (analyzer) together.
 
 This module has ZERO knowledge of transcript.py.
 """
@@ -171,6 +175,11 @@ class AgentActivity:
     tool_counts: dict[str, int] = field(default_factory=dict)
     reads: list[str] = field(default_factory=list)   # targets of read-ish calls
     writes: list[str] = field(default_factory=list)   # targets of write-ish calls
+    # guard's own pre-execution decision per call (#31 R4). `decision_unknown` counts
+    # legacy lines written before guard_decision existed — reported, never guessed.
+    grants: int = 0
+    denies: int = 0
+    decision_unknown: int = 0
     # (tool, target) for each read-ish call — the tool is needed to mirror guard.py's
     # tool-split secret detection faithfully (a Bash target is a command, not a path).
     read_calls: list[tuple[str, str]] = field(default_factory=list)
@@ -247,6 +256,15 @@ def parse_runlog(path: str) -> RunLogAnalysis:
                 act.read_calls.append((tool, target))
             elif tool in WRITEISH:
                 act.writes.append(target)
+
+            # #31 R4: the guard's own decision. Absent (legacy line) => unknown, not a guess.
+            decision = rec.get("guard_decision")
+            if decision == "allow":
+                act.grants += 1
+            elif decision == "deny":
+                act.denies += 1
+            else:
+                act.decision_unknown += 1
 
             ts = parse_ts(str(rec.get("ts") or ""))
             if ts is not None:

@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """PreToolUse guard hook for /implement-feature.
 
-Does six jobs on every Read/Bash/Grep/Glob/Edit/Write/NotebookEdit (conductor AND every subagent):
-  1. AUDIT  — append one JSONL line per tool call (agent_id/agent_type/tool/target).
+Does six jobs on every Read/Bash/Grep/Glob/Edit/Write/NotebookEdit (conductor AND every subagent).
+The deny decision (jobs 2-5) is computed FIRST so the audit line can record it truthfully; the
+audit still logs every call regardless of the decision.
+  1. AUDIT  — append one JSONL line per tool call (agent_id/agent_type/tool/target +
+     `guard_decision: allow|deny`, the guard's own pre-execution decision — #31 R4).
   2. SECRETS GUARDRAIL — deny reads of .env / keys / credentials for ANY agent.
   3. ALGORITHM-BLIND — deny reads of design-internal for the test-writer agent only.
   3b. DRAFT-CONFINEMENT — deny ANY subagent reading anything under handoff/draft/ (an
@@ -227,6 +230,67 @@ def bash_write_targets(command: str) -> list[str]:
     # file write — parsing it as one false-flagged a reviewer's `pytest ... 2>&1`.
     return [t for t in targets if t and not t.startswith("&")]
 
+def _deny_reason(tool: str, ti: dict, agent_type: str, target: str) -> str | None:
+    """The guard's pre-execution decision, expressed as a deny reason (or None to allow).
+
+    Pure w.r.t. process state (no I/O, no exit) so main() can learn the decision BEFORE
+    writing the audit line — the run-log then records `guard_decision` truthfully (#31 R4).
+    First matching rule wins; the checks and their order are unchanged from the historical
+    deny-chain."""
+    # 2. SECRETS GUARDRAIL — any agent, read-ish tools, plus Edit (which reads the file
+    #    to diff even though it's in WRITEISH)
+    if (tool in READISH or tool == "Edit") and looks_secret(tool, target):
+        return (f"Blocked by implement-feature guard: reading secrets/.env is not allowed "
+                f"(target: {os.path.basename(target) or target[:60]}).")
+
+    # 2b. SECRETS GUARDRAIL — directory-scoped reads (#m-05): a Grep call scoped to a
+    #     directory, or a Bash recursive search (`grep -r`, `rg`, `find`, ...) over one,
+    #     that contains a secret file would surface its contents without the target
+    #     itself ever being a secret path.
+    if tool == "Grep" and _dir_contains_secret(str(ti.get("path") or "")):
+        return ("Blocked by implement-feature guard: this directory contains a secrets/.env "
+                "file — a directory-scoped search would surface its contents.")
+    if tool == "Bash":
+        for d in _bash_secret_dir_targets(target):
+            if _dir_contains_secret(d):
+                return (f"Blocked by implement-feature guard: recursive search of {d} would "
+                        f"surface a secrets/.env file's contents.")
+
+    # 3. ALGORITHM-BLIND — only the test-writer is denied design-internal
+    #    (substring match is prefix-tolerant: "03-design-internal.md" still trips it).
+    if "test-writer" in agent_type and "design-internal" in target:
+        return ("Blocked by implement-feature guard: the test-writer is algorithm-blind and "
+                "must not read design-internal.md.")
+
+    # 3b. DRAFT-CONFINEMENT — no subagent may read an unapproved draft. Only the
+    #     conductor (empty agent_type) authors/reviews drafts; a subagent seeing
+    #     handoff/draft/ means an unpromoted artifact is leaking into an isolated gate.
+    if agent_type and tool in READISH and "handoff/draft/" in target.replace("\\", "/"):
+        return ("Blocked by implement-feature guard: handoff/draft/ holds unapproved drafts. "
+                "Subagents read only promoted files under handoff/. (Conductor promotes on approval.)")
+
+    # 4. TEST-INTEGRITY — the implementer may not edit/write test files
+    if "implementer" in agent_type and tool in WRITEISH and is_test_path(target):
+        return ("Blocked by implement-feature guard: the implementer must make the code pass "
+                "the tests, not modify the tests. Editing test files is not allowed.")
+
+    # 5. REVIEWER-CONFINEMENT (#12) — the test-reviewer never mutates the product tree.
+    #    Sanctioned writes: its handoff/ outbox and throwaway probes in a scratch dir.
+    if "test-reviewer" in agent_type:
+        if tool in WRITEISH and reviewer_write_denied(target):
+            return ("Blocked by implement-feature guard: the test-reviewer is an analytical "
+                    "critic — it may write only its handoff/ findings outbox and throwaway "
+                    f"probes in a scratch dir, never the product tree (target: {target[:80]}).")
+        if tool == "Bash":
+            bad = [t for t in bash_write_targets(target) if reviewer_write_denied(t)]
+            if bad:
+                return ("Blocked by implement-feature guard: the test-reviewer must not write "
+                        "into the product tree via Bash (build no reference implementation; use "
+                        f"a scratch dir for probes). Offending write target(s): {', '.join(bad)[:120]}.")
+
+    return None
+
+
 def main():
     try:
         data = json.load(sys.stdin)
@@ -240,7 +304,11 @@ def main():
     target = str(ti.get("file_path") or ti.get("path") or ti.get("command")
                  or ti.get("pattern") or "")
 
-    # 1. AUDIT (best-effort; never fail the tool because of logging)
+    # Decide FIRST (job #2-5), so the audit line can record the guard's own decision.
+    reason = _deny_reason(tool, ti, agent_type, target)
+
+    # 1. AUDIT (best-effort; never fail the tool because of logging). A denied call has no
+    #    transcript effect, so `guard_decision` here is the ONLY record that a denial happened.
     try:
         with open(runlog_path(), "a") as f:
             f.write(json.dumps({
@@ -251,68 +319,20 @@ def main():
                 "ts": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
                 "agent_type": agent_type, "agent_id": agent_id,
                 "tool": tool, "target": target[:300],
+                # #31 R4: the guard's OWN pre-execution decision — not the platform's final
+                # verdict or the command's exit status.
+                "guard_decision": "deny" if reason else "allow",
             }) + "\n")
     except Exception:
         pass
 
-    def deny(reason):
+    if reason:
         print(json.dumps({"hookSpecificOutput": {
             "hookEventName": "PreToolUse",
             "permissionDecision": "deny",
             "permissionDecisionReason": reason,
         }}))
         sys.exit(2)
-
-    # 2. SECRETS GUARDRAIL — any agent, read-ish tools, plus Edit (which reads the file
-    #    to diff even though it's in WRITEISH)
-    if (tool in READISH or tool == "Edit") and looks_secret(tool, target):
-        deny(f"Blocked by implement-feature guard: reading secrets/.env is not allowed "
-             f"(target: {os.path.basename(target) or target[:60]}).")
-
-    # 2b. SECRETS GUARDRAIL — directory-scoped reads (#m-05): a Grep call scoped to a
-    #     directory, or a Bash recursive search (`grep -r`, `rg`, `find`, ...) over one,
-    #     that contains a secret file would surface its contents without the target
-    #     itself ever being a secret path.
-    if tool == "Grep" and _dir_contains_secret(str(ti.get("path") or "")):
-        deny("Blocked by implement-feature guard: this directory contains a secrets/.env "
-             "file — a directory-scoped search would surface its contents.")
-    if tool == "Bash":
-        for d in _bash_secret_dir_targets(target):
-            if _dir_contains_secret(d):
-                deny(f"Blocked by implement-feature guard: recursive search of {d} would "
-                     f"surface a secrets/.env file's contents.")
-
-    # 3. ALGORITHM-BLIND — only the test-writer is denied design-internal
-    #    (substring match is prefix-tolerant: "03-design-internal.md" still trips it).
-    if "test-writer" in agent_type and "design-internal" in target:
-        deny("Blocked by implement-feature guard: the test-writer is algorithm-blind and "
-             "must not read design-internal.md.")
-
-    # 3b. DRAFT-CONFINEMENT — no subagent may read an unapproved draft. Only the
-    #     conductor (empty agent_type) authors/reviews drafts; a subagent seeing
-    #     handoff/draft/ means an unpromoted artifact is leaking into an isolated gate.
-    if agent_type and tool in READISH and "handoff/draft/" in target.replace("\\", "/"):
-        deny("Blocked by implement-feature guard: handoff/draft/ holds unapproved drafts. "
-             "Subagents read only promoted files under handoff/. (Conductor promotes on approval.)")
-
-    # 4. TEST-INTEGRITY — the implementer may not edit/write test files
-    if "implementer" in agent_type and tool in WRITEISH and is_test_path(target):
-        deny("Blocked by implement-feature guard: the implementer must make the code pass "
-             "the tests, not modify the tests. Editing test files is not allowed.")
-
-    # 5. REVIEWER-CONFINEMENT (#12) — the test-reviewer never mutates the product tree.
-    #    Sanctioned writes: its handoff/ outbox and throwaway probes in a scratch dir.
-    if "test-reviewer" in agent_type:
-        if tool in WRITEISH and reviewer_write_denied(target):
-            deny("Blocked by implement-feature guard: the test-reviewer is an analytical "
-                 "critic — it may write only its handoff/ findings outbox and throwaway "
-                 f"probes in a scratch dir, never the product tree (target: {target[:80]}).")
-        if tool == "Bash":
-            bad = [t for t in bash_write_targets(target) if reviewer_write_denied(t)]
-            if bad:
-                deny("Blocked by implement-feature guard: the test-reviewer must not write "
-                     "into the product tree via Bash (build no reference implementation; use "
-                     f"a scratch dir for probes). Offending write target(s): {', '.join(bad)[:120]}.")
 
     sys.exit(0)
 

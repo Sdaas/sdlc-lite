@@ -46,6 +46,20 @@ def test_audit_written_to_if_runlog(tmp_path):
     assert line["tool"] == "Read" and line["target"] == "somefile.py"
 
 
+def test_audit_records_guard_decision_allow(tmp_path):
+    log = tmp_path / "l.jsonl"
+    rc, _ = run_guard(call("Read", "somefile.py"), env_extra={"IF_RUNLOG": str(log)})
+    assert rc == 0  # #31 R4: allowed call is stamped allow
+    assert json.loads(log.read_text().strip())["guard_decision"] == "allow"
+
+
+def test_audit_records_guard_decision_deny_even_though_call_is_blocked(tmp_path):
+    log = tmp_path / "l.jsonl"
+    rc, _ = run_guard(call("Read", "/repo/.env"), env_extra={"IF_RUNLOG": str(log)})
+    assert rc == 2  # denied — and the audit line (only record of a denial) says so
+    assert json.loads(log.read_text().strip())["guard_decision"] == "deny"
+
+
 def test_runlog_resolved_via_active_run_pointer(tmp_path):
     # Layout: <proj>/.implement-feature/.active-run -> <workdir>; log at <workdir>/handoff/.
     proj = tmp_path
