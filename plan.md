@@ -50,9 +50,11 @@ without revisiting the dependency reasoning in "The through-line."
 | #30a (enforcer) | v1 · step 3a | **DONE** | policy SSOT (`policy.py`) + guard rewired onto it (R1 enforcer side, R2) + Bash write-forms (sed -i/cp/mv) + full-length run-log (R3 intent half) + R6 wildcard-ban + #29 (verifier/code-reviewer write-confinement). Commits: R1 `9c96c8e`, R2 `b2a7184`, R6 `518c5aa` |
 | #30b (auditor) | v1 · step 3b | **DONE** | (B) `runlog.py` imports `policy` SSOT + anchored critic confinement (`c663e09`); (R3) transcript content-fingerprint auditor + `TRANSCRIPT-FORMAT.md` §5 (`0f95d10`); (R4) wired into receipt `Files seen` + Gate-11 `UNTRUSTED` verdict + R5 tests (`a495ff1`); DG §4 rewrite + ADR-11. **#30 complete.** Full host suite 138 green |
 | #22 | v1 · step 4 | **DONE** | (A) `agentdefs.py` pin SSOT + receipt fills req model/effort; (B) run-log gate-record hygiene (M-06) + conductor stops guessing (m-09); (C) Witt deny-if-unnamed model-enforce hook on Task/Agent dispatch; (D) ADR-12 + fixed overstated "never deviate" prose. Effort-frontmatter-only premise **verified** on current platform (Agent/Task exposes `model`, not `effort`) — asymmetry stands. Commits `0479d31`/`1e05e72`/`8f825a6`/`517c1d8`. Host suite 160 green |
-| #31a (close-docs) | v1 · step 5a | pending | R1 framing/docs only (DG + README state the audit's purpose: the receipt for guarantees (a)+(b), framed as **observability + best-effort prevention, not cost enforcement**). Cheap, host-only |
-| #31b (close-accept) | v1 · step 5b | pending | v1 **acceptance dry runs** (clean all-PASS + adversarial FAIL). **Expensive** — 2× full end-to-end runs, 6 subagents each incl. Opus reviewers; dev container. **Defer to post weekly-quota-reset.** Closes #31 |
-| #35 | v1 · release | pending | flip all effort pins → `medium`; **blocked by #31b** (must observe the dev-spread end-to-end first). Rides with #31b post-reset |
+| #31a (close-docs) | v1 · step 5a | **DONE** | R1 framing/docs: DG §5 "What the receipt is — and is not" + README "Two guarantees" bullet state the audit's purpose as **observability + best-effort prevention, not cost enforcement**. Commit `95e3ccc`. Host-only |
+| #31b-i (accept: wrong-model) | v1 · step 5b-i | pending | **Cheapest, one clean session.** Real run; at the first `[I]` dispatch name the WRONG model, let that one Sonnet subagent run, abort, run analyzer → receipt flips to **❌ model mismatch / untrusted**. Validates the whole #22 chain (dispatch hook → transcript model → receipt verdict) end-to-end. Prereq: dev container up |
+| #31b-ii (accept: isolation) | v1 · step 5b-ii | pending | **Moderate, one clean session.** Two injected isolation violations: test-writer content-leak via a guard-missed read (`python -c`/indirect) → **auditor FAIL**; implementer `sed -i … tests/` → **run-log detective FAIL**. Each caught early (reaches at most the low-effort test-reviewer). Prereq: dev container up |
+| #31b-iii (accept: clean run) | v1 · step 5b-iii | pending | **Expensive, one clean session post weekly-reset.** The clean all-PASS run: full pipeline incl. BOTH Opus reviewers → all-✅ receipt, committed. Observes the #28 dev-spread end-to-end. **Closing this closes #31 and completes v1.** Prereq: dev container up |
+| #35 | v1 · release | pending | flip all effort pins → `medium`; **blocked by #31b-iii** (the clean run must observe the dev-spread end-to-end first). Rides with / immediately after #31b-iii |
 | #32 | v2 | pending | `/plan-feature`; first task = falsification run |
 | #34 | v2 (indep.) | pending | agent-driven regression harness; supersedes #18 D5c, needs #21 |
 | #18 | support | partial | D1–D4 stand; **D5c superseded by #34** |
@@ -185,11 +187,27 @@ Ship as **one coherent release**. Order is load-bearing (schema before the legs 
 - **#31a — close-docs (cheap, host-only).** DG + README state the audit's purpose: the **receipt**
   proving guarantees (a) isolation and (b) bounded model/effort — **observability with best-effort
   prevention, not enforcement of cost.** No container, no model spend beyond writing.
-- **#31b — close-accept (expensive, defer to post weekly-quota-reset).** The v1 acceptance dry runs
-  (clean all-PASS + adversarial FAIL) — 2× full end-to-end runs, 6 subagents each incl. the Opus
-  reviewers. This is the single most quota-heavy activity in v1; it must *complete* to be meaningful,
-  so it waits for a fresh weekly budget. Carries **#35** (flip effort pins → `medium`) with it, since
-  #35 only needs the dev-spread observed end-to-end first. Closing #31b closes #31 and completes v1.
+- **#31b — close-accept.** The v1 acceptance dry runs. **Further split into three slices, one clean
+  session each** (2026-09-14, by quota + context budget — the adversarial slices are cheap because an
+  injected violation is caught *early* and the run aborts before the expensive Opus gates; only the
+  clean run traverses the full pipeline):
+  - **#31b-i — wrong-model proof (cheapest, ~1 Sonnet subagent).** A real run; name the wrong model at
+    the first `[I]` dispatch, let that one subagent run, abort, run the analyzer → receipt flips to
+    **❌ model mismatch / untrusted**. Exercises the whole #22 chain (dispatch enforcement → transcript
+    model extraction → receipt verdict) in a real run. Highest value-per-token: proves the freshly
+    shipped #22 fires for real, not just in unit tests.
+  - **#31b-ii — isolation proofs (moderate).** test-writer content-leak via a guard-missed read
+    (e.g. `python -c`) → **auditor content-fingerprint FAIL**; implementer `sed -i … tests/` →
+    **run-log detective FAIL**. Each caught early (reaches at most the low-effort test-reviewer).
+  - **#31b-iii — clean all-PASS run (expensive; post weekly-reset).** Full pipeline incl. **both** Opus
+    reviewers → all-✅ receipt, committed. The single most quota-heavy activity in v1; it must
+    *complete* to be meaningful, so it waits for a fresh weekly budget. Observes the #28 dev-spread
+    end-to-end, which **unblocks #35** (flip effort pins → `medium`). Closing #31b-iii closes #31 and
+    completes v1.
+
+  All three need the dev container up (`devcontainer up` + Docker). The adversarial slices (i, ii) are
+  *real* runs aborted at the caught violation — not synthetic fixtures (the receipt *logic* is already
+  unit-proven; these prove it fires end-to-end).
 
 ### v1 acceptance — driven **manually**, once, for the release
 - **Clean run** → all-PASS receipt (isolation held; model == pin; effort spread == configured;
