@@ -123,3 +123,13 @@ def test_bash_write_targets_and_heredoc_strip():
     # The redirection OUTSIDE a heredoc body is kept; `>` inside the body is not.
     cmd = "cat > f.md <<'EOF'\n> a blockquote\nEOF"
     assert policy.bash_write_targets(cmd) == ["f.md"]
+
+
+def test_bash_write_targets_in_place_and_copy_forms():
+    # #30 R2: sed -i / cp / mv are write forms, not just >/>>/tee.
+    assert policy.bash_write_targets("sed -i 's/a/b/' tests/test_foo.py") == ["tests/test_foo.py"]
+    assert policy.bash_write_targets("cp ref.py src/app.py") == ["src/app.py"]
+    assert policy.bash_write_targets("mv a.py tests/test_b.py") == ["tests/test_b.py"]
+    # A plain sed (no -i) writes nothing; a read-only grep writes nothing.
+    assert policy.bash_write_targets("sed 's/a/b/' file.py") == []
+    assert policy.bash_write_targets("grep -r x src/") == []

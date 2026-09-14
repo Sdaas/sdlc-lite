@@ -207,8 +207,10 @@ def strip_heredocs(command: str) -> str:
 
 
 def bash_write_targets(command: str) -> list[str]:
-    """Best-effort: the paths a Bash command redirects/writes into (`>`, `>>`, `tee`).
-    Bash write-detection is inherently fragile (P44) — key on the targets we can see."""
+    """Best-effort: the paths a Bash command redirects/writes into. Covers shell
+    redirections (`>`, `>>`, `tee`) AND the recognizable in-place/copy write FORMS
+    (`sed -i`, `cp`, `mv`) that #30 R2 calls out. Bash write-detection is inherently
+    fragile (P44) — key on the targets we can see; the transcript auditor is the backstop."""
     toks = bash_tokens(strip_heredocs(command))
     targets: list[str] = []
     for i, tok in enumerate(toks):
@@ -221,8 +223,28 @@ def bash_write_targets(command: str) -> list[str]:
             nxt = toks[i + 1]
             targets.append(nxt if not nxt.startswith("-")
                            else (toks[i + 2] if i + 2 < len(toks) else ""))
+    targets += _command_write_targets(toks)
     # Drop fd-duplication targets (`2>&1`, `>&2`): `&N` is a descriptor, not a file write.
     return [t for t in targets if t and not t.startswith("&")]
+
+
+def _command_write_targets(toks: list[str]) -> list[str]:
+    """Best-effort write targets of the in-place/copy write COMMANDS (`sed -i`, `cp`, `mv`).
+    Heuristic (deliberately simple, P44): the LAST non-option operand is the write target —
+    the file `sed -i` edits in place, the destination `cp`/`mv` writes. Misses multi-file
+    forms and is only a real-time backstop; the transcript auditor is authoritative."""
+    if not toks:
+        return []
+    prog = os.path.basename(toks[0].strip("'\""))
+    operands = [t for t in toks[1:] if not t.startswith("-")]
+    if prog == "sed":
+        in_place = any(t == "-i" or t.startswith("-i") or t == "--in-place"
+                       for t in toks[1:])
+        # For `sed`, the first non-option operand is the SCRIPT, the rest are files.
+        return operands[1:] if in_place and len(operands) > 1 else []
+    if prog in ("cp", "mv", "install") and len(operands) >= 2:
+        return [operands[-1]]   # the destination
+    return []
 
 
 # --- the per-agent rule table (data, not code) -----------------------------

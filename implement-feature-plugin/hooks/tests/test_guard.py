@@ -139,6 +139,49 @@ def test_implementer_denied_writing_test_file(tmp_path):
     assert json.loads(out)["hookSpecificOutput"]["permissionDecision"] == "deny"
 
 
+# --- #30 R2: Bash write FORMS now enforced (closing the historical Bash gaps) ----
+
+def test_implementer_denied_bash_sed_inplace_test_write(tmp_path):
+    # Was audited-but-allowed before #30 (sed -i is not a `>` redirect). Now denied.
+    rc, out = run_guard(
+        call("Bash", "sed -i 's/x/y/' tests/test_foo.py",
+             agent_type="implement-feature:implementer"),
+        env_extra={"IF_RUNLOG": str(tmp_path / "l.jsonl")})
+    assert rc == 2
+    assert json.loads(out)["hookSpecificOutput"]["permissionDecision"] == "deny"
+
+
+def test_implementer_denied_bash_heredoc_test_write(tmp_path):
+    rc, out = run_guard(
+        call("Bash", "cat > tests/test_foo.py <<'EOF'\ndef test_x(): assert True\nEOF",
+             agent_type="implement-feature:implementer"),
+        env_extra={"IF_RUNLOG": str(tmp_path / "l.jsonl")})
+    assert rc == 2
+
+
+@pytest.mark.parametrize("agent", [
+    "implement-feature:verifier", "implement-feature:code-reviewer",
+])
+def test_confined_critics_denied_bash_product_write(agent, tmp_path):
+    # #29 (subsumed by #30): verifier + code-reviewer get the test-reviewer's
+    # write-confinement — a Bash product-tree write is denied.
+    rc, out = run_guard(
+        call("Bash", "echo x > /repo/src/ref.py", agent_type=agent),
+        env_extra={"IF_RUNLOG": str(tmp_path / "l.jsonl")})
+    assert rc == 2
+    assert "product tree" in json.loads(out)["hookSpecificOutput"]["permissionDecisionReason"]
+
+
+def test_full_length_target_logged_no_truncation(tmp_path):
+    # #30 R3: the run-log is the intent record and must log the WHOLE command (the old
+    # target[:300] truncation was a data-loss bug the transcript auditor can't tolerate).
+    log = tmp_path / "l.jsonl"
+    long_cmd = "echo " + "a" * 500 + " > /tmp/scratchpad/x"
+    rc, _ = run_guard(call("Bash", long_cmd), env_extra={"IF_RUNLOG": str(log)})
+    assert rc == 0
+    assert json.loads(log.read_text().strip())["target"] == long_cmd
+
+
 # --- #16: secret detection must not false-positive on Bash command strings --
 
 BENIGN_BASH = [
