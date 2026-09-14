@@ -30,6 +30,17 @@ a 2026-09-14 decision comment that overrides any stale prose in the issue body).
 **Order is load-bearing** for the v1 cluster (schema before the legs that fill it). Do not reorder
 without revisiting the dependency reasoning in "The through-line."
 
+**Branching strategy (solo dev — branch per release stream, commit per issue):**
+- The **entire v1 audit cluster** (#28 → #31 → #30 → #22 → #31-close → #35) lands on **one branch,
+  `v1-trust-claim`**. Each issue lands as its own commit(s) — keep "commit per logical unit" and
+  granular history — but the branch merges to `main` **once**, as the coherent v1 release. Every v1
+  session commits onto this same branch; do **not** cut a new branch per issue.
+- **v2 issues are independent** — each gets its own branch (e.g. `feat-32-plan-feature`,
+  `feat-34-regression-harness`), since they share no code with the cluster.
+- Rationale: matches "ship v1 as one coherent release"; avoids throwaway per-issue PRs for tightly
+  coupled changes; lets the whole cluster be reviewed as one diff before touching `main`. Accepted
+  cost: `main` goes stale while v1 accumulates (fine for a single developer).
+
 ## Status ledger
 
 | Issue | Stream | State | Notes |
