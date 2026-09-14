@@ -9,31 +9,27 @@ The pins live in the agent-definition frontmatter (`agents/<role>.md`):
     ...
     ---
 
-Two independent consumers need those pins and must agree on them (the same
-seam-not-two-copies discipline as `policy.py` for the isolation rules):
+The pins have one consumer: the DETECTIVE analyzer (`analyzer/receipt.py`, #22 legs
+(b)/(c)) — it fills the receipt's REQUESTED model/effort columns from these pins and
+compares them against the transcript's ACTUAL values (model mismatch = FAIL; effort
+deviation = WARN, either direction). This is authoritative — it proves what the run
+actually did. Same seam-not-two-copies discipline as `policy.py` for the isolation rules.
 
-  - the PREVENTIVE guard hook (`hooks/scripts/guard.py`, #22 leg (a)) — on a
-    `Task`/`Agent` dispatch it looks up the pinned model and DENIES a dispatch that
-    carries no explicit `model`. NOTE (#36): this leg is being reverted. Its premise —
-    "a frontmatter pin is rank-2 and silently droppable, so promote it to a rank-1
-    per-invocation argument" — is FALSE on this platform (a bare-dispatch frontmatter
-    pin IS honored), and it BREAKS the dated reviewer pins: the inline `model` lever
-    accepts only family aliases {sonnet,opus,haiku,fable}, so a forced inline name can
-    only be the `opus` alias, which (rank-1) overrides the dated `claude-opus-4-8`
-    frontmatter pin -> the reviewer resolves to `claude-opus-5`. See
-    design/model-pinning-findings.md §7.
-  - the DETECTIVE analyzer (`analyzer/receipt.py`, #22 legs (b)/(c)) — it fills the
-    receipt's REQUESTED model/effort columns from these pins and compares them
-    against the transcript's ACTUAL values (model mismatch = FAIL; effort deviation
-    = WARN, either direction). This half is authoritative and unaffected by #36.
+Pinned gates are DISPATCHED BARE (no inline `model`); the frontmatter pin — including
+the dated reviewer pin — is honored, and the receipt verifies the actual resolved model
+against it. #22 originally also had the guard DENY a dispatch that named no model (the
+"Witt" deny-if-unnamed technique) on the premise that a frontmatter pin is "silently
+droppable"; that premise is FALSE on this platform (a bare-dispatch frontmatter pin IS
+honored) and the hook BROKE the dated reviewer pins — the inline `model` lever accepts
+only family aliases {sonnet,opus,haiku,fable}, so a forced inline name could only be the
+`opus` alias, which (rank-1) overrode the dated `claude-opus-4-8` pin -> `claude-opus-5`.
+#36 reverted it. See design/model-pinning-findings.md §7 and the developer-guide ADR-12.
 
 Effort asymmetry (verified against the current Claude Code platform, 2026-09): the
 dispatch tool exposes an inline `model` lever but NO `effort` lever — `effort` is
-frontmatter-only, so it can only be AUDITED after the fact. (Model does have an inline
-lever, but it is alias-only and — per #36 — need not and should not be used: the
-frontmatter pin is honored on a bare dispatch.) This module carries both pins; the
-audit lives in the analyzer (both), and the model-enforcement leg in the guard is
-being removed (#36). See the developer-guide ADR-12.
+frontmatter-only, so it can only ever be AUDITED after the fact (never forced). Model
+does have an inline lever, but it is alias-only and (per #36) is not used: the frontmatter
+pin is honored on a bare dispatch. Either way, both pins are proven by the analyzer.
 
 Frontmatter is parsed by hand (no PyYAML dependency): the guard hook must stay
 dependency-free, and the frontmatter we read is flat `key: value` lines. Pure w.r.t.

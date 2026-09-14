@@ -1,9 +1,10 @@
 """Unit tests for agentdefs.py — the MODEL/EFFORT pin SSOT (#22).
 
-Two consumers depend on these pins agreeing with the shipped agent-defs: the guard's
-model-enforcement (a) and the receipt's requested-column fill (b/c). These tests read the
-REAL `agents/*.md`, so they also guard against a pin silently drifting from the SKILL model
-plan, plus the pure frontmatter parser's edge cases.
+The receipt's requested-column fill (#22 b/c) depends on these pins agreeing with the
+shipped agent-defs (the dispatch is bare — the frontmatter pin is honored, then verified;
+the model-enforcement hook was reverted in #36). These tests read the REAL `agents/*.md`,
+so they also guard against a pin silently drifting from the SKILL model plan, plus the pure
+frontmatter parser's edge cases.
 """
 from __future__ import annotations
 

@@ -421,7 +421,11 @@ def test_reviewer_benign_redirects_not_flagged(cmd, tmp_path):
     assert rc == 0, f"benign redirect false-denied: {cmd!r}"
 
 
-# --- #22 (a): model enforcement on Task/Agent dispatch ---------------------
+# --- #36: Task/Agent dispatch is AUDITED but never model-enforced ----------
+# The #22 deny-if-unnamed hook was reverted (its premise — "a frontmatter model pin is silently
+# droppable" — is false, and it broke the dated reviewer pins by forcing an alias-only inline
+# model). Pinned gates now dispatch BARE and the honored frontmatter pin governs; the receipt
+# verifies the actual model after the fact. So a bare dispatch is ALLOWED and still audited.
 
 def dispatch(subagent_type: str | None, *, tool: str = "Task",
              model: str | None = None, agent_type: str = "") -> dict:
@@ -433,54 +437,44 @@ def dispatch(subagent_type: str | None, *, tool: str = "Task",
     return {"tool_name": tool, "tool_input": ti, "agent_type": agent_type}
 
 
-def test_dispatch_pinned_agent_without_model_is_denied(tmp_path):
+def test_dispatch_pinned_agent_without_model_is_allowed_and_audited(tmp_path):
+    # #36: the dated-pin reviewer is dispatched bare — allowed, and recorded in the run-log so the
+    # dispatch is still observable (the receipt verifies the actual resolved model).
     log = tmp_path / "l.jsonl"
-    rc, out = run_guard(dispatch("implement-feature:code-reviewer"),
-                        env_extra={"IF_RUNLOG": str(log)})
-    assert rc == 2  # code-reviewer pins claude-opus-4-8 but no model was named
-    reason = json.loads(out)["hookSpecificOutput"]["permissionDecisionReason"]
-    assert "claude-opus-4-8" in reason
+    rc, _ = run_guard(dispatch("implement-feature:code-reviewer"),
+                      env_extra={"IF_RUNLOG": str(log)})
+    assert rc == 0  # bare dispatch of a pinned gate is honored, not denied
     line = json.loads(log.read_text().strip())
     assert line["tool"] == "Task" and line["target"] == "implement-feature:code-reviewer"
-    assert line["guard_decision"] == "deny"
+    assert line["guard_decision"] == "allow"
 
 
 def test_dispatch_with_explicit_model_is_allowed(tmp_path):
     log = tmp_path / "l.jsonl"
-    rc, _ = run_guard(dispatch("implement-feature:code-reviewer", model="claude-opus-4-8"),
+    rc, _ = run_guard(dispatch("implement-feature:code-reviewer", model="opus"),
                       env_extra={"IF_RUNLOG": str(log)})
     assert rc == 0
     assert json.loads(log.read_text().strip())["guard_decision"] == "allow"
 
 
-def test_dispatch_with_explicit_wrong_model_is_allowed_hook_only_forces_naming():
-    # Contract (M-08): the hook only forces a model to be NAMED. A WRONG named model is NOT
-    # the hook's job — the transcript-based receipt flags a pin/actual mismatch as FAIL.
-    rc, _ = run_guard(dispatch("implement-feature:code-reviewer", model="sonnet"))
-    assert rc == 0
-
-
 def test_dispatch_unpinned_agent_is_allowed():
-    # An agent with no model pin (no agent-def) -> nothing to enforce -> allow.
     rc, _ = run_guard(dispatch("some-random-agent"))
     assert rc == 0
 
 
-def test_dispatch_missing_subagent_type_fails_open():
-    # An unparseable/partial dispatch payload is never blocked (fail open).
+def test_dispatch_missing_subagent_type_is_allowed():
+    # A partial dispatch payload carries no file target — nothing to adjudicate, allow.
     rc, _ = run_guard(dispatch(None))
     assert rc == 0
 
 
-def test_dispatch_agent_tool_name_also_enforced():
-    # The matcher covers both Task and Agent dispatch verbs.
+def test_dispatch_agent_tool_name_also_allowed():
+    # The matcher covers both Task and Agent dispatch verbs; neither is model-enforced now.
     rc, _ = run_guard(dispatch("implement-feature:test-reviewer", tool="Agent"))
-    assert rc == 2  # test-reviewer pins claude-opus-4-8, no model named
+    assert rc == 0
 
 
-def test_dispatch_alias_pinned_agent_without_model_is_denied():
-    # A producer pinned to the `sonnet` alias is enforced the same way — the pin (any model)
-    # must be promoted to rank-1.
-    rc, out = run_guard(dispatch("implement-feature:implementer"))
-    assert rc == 2
-    assert "sonnet" in json.loads(out)["hookSpecificOutput"]["permissionDecisionReason"]
+def test_dispatch_alias_pinned_agent_without_model_is_allowed():
+    # A producer pinned to the `sonnet` alias also dispatches bare — the frontmatter pin governs.
+    rc, _ = run_guard(dispatch("implement-feature:implementer"))
+    assert rc == 0

@@ -20,12 +20,13 @@ the audit still logs every call regardless of the decision.
      Two enforcement mechanics stay here because they need I/O the pure policy must not do:
      the secret DIRECTORY scan (a recursive search over a dir that merely CONTAINS a secret
      file) and the R6 wildcard-ban.
-  3. MODEL ENFORCE (#22 (a)) — on a Task/Agent dispatch the hook reads the target subagent's
-     agent-def `model:` pin (via agentdefs.py) and DENIES a dispatch that names no model.
-     !!! BEING REVERTED (#36): its premise ("frontmatter pin silently droppable") is false and
-     it breaks the dated reviewer pins — see the block comment on _dispatch_deny_reason below.
-     Effort has no inline dispatch lever on this platform, so it is audited (analyzer), never
-     enforced here (this half stands).
+  Task/Agent dispatches are AUDITED here but never model-enforced. #22 once added a
+  "deny a dispatch that names no model" hook (the "Witt" technique) on the premise that a
+  frontmatter `model:` pin is silently droppable; that premise is false on this platform (a
+  bare-dispatch frontmatter pin IS honored) and the hook broke the dated reviewer pins by
+  forcing an alias-only inline model. #36 reverted it: pinned gates are dispatched bare and the
+  honored frontmatter pin governs. Model/effort integrity is proven after the fact by the
+  transcript-based receipt (the analyzer), which is authoritative — not by this hook.
 
 Reads the hook JSON on stdin. To DENY: print a hookSpecificOutput deny decision and
 exit 2. To ALLOW: exit 0.
@@ -45,7 +46,6 @@ import json, os, sys, datetime
 # (hooks/scripts -> hooks -> <plugin root>) so `import policy` resolves — the ONE home
 # for the isolation rules, shared with the analyzer (#30 R1).
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
-import agentdefs  # noqa: E402
 import policy  # noqa: E402
 
 _DENY_PREFIX = "Blocked by implement-feature guard: "
@@ -129,9 +129,11 @@ def _deny_reason(tool: str, ti: dict, agent_type: str, target: str) -> str | Non
     allow/deny logic is delegated to policy.decide(); this function is the tool-aware
     extraction that turns a tool call into the (access, path) probes decide() adjudicates,
     plus the two I/O-bearing mechanics (secret dir-scan) that can't live in the pure policy."""
-    # #22 (a): a Task/Agent dispatch is model-enforced, not file-access-checked.
+    # A Task/Agent dispatch carries no file target to adjudicate; it is audited by main() but
+    # never model-enforced here (#36 reverted the deny-if-unnamed hook — pinned gates dispatch
+    # bare and the receipt verifies the actual model). Allow.
     if tool in ("Task", "Agent"):
-        return _dispatch_deny_reason(ti)
+        return None
 
     handoff = _handoff_dir()
 
@@ -154,42 +156,6 @@ def _deny_reason(tool: str, ti: dict, agent_type: str, target: str) -> str | Non
         if not d.allowed:
             return _DENY_PREFIX + d.reason
     return None
-
-
-# --- #22 (a): model enforcement on a Task/Agent dispatch --------------------
-# !!! BEING REVERTED — see #36 and design/model-pinning-findings.md §7. !!!
-# This implements the Thomas-Witt "deny-if-unnamed" technique on the PREMISE that an agent-def
-# `model:` pin is rank-2 (frontmatter, "silently droppable if the dispatch omits a model") and so
-# must be promoted to rank-1 by naming it per-invocation. THAT PREMISE IS FALSE on this platform:
-# a bare-dispatch frontmatter pin IS honored (proven across four real sessions + a 2026-09-14
-# re-probe). Worse, this rule BREAKS the dated reviewer pins: the inline `model` slot is enum-only
-# {sonnet,opus,haiku,fable}, so a forced inline name of a `claude-opus-4-8` reviewer can only be the
-# `opus` alias, which (rank-1) OVERRIDES the dated frontmatter pin -> the reviewer runs
-# `claude-opus-5`. The #36 fix is the inverse (dispatch pinned gates bare); this function will be
-# removed/inverted then. Left in place for now (behavior unchanged this commit).
-# Contract (M-08, current): pinned + no model -> deny; ANY explicit model -> allow (a *wrong* named
-# model is caught by the transcript-based receipt as a pin/actual FAIL); unpinned -> allow;
-# unparseable -> fail open.
-# Effort has NO inline dispatch lever on this platform (verified 2026-09), so it cannot be
-# enforced here — only audited by the analyzer. See agentdefs.py / the developer-guide ADR-12.
-def _dispatch_deny_reason(ti: dict) -> str | None:
-    """Deny a pinned-model dispatch that names no model; else allow. Fail open on anything
-    unexpected (never break a dispatch we can't confidently adjudicate)."""
-    try:
-        subagent_type = str(ti.get("subagent_type") or "")
-        if not subagent_type:
-            return None  # not a named-agent dispatch we model -> allow
-        pin = agentdefs.pin_for(subagent_type)
-        if not (pin and pin.model):
-            return None  # no model pin for this agent -> nothing to enforce
-        explicit = str(ti.get("model") or "").strip()
-        if explicit:
-            return None  # a model was named (rank-1) -> allow; mismatch is the receipt's job
-        return (_DENY_PREFIX + f"'{subagent_type}' pins model '{pin.model}' but this dispatch "
-                f"named no model — the frontmatter pin is silently droppable. Re-dispatch with "
-                f"the model named explicitly (model: \"{pin.model}\") so the pin is honored.")
-    except Exception:
-        return None  # fail open: an unparseable dispatch payload is never blocked
 
 
 def _bash_deny_reason(agent_type: str, command: str, handoff: str) -> str | None:
