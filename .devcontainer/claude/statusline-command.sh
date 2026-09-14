@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+#
+# About the claude code's status line - https://code.claude.com/docs/en/statusline
+# Claude passes data in JSON forfmat to this sscript
+# Available data is - https://code.claude.com/docs/en/statusline#available-data
+#
 # Claude Code status line - dir, vcs, user@host, model, effort, context %
 input=$(cat)
 cwd=$(echo "$input" | jq -r '.workspace.current_dir // .cwd // "?"')
