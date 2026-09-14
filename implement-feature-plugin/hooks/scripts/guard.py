@@ -20,6 +20,11 @@ the audit still logs every call regardless of the decision.
      Two enforcement mechanics stay here because they need I/O the pure policy must not do:
      the secret DIRECTORY scan (a recursive search over a dir that merely CONTAINS a secret
      file) and the R6 wildcard-ban.
+  3. MODEL ENFORCE (#22 (a)) — on a Task/Agent dispatch the hook reads the target subagent's
+     agent-def `model:` pin (via agentdefs.py) and DENIES a dispatch that names no model,
+     forcing a re-dispatch with the model named explicitly. This promotes the pin from rank-2
+     (frontmatter, silently droppable) to rank-1 (a per-invocation argument). Effort has no
+     inline dispatch lever on this platform, so it is audited (analyzer), never enforced here.
 
 Reads the hook JSON on stdin. To DENY: print a hookSpecificOutput deny decision and
 exit 2. To ALLOW: exit 0.
@@ -39,6 +44,7 @@ import json, os, sys, datetime
 # (hooks/scripts -> hooks -> <plugin root>) so `import policy` resolves — the ONE home
 # for the isolation rules, shared with the analyzer (#30 R1).
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+import agentdefs  # noqa: E402
 import policy  # noqa: E402
 
 _DENY_PREFIX = "Blocked by implement-feature guard: "
@@ -122,6 +128,10 @@ def _deny_reason(tool: str, ti: dict, agent_type: str, target: str) -> str | Non
     allow/deny logic is delegated to policy.decide(); this function is the tool-aware
     extraction that turns a tool call into the (access, path) probes decide() adjudicates,
     plus the two I/O-bearing mechanics (secret dir-scan) that can't live in the pure policy."""
+    # #22 (a): a Task/Agent dispatch is model-enforced, not file-access-checked.
+    if tool in ("Task", "Agent"):
+        return _dispatch_deny_reason(ti)
+
     handoff = _handoff_dir()
 
     if tool == "Bash":
@@ -143,6 +153,35 @@ def _deny_reason(tool: str, ti: dict, agent_type: str, target: str) -> str | Non
         if not d.allowed:
             return _DENY_PREFIX + d.reason
     return None
+
+
+# --- #22 (a): model enforcement on a Task/Agent dispatch --------------------
+# The Thomas-Witt technique: an agent-def `model:` pin is rank-2 (frontmatter, silently
+# droppable if the dispatch omits a model). Promote it to rank-1 (a per-invocation argument)
+# by DENYING a dispatch of a pinned subagent that carries no explicit `model` — the conductor
+# must re-dispatch naming the model. Contract (M-08): pinned + no model -> deny; ANY explicit
+# model -> allow (a *wrong* named model is not the hook's job — the transcript-based receipt
+# flags a pin/actual mismatch as FAIL); unpinned -> allow; unparseable -> fail open.
+# Effort has NO inline dispatch lever on this platform (verified 2026-09), so it cannot be
+# enforced here — only audited by the analyzer. See agentdefs.py / the developer-guide ADR.
+def _dispatch_deny_reason(ti: dict) -> str | None:
+    """Deny a pinned-model dispatch that names no model; else allow. Fail open on anything
+    unexpected (never break a dispatch we can't confidently adjudicate)."""
+    try:
+        subagent_type = str(ti.get("subagent_type") or "")
+        if not subagent_type:
+            return None  # not a named-agent dispatch we model -> allow
+        pin = agentdefs.pin_for(subagent_type)
+        if not (pin and pin.model):
+            return None  # no model pin for this agent -> nothing to enforce
+        explicit = str(ti.get("model") or "").strip()
+        if explicit:
+            return None  # a model was named (rank-1) -> allow; mismatch is the receipt's job
+        return (_DENY_PREFIX + f"'{subagent_type}' pins model '{pin.model}' but this dispatch "
+                f"named no model — the frontmatter pin is silently droppable. Re-dispatch with "
+                f"the model named explicitly (model: \"{pin.model}\") so the pin is honored.")
+    except Exception:
+        return None  # fail open: an unparseable dispatch payload is never blocked
 
 
 def _bash_deny_reason(agent_type: str, command: str, handoff: str) -> str | None:
@@ -196,7 +235,7 @@ def main():
     agent_type = str(data.get("agent_type") or "")
     agent_id = str(data.get("agent_id") or "")
     target = str(ti.get("file_path") or ti.get("path") or ti.get("command")
-                 or ti.get("pattern") or "")
+                 or ti.get("pattern") or ti.get("subagent_type") or "")
 
     # Decide FIRST (job #2), so the audit line can record the guard's own decision.
     reason = _deny_reason(tool, ti, agent_type, target)

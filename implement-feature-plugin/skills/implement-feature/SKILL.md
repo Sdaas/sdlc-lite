@@ -21,6 +21,13 @@ downstream gate see a prior gate's raw transcript — only the **curated handoff
   `implement-feature:test-writer`, `implement-feature:test-reviewer`,
   `implement-feature:implementer`, `implement-feature:verifier`,
   `implement-feature:code-reviewer` — never the bare name. (Verified empirically.)
+- **Always name the model on every `[I]` dispatch (#22).** Read the gate's pinned `model`
+  from its `agents/*.md` frontmatter and pass it **explicitly** as the dispatch `model`
+  argument (e.g. `model: "claude-opus-4-8"` for the reviewers, `model: "sonnet"` for the
+  producers). The guard hook **denies a dispatch that names no model** and asks you to
+  re-dispatch — a frontmatter pin alone is silently droppable, so naming it per-invocation is
+  what actually guarantees the gate runs on its pinned model. (`effort` has no dispatch lever;
+  it stays frontmatter-only and is audited, not enforced.)
 
 ### Two trees: product code vs process artifacts (P48)
 
@@ -123,7 +130,10 @@ Two records, plus a hard guard, run alongside every gate:
    - Edit/Write to any **test file** — for the **implementer** only (test-integrity: it
      must pass the tests, not change them); and
    - any write outside its `handoff/` outbox + a scratch dir — for the **test-reviewer**
-     (it must not mutate the product tree / build a reference implementation).
+     (it must not mutate the product tree / build a reference implementation); and
+   - a **Task/Agent dispatch of a pinned subagent that names no `model`** (#22) — forcing a
+     re-dispatch with the model named explicitly, so the agent-def pin (silently droppable)
+     is promoted to a per-invocation argument and the gate provably runs on its pinned model.
    Each is defense-in-depth with the agents' own role instructions.
 
 The deterministic analyzer reads the hook audit (stable source of reads) and cross-checks
