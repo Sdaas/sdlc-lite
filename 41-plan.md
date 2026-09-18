@@ -129,7 +129,9 @@ Commit per logical unit; **never commit before human approval**; **never push/ta
 - [x] **B** — dev catalog + container to final names + in-container live-load verified
       (2026-09-18: fresh-volume rebuild, settings self-healed to `sdlc-lite@sdlc-lite-dev`,
       160 tests green in-container, `/sdlc-lite:implement-feature` loaded live and ran Gate 0)
-- [ ] **C** — umbrella repo `Sdaas/claude-plugins` created + catalog + README
+- [x] **C** — umbrella repo `Sdaas/claude-plugins` created + catalog + README
+      (2026-09-18: public repo pushed; `marketplace add Sdaas/claude-plugins` validated the `sdaas`
+      catalog via a real HTTPS clone; local clone at `../claude-plugins` for release.sh Phase D)
 - [ ] **D** — cross-repo `release.sh` + surgery unit-tests
 - [ ] **E** — clean-room verify (isolated config) install→run + `/plugin update` check  ← **the gate**
 - [ ] **F** — RELEASING.md / README / User Guide finalized; ADR-13 proven; #41 closed
