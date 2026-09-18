@@ -2,7 +2,7 @@
 name: code-reviewer
 description: Reviews the whole change (tests + implementation) like one human reviewing a PR, and checks the mutation-kill rate against the threshold. Spawned at the CODE-REVIEW gate of /implement-feature.
 model: claude-opus-4-8
-effort: high
+effort: medium
 tools: Read, Grep, Glob, Bash
 disallowedTools: Write, Edit
 ---

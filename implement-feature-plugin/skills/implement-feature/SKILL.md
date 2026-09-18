@@ -212,18 +212,19 @@ Gate 0 below is the first application of this style; later STOP gates follow the
      audit file, written to the repo root before this workdir exists and after the lock is
      cleared (the pointer only routes to `handoff/run-log.jsonl` while `.active-run` lives).
 5. **Per-gate model/effort plan (canonical).** The invariant: **design and every review use
-   a higher model (or effort) than implementation.** This is the reference plan — you render
-   it per the display rule in step 8, not verbatim.
+   a higher model than implementation.** Effort is uniform (`medium`) across every gate —
+   real-world config differentiates on model, not effort (#35). This is the reference plan
+   — you render it per the display rule in step 8, not verbatim.
 
    | Gate | Runs as | Model / effort | Why |
    |---|---|---|---|
    | INTERVIEW | [C] | Opus (session), medium | requirements reasoning = strong model |
    | DESIGN / SPEC | [C] | Opus (session), medium | design = strong model |
    | WRITE-TESTS | [I] `test-writer` | `sonnet` alias, medium | writing tests = implementation |
-   | TEST-REVIEW | [I] `test-reviewer` | **`claude-opus-4-8`** (pinned), low | review > implementation |
+   | TEST-REVIEW | [I] `test-reviewer` | **`claude-opus-4-8`** (pinned), medium | review > implementation |
    | IMPLEMENT | [I] `implementer` | `sonnet` alias, medium | implementation |
    | VERIFY | [I] `verifier` | `sonnet` alias, medium | verification |
-   | CODE-REVIEW | [I] `code-reviewer` | **`claude-opus-4-8`** (pinned), high | review > implementation |
+   | CODE-REVIEW | [I] `code-reviewer` | **`claude-opus-4-8`** (pinned), medium | review > implementation |
    | REVIEW-GUIDE / COMMIT | [C] | Sonnet or Haiku (session) | mechanical presentation + commit |
 
    The `[I]` subagent models are pinned in `agents/*.md`, in two different ways: the two
@@ -426,7 +427,7 @@ findings file added to its inbox.)*
 
 An **independent** critic reviews the tests **before** any implementation exists. Spawn a
 **different** agent than the writer — `subagent_type: implement-feature:test-reviewer`
-(Opus/low per the model plan; pinned in `agents/test-reviewer.md`).
+(Opus/medium per the model plan; pinned in `agents/test-reviewer.md`).
 
 **Its inbox (it sees more than the writer):** `01-requirements.md`, the **full** design
 (`02-design-interface.md` **and** `03-design-internal.md`), `04-test-plan.md`, the tests,
@@ -506,7 +507,7 @@ converge). On all-PASS → append the run-log entry and proceed to CODE-REVIEW.
 ## Gate 7 — CODE-REVIEW + quality  [I] `code-reviewer`  (the last unattended gate)
 
 Spawn a fresh, read-only whole-diff reviewer —
-`subagent_type: implement-feature:code-reviewer` (Opus/high; pinned in
+`subagent_type: implement-feature:code-reviewer` (Opus/medium; pinned in
 `agents/code-reviewer.md`). "One senior engineer reviewing the entire PR": fresh context
 kills anchoring, a stronger model than the implementer kills monoculture. Its inbox:
 `01-requirements.md` + the full design + the **whole change** (tests + `<code_root>/`) +
@@ -626,7 +627,7 @@ later with the standalone `/implement-feature:analyze-run` command.) The pipelin
 ## Rules
 - Curated handoffs only — a gate never sees a prior gate's raw transcript.
 - The test-writer is blind to `03-design-internal.md`.
-- Design & every review use a higher model/effort than implementation.
+- Design & every review use a higher model than implementation.
 - Not Done on green tests alone — VERIFY observed behavior.
 - Bound every automated loop; surface to the human on no progress.
 - Never ask a human to approve an artifact they have not seen in full (P47).

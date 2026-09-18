@@ -2,7 +2,7 @@
 name: test-reviewer
 description: Reviews the test suite against requirements and design/intent BEFORE any implementation exists. Spawned at the TEST-REVIEW gate of /implement-feature. A different agent than the test-writer.
 model: claude-opus-4-8
-effort: low
+effort: medium
 tools: Read, Bash
 disallowedTools: Write, Edit
 ---

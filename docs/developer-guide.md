@@ -139,10 +139,10 @@ inform the critic.
 | 1 | INTERVIEW | [C] | session (wants Opus) | human |
 | 2 | DESIGN / SPEC | [C] | session (wants Opus) | human |
 | 3 | WRITE-TESTS | [I] `test-writer` | `sonnet` / medium | machine (suite red) |
-| 4 | TEST-REVIEW | [I] `test-reviewer` | `claude-opus-4-8` (pinned) / low | machine (verdict) |
+| 4 | TEST-REVIEW | [I] `test-reviewer` | `claude-opus-4-8` (pinned) / medium | machine (verdict) |
 | 5 | IMPLEMENT | [I] `implementer` | `sonnet` / medium | machine (green) |
 | 6 | VERIFY | [I] `verifier` | `sonnet` / medium | machine (observed pass) |
-| 7 | CODE-REVIEW | [I] `code-reviewer` | `claude-opus-4-8` (pinned) / high | machine (verdict) |
+| 7 | CODE-REVIEW | [I] `code-reviewer` | `claude-opus-4-8` (pinned) / medium | machine (verdict) |
 | 8 | REVIEW-GUIDE | [C] | session (Sonnet/Haiku ok) | — |
 | 9 | HUMAN REVIEW | [C] | session | **human (ship)** |
 | 10 | COMMIT | [C] | session (Sonnet/Haiku ok) | — |
@@ -168,7 +168,7 @@ role's static identity; the spawn brief passes the per-run specifics (paths, inb
 ---
 name: code-reviewer
 model: claude-opus-4-8       # dated pin — see the model-pinning ADR
-effort: high
+effort: medium
 tools: Read, Grep, Glob, Bash
 disallowedTools: Write, Edit  # read-only critic
 ---
@@ -184,9 +184,12 @@ Key facts (all empirically verified — see the ADRs and §7):
 - The **conductor's own model cannot be pinned** by a plugin — it runs on whatever the session was
   launched with. Gate 0 therefore self-checks and warns if the conductor is below design-grade.
 
-The invariant these pins enforce: **design and every review use a higher model (or effort) than
+The invariant these pins enforce: **design and every review use a higher model than
 implementation.** The two reviewers pin the *dated* `claude-opus-4-8` for reproducibility; the
-producer gates (`test-writer`, `implementer`, `verifier`) pin the floating `sonnet` alias.
+producer gates (`test-writer`, `implementer`, `verifier`) pin the floating `sonnet` alias. Effort is
+uniform (`medium`) across every gate — a deliberate dev-only spread (`test-reviewer` `low`,
+`code-reviewer` `high`) proved the receipt's effort audit end-to-end before release; real-world
+config differentiates on model, not effort (#28, #35).
 
 **The pins are the SSOT for the receipt (#22).** [`agentdefs.py`](../implement-feature-plugin/agentdefs.py)
 reads this frontmatter and hands the model/effort pins to the analyzer's receipt — the same

@@ -14,10 +14,10 @@ import agentdefs
 # test is the tripwire — update it deliberately, together with the SKILL table.
 EXPECTED = {
     "test-writer":   ("sonnet", "medium"),
-    "test-reviewer": ("claude-opus-4-8", "low"),
+    "test-reviewer": ("claude-opus-4-8", "medium"),
     "implementer":   ("sonnet", "medium"),
     "verifier":      ("sonnet", "medium"),
-    "code-reviewer": ("claude-opus-4-8", "high"),
+    "code-reviewer": ("claude-opus-4-8", "medium"),
 }
 
 
@@ -31,7 +31,7 @@ def test_load_pins_matches_shipped_agent_defs():
 
 def test_pin_for_strips_plugin_namespace():
     assert agentdefs.pin_for("implement-feature:code-reviewer").model == "claude-opus-4-8"
-    assert agentdefs.pin_for("code-reviewer").effort == "high"
+    assert agentdefs.pin_for("code-reviewer").effort == "medium"
 
 
 def test_pin_for_unknown_or_conductor_is_none():
