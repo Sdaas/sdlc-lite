@@ -2,10 +2,11 @@
 
 How this repo is versioned, how issues are triaged, and how a release is cut and consumed.
 
-> **Status (2026-09-18):** the **conventions** below are settled and in force *now*. The
-> **procedure** (§4) is **not yet proven** — it is filled in and verified against a real
-> clean install→run as part of **[#41 — release engineering](../../issues/41)**. Do not
-> treat §4 as authoritative until #41 closes.
+> **Status (2026-09-18):** the conventions **and** the procedure (§4) below are settled and in force
+> *now*, proven by **[#41 — release engineering](../../issues/41)**: `1.0.0-beta.1` was cut with
+> `release.sh` and verified by an automated clean-room install (`release-verify.sh`, 15/15 — GitHub
+> git-subdir install + Gate 0/Gate 1 from an isolated config). ADR-13 (Developer Guide §6) carries the
+> durable rationale.
 
 ---
 
@@ -26,20 +27,27 @@ and is mirrored by a git **tag** `v<version>` on the release commit.
 > feature-complete and hardened — we are only validating it in the wild. `1.0.0-beta.1` says
 > exactly that.
 
-## 2. Distribution — two channels
+## 2. Distribution — two channels in two repos
 
 The platform pins a plugin's version **only for git/archive sources**, *not* for a
-**local-directory source loaded in place**. So the repo runs two channels:
+**local-directory source loaded in place**. So the product runs two channels — each a **separate
+marketplace in a separate repo** (ADR-13):
 
-| Channel | Audience | Marketplace source | Moves when |
-|---|---|---|---|
-| **dev / in-place** | maintainer + dev container | local **directory** source (`./sdlc-lite-plugin`) | every workspace edit (no release needed) |
-| **release / stable** | real customers | **github** source **pinned to a tag** (`ref: v1.0.0-beta.1`, optionally `sha`) | only when a release is cut |
+| Channel | Repo · catalog name | Audience | Marketplace source | Moves when |
+|---|---|---|---|---|
+| **dev / in-place** | `Sdaas/sdlc-lite` (this repo) · `sdlc-lite-dev` | maintainer + dev container | local **directory** source (`./sdlc-lite-plugin`) | every workspace edit (no release needed) |
+| **release / stable** | `Sdaas/claude-plugins` (umbrella) · `sdaas` | real customers | **git-subdir** source pinned to a tag (explicit https url, `path: sdlc-lite-plugin`, `ref: v1.0.0-beta.1` + `sha`) | only when a release is cut |
 
 - The dev container keeps loading the plugin from the workspace directory (see `DEVCONTAINER.md`)
   — unchanged.
-- Customers add the **release** marketplace and get exactly the tagged commit. The maintainer can
-  keep committing to `main` (toward the next release) without affecting installed customers.
+- Customers add the **umbrella** marketplace (`Sdaas/claude-plugins`) and get exactly the tagged
+  commit. The maintainer can keep committing to `main` (toward the next release) without affecting
+  installed customers.
+- **Why `git-subdir`, not `github`:** the plugin lives in the `sdlc-lite-plugin/` **subdirectory**;
+  a plain `github` source can only target a repo root, so it installed **zero commands**. A
+  `git-subdir` source with `path: sdlc-lite-plugin` targets the subdir. The url is an **explicit
+  https url** (not the `owner/repo` shorthand) to avoid an SSH-default clone failure in clean-room
+  environments.
 - **`sha` beats `ref`** when both are set (exact pin). Each channel must resolve to a **distinct
   version string or SHA**, or `/plugin update` treats them as identical and skips the update.
 
@@ -61,29 +69,44 @@ release milestone if it's committed, otherwise leave it milestone-less (backlog)
 
 ## 4. Cutting a release — procedure
 
-> ⚠️ **TBD — proven and finalized by [#41](../../issues/41).** The steps below are the *intended*
-> shape; they are not yet run end-to-end. #41's done-criterion is that this section matches a real
-> clean install→run exactly.
+`release.sh` is **cross-repo**: it tags in this repo **and** repoints the umbrella catalog. Run it
+from a clean `main`:
 
-Intended shape (to be verified):
+```bash
+./release.sh <version> --umbrella <path-to-local-clone-of-Sdaas/claude-plugins>
+# e.g. ./release.sh 1.0.0-beta.2 --umbrella /Users/sdaas/dev/claude-plugins
+# (--umbrella may be supplied via $UMBRELLA_DIR instead)
+```
 
-1. Confirm the release milestone's issues are closed (or explicitly punted).
-2. Bump `plugin.json` `version` → `<version>`.
-3. Commit, tag `v<version>`, push tag.
-4. Update the **release** marketplace entry to pin `ref`/`sha` to the tag.
-5. **Verify (the gate):** from a *clean* environment — add the release marketplace,
-   `/plugin install`, run `/implement-feature` on a fixture end-to-end. It must succeed.
-6. Only after the clean install→run passes is the release real.
+What it does (each push is confirmation-gated):
 
-`release.sh` (also delivered by #41) automates steps 2–4 and hands off to the verify step.
+1. **Validate:** clean tree, on `main`, `<version>` is valid semver, tag `v<version>` absent.
+2. **Bump** `sdlc-lite-plugin/.claude-plugin/plugin.json` `version` → `<version>`; commit.
+3. **Tag** `v<version>` (annotated) on the release commit; resolve its `sha`.
+4. **Repoint the umbrella:** in the `--umbrella` clone, edit the `sdlc-lite` **git-subdir** entry's
+   `ref`/`sha` to the new tag; commit. (Without `--umbrella` it prints the exact manual edit.)
+5. **Push both repos** (confirmation-gated), then print the clean-room verify handoff.
+
+Then **verify (the gate)** with `release-verify.sh` (§below), and confirm the milestone's issues are
+closed or explicitly punted before announcing the release.
+
+**The verify gate — `release-verify.sh`.** Automated clean-room check from an isolated
+`CLAUDE_CONFIG_DIR` (no dev marketplace, no cached plugins): `marketplace add Sdaas/claude-plugins`
+→ `install sdlc-lite@sdaas` → assert a genuine GitHub git-subdir clone at the tag, cached version
+`<version>` → headless Gate 0 preflight-pass + Gate 1 interview (authed from `.env`'s
+`CLAUDE_CODE_OAUTH_TOKEN`; see `.env.example`). The full human-driven `/implement-feature` run to
+green+commit is the final belt-and-suspenders check (see the User Guide).
 
 ## 5. Consuming a release (customer)
 
-> ⚠️ **TBD — finalized by [#41](../../issues/41)** and mirrored into the User Guide once verified.
+```bash
+claude plugin marketplace add Sdaas/claude-plugins   # the umbrella / release channel
+claude plugin install sdlc-lite@sdaas                # version-pinned to the released tag
+```
 
-Intended shape: add the release marketplace, `/plugin install implement-feature@<marketplace>`,
-install the pinned toolchain, run `/implement-feature`. Exact commands live in the User Guide
-after #41 verifies them.
+Then install the pinned toolchain and run `/implement-feature` — full walkthrough in the
+[User Guide](docs/user-guide.md). To update to a newer release: refresh the marketplace, then
+`claude plugin update sdlc-lite`.
 
 ## 6. Roadmap
 

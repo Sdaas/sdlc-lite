@@ -55,15 +55,21 @@ DEVCONTAINER.md                # the dev-container test harness (referenced by t
 design/                        # standalone design-investigation records referenced by the ADRs
 sdlc-lite-plugin/      # ← the product
 toy-greet-plugin/              # a minimal 2-gate example plugin (used by the Tutorial)
-.claude-plugin/marketplace.json  # publishes both plugins
+.claude-plugin/marketplace.json  # the DEV catalog (name: sdlc-lite-dev)
 .devcontainer/                 # the dev container definition
 REVIEW-PROMPT.md               # read-only review methodology (findings now tracked as GitHub issues)
 ```
 
-Two plugins are published through `.claude-plugin/marketplace.json`:
+**Two channels (ADR-13).** This repo's root `.claude-plugin/marketplace.json` is the **dev** catalog
+(`name: sdlc-lite-dev`, a live directory source used by the maintainer + dev container). It carries:
 
-- **`implement-feature`** — the product this repo exists to ship.
-- **`toy-greet`** — a two-file, two-gate `/greet` workflow kept as the Tutorial's runnable example.
+- **`sdlc-lite`** — the product this repo exists to ship (command `/implement-feature`).
+- **`toy-greet`** — a two-file, two-gate `/greet` workflow kept as the Tutorial's runnable example
+  (tutorial-only; never published to customers).
+
+**Customers** install from the separate **`Sdaas/claude-plugins`** umbrella marketplace, which pins
+`sdlc-lite` to a released tag — `marketplace add Sdaas/claude-plugins` → `install sdlc-lite@sdaas`.
+See the [User Guide](docs/user-guide.md).
 
 ---
 
@@ -77,7 +83,7 @@ Two plugins are published through `.claude-plugin/marketplace.json`:
 
 ## Status
 
-`implement-feature` is **v1**: it has been run end-to-end against real Python features (a duration
+`sdlc-lite` is **v1**: it has been run end-to-end against real Python features (a duration
 parser, a slugifier, and an async cached JSON fetcher), including a fault-injection pass, inside the
 dev container. See the [Developer Guide](docs/developer-guide.md) for the testing methodology and the
 recorded design decisions.

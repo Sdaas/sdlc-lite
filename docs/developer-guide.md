@@ -542,10 +542,12 @@ promised and what is verified cannot drift — the discipline ADR-11 gives the i
 
 ### ADR-13 — One `sdlc-lite` plugin; two channels are two marketplaces in two repos
 
-> **Status (2026-09-18):** decision settled for [#41](https://github.com/Sdaas/sdlc-lite/issues/41);
-> the mechanism is *proven* only when the clean-room verify passes. Execution plan + progress:
-> [`41-plan.md`](../41-plan.md). Until #41 closes, treat `release.sh`, `RELEASING.md` §2/§4/§5, and the
-> install commands as intended-but-unverified.
+> **Status (2026-09-18):** **proven.** `1.0.0-beta.1` was cut with `release.sh` (tag in this repo +
+> umbrella repoint) and verified by an automated clean-room install (`release-verify.sh`, 15/15): from
+> an isolated `CLAUDE_CONFIG_DIR` with no dev marketplace, `marketplace add Sdaas/claude-plugins` →
+> `install sdlc-lite@sdaas` fetched the tagged commit via a **git-subdir** source (cached version
+> `1.0.0-beta.1`) and passed Gate 0 preflight + Gate 1 interview headless. `release.sh`, `RELEASING.md`
+> §2/§4/§5, and the customer install commands are now authoritative.
 >
 > *Supersedes an earlier draft of this ADR* (a single repo carrying two catalog entries —
 > `implement-feature` github-pinned + `implement-feature-dev` directory). That approach worked but was
@@ -568,10 +570,19 @@ version-pinned**. So the channels are physically separate catalogs:
 | Channel | Lives in | Catalog `name` | `sdlc-lite` entry source | Audience |
 |---|---|---|---|---|
 | **dev** | **this repo** (`Sdaas/sdlc-lite`) root catalog | `sdlc-lite-dev` | **directory** `./sdlc-lite-plugin` (live) | dev container only — enables `sdlc-lite@sdlc-lite-dev` |
-| **release** | **umbrella repo** `Sdaas/claude-plugins` | `sdaas` | **github** `Sdaas/sdlc-lite`, pinned `ref: vX.Y.Z` + `sha` | customers — `marketplace add Sdaas/claude-plugins` → `install sdlc-lite@sdaas` |
+| **release** | **umbrella repo** `Sdaas/claude-plugins` | `sdaas` | **git-subdir** (explicit https url to `Sdaas/sdlc-lite`, `path: sdlc-lite-plugin`), pinned `ref: vX.Y.Z` + `sha` | customers — `marketplace add Sdaas/claude-plugins` → `install sdlc-lite@sdaas` |
+
+**Why `git-subdir`, not `github` (caught in the clean-room verify).** The plugin lives in the
+`sdlc-lite-plugin/` **subdirectory** of `Sdaas/sdlc-lite`, but a plain `github` marketplace source can
+only target a repo **root** — so the customer install resolved the repo root, found no `plugin.json`,
+and loaded **zero commands**. The fix is a **`git-subdir`** source with `path: sdlc-lite-plugin`,
+which targets the subdir. Its url must be an **explicit https url** (`https://github.com/Sdaas/sdlc-lite`),
+not the `owner/repo` shorthand, because the shorthand defaulted to an **SSH** clone that failed in the
+credential-less clean-room environment. Same tag/sha as the first cut — this was a catalog-source fix,
+not a re-release.
 
 The **umbrella** repo (`Sdaas/claude-plugins`, catalog `sdaas`) is the maintainer's cross-product
-marketplace: each future plugin (in its **own** repo) gets one github-pinned entry here, so `sdaas`
+marketplace: each future plugin (in its **own** repo) gets one pinned git-subdir entry here, so `sdaas`
 *honestly* aggregates plugins that live in different repos — which a single per-product catalog cannot.
 This repo's root catalog is now **dev-only** (the container reads it via a directory source; it also
 lists `toy-greet` for the Tutorial). Customers never read it — a README pointer routes them to the
@@ -589,14 +600,14 @@ required (see below). Verification is the gate — see the last bullet.
   "released," yet their install moved under them. `plugin.json`'s `"version"` does no work for a
   directory source, so you **cannot freeze customers at a version**. That is #41 in one sentence.
 - **The fix, concretely.** Customers install `sdlc-lite@sdaas`, whose source is the umbrella's
-  `github` entry pinned to `v1.0.0-beta.1`'s commit — and *stop there*. Your Tuesday push to
+  `git-subdir` entry pinned to `v1.0.0-beta.1`'s commit — and *stop there*. Your Tuesday push to
   `Sdaas/sdlc-lite` `main` doesn't touch them; meanwhile the dev container, on the directory-source
   `sdlc-lite@sdlc-lite-dev`, *does* see Tuesday's code live — exactly what a developer wants. Customers
   move only when *you* cut the next release and they run `plugin update`.
 - **Why separate repos + an umbrella, not one repo.** The maintainer will ship unrelated plugins
   (agentic-coding tools here, a finances plugin elsewhere) that shouldn't share a repo. Since one
   marketplace = one repo, aggregating across products *requires* a dedicated umbrella repo whose
-  entries are github sources into each product repo. Doing this now — at **zero customers** — avoids a
+  entries are pinned git-subdir sources into each product repo. Doing this now — at **zero customers** — avoids a
   customer-breaking marketplace migration later. It also matches the ecosystem's documented
   "separate stable/canary marketplaces at different refs" pattern and pins to a **commit SHA, not a
   moving tag** (`sha` wins over `ref` when both are set).
@@ -809,7 +820,8 @@ Guide documents that distinction.
 > path (`marketplace add Sdaas/sdlc-lite` → `install implement-feature@sdaas-sdlc-lite`), which no
 > longer exists — the customer channel moved to the umbrella repo `Sdaas/claude-plugins`
 > (`sdlc-lite@sdaas`). Kept as a historical record that a github-clone install works end to end; the
-> **new** customer path is re-verified for real in #41 Phase E (clean-room verify) before the tag is cut.
+> **new** customer path is verified by the automated **`release-verify.sh`** clean-room run (see the
+> CLAUDE_CONFIG_DIR two-profile section below) — 15/15 against `v1.0.0-beta.1`.
 
 The **real end-user path** — `claude plugin marketplace add Sdaas/sdlc-lite` +
 `claude plugin install implement-feature@sdaas-sdlc-lite` — was verified for real on 2026-09-12,

@@ -39,14 +39,15 @@ approval, and it never commits on your default branch.
 
 ### 3a. Install the plugin from GitHub
 
-The plugin is published through a marketplace in this repo. Register the marketplace, then install:
+The plugin is published through the **`Sdaas/claude-plugins`** umbrella marketplace, which pins it to
+a released tag. Register that marketplace, then install:
 
 ```bash
-# register this repo as a plugin marketplace
-claude plugin marketplace add Sdaas/sdlc-lite
+# register the umbrella marketplace (the customer/release channel)
+claude plugin marketplace add Sdaas/claude-plugins
 
-# install the plugin from it
-claude plugin install implement-feature@sdaas-sdlc-lite
+# install the plugin from it (version-pinned to the released tag)
+claude plugin install sdlc-lite@sdaas
 ```
 
 Then, inside a Claude Code session, activate it in the current session:
@@ -222,5 +223,5 @@ Gate 11 prints the report automatically, and you can re-run it on any past run w
 transcript.
 
 **How do I uninstall it?**
-`claude plugin uninstall implement-feature`, and optionally
-`claude plugin marketplace remove sdaas-sdlc-lite`. Everything is reversible.
+`claude plugin uninstall sdlc-lite`, and optionally
+`claude plugin marketplace remove sdaas`. Everything is reversible.
