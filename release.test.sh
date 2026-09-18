@@ -41,7 +41,8 @@ mk_umbrella() { # $1=dir
   "name": "sdaas",
   "plugins": [
     { "name": "sdlc-lite",
-      "source": { "source": "github", "repo": "Sdaas/sdlc-lite", "ref": "v0.0.0" },
+      "source": { "source": "git-subdir", "url": "https://github.com/Sdaas/sdlc-lite.git",
+                  "path": "sdlc-lite-plugin", "ref": "v0.0.0" },
       "description": "x" }
   ]
 }

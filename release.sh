@@ -9,8 +9,9 @@
 #   • dev      → this repo's root catalog (name: sdlc-lite-dev), directory source, live.
 #                release.sh NEVER touches it.
 #   • release  → the umbrella repo Sdaas/claude-plugins (catalog name: sdaas), where the
-#                sdlc-lite entry is a github source pinned to a tag. CUSTOMERS install from
-#                here: `marketplace add Sdaas/claude-plugins` → `install sdlc-lite@sdaas`.
+#                sdlc-lite entry is a git-subdir source (path: sdlc-lite-plugin) pinned to a
+#                tag. CUSTOMERS install: `marketplace add Sdaas/claude-plugins` →
+#                `install sdlc-lite@sdaas`. (github sources can't target a subdirectory.)
 #
 # A release = bump plugin.json "version" + tag v<version> in THIS repo, then repoint the
 # umbrella entry's ref/sha to that tag. All are required: /plugin update compares the
@@ -107,8 +108,8 @@ with open(path) as f: data = json.load(f)
 for p in data.get("plugins", []):
     if p.get("name") == name:
         src = p.get("source")
-        if not isinstance(src, dict) or src.get("source") != "github":
-            sys.exit(f"umbrella entry '{name}' is not a github source")
+        if not isinstance(src, dict) or src.get("source") not in ("github", "git-subdir"):
+            sys.exit(f"umbrella entry '{name}' is not a github/git-subdir source")
         sys.exit(0)
 sys.exit(f"umbrella entry '{name}' not found in {path}")
 PY
@@ -144,8 +145,8 @@ with open(path) as f: data = json.load(f)
 for p in data.get("plugins", []):
     if p.get("name") == name:
         src = p.get("source")
-        if not isinstance(src, dict) or src.get("source") != "github":
-            sys.exit(f"entry '{name}' is not a github source; refusing to repoint")
+        if not isinstance(src, dict) or src.get("source") not in ("github", "git-subdir"):
+            sys.exit(f"entry '{name}' is not a github/git-subdir source; refusing to repoint")
         src["ref"], src["sha"] = ref, sha
         break
 else:
