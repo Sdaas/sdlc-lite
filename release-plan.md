@@ -31,8 +31,9 @@ _Last updated: 2026-09-18._
 The order to implement the current milestone's open issues — **numbers only**; GitHub owns the detail.
 Regenerate the set from the milestone (step 2) and keep this list to the *sequence* and any blockers.
 
-- `1.0.0-beta.1`: **#41** (release engineering) — **landed** 2026-09-18; the milestone has no other
-  open issues, so the beta channel is cut. Nothing sequences behind it.
+- **No active milestone.** `1.0.0-beta.1` **closed** 2026-09-18 (its sole issue #41 landed; beta.1 +
+  beta.2 cut & public). The next milestone — **`1.0.0-beta.3`** (more validation) *or* **`1.0.0`**
+  (GA) — is opened once early-customer feedback tells us which. Until then, work is backlog-driven.
 
 ## Where we are
 
@@ -58,13 +59,15 @@ cleanly from a clean environment (`release-verify.sh` 17/17: git-subdir GitHub i
 Guide install commands are finalized against that verified path. Beta validation with early customers
 is now the open work toward GA.
 
-## Next release — `1.0.0` GA
+## Next release — `1.0.0-beta.3` or `1.0.0` GA (feedback-decided)
 
-Theme: **robustness and real-user UX hardening**, driven by beta validation feedback plus the
-committed follow-ups from v1 acceptance (toolchain auto-install so a stranger can run it unaided;
-closing the test-quality and isolation-correctness gaps the acceptance runs surfaced). Milestone:
-`1.0.0`. Scope may grow or shrink during the release — that's expected; when GA ships, this section
-is reset to the next release.
+The beta channel is live and being validated with early customers. Their feedback decides the next
+milestone: another **`1.0.0-beta.3`** if issues surface that warrant more probation, or straight to
+**`1.0.0` GA** if the beta holds. Either way the theme is **robustness and real-user UX hardening** —
+beta validation feedback plus the committed follow-ups from v1 acceptance (toolchain auto-install so a
+stranger can run it unaided; closing the test-quality and isolation-correctness gaps the acceptance
+runs surfaced: #19 / #37 / #38). Scope may grow or shrink during the release — that's expected; when
+it ships, this section resets to the next release.
 
 ## Backlog
 
