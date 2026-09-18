@@ -12,7 +12,7 @@ This file provides guidance to Claude Code when working in this repository.
   hook, the analyzer, and the testing / dry-run methodology. For someone improving the plugin.
   - **Tutorial** (`docs/tutorial.md`) — concepts (plugin vs command vs skill vs workflow) + subagent isolation, with `toy-greet-plugin/` as the runnable example.
 - `toy-greet-plugin/` a minimal 2-gate example, kept for the Tutorial
-- Both are published through `.claude-plugin/marketplace.json` (the `daas-plugins` marketplace).
+- Both are published through `.claude-plugin/marketplace.json` (the `sdaas-sdlc-lite` marketplace).
 
 ## Working conventions
 - **Process:** plan → approve → phased execution. Commit per **logical unit**. Keep git history.

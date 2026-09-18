@@ -46,7 +46,7 @@ The plugin is published through a marketplace in this repo. Register the marketp
 claude plugin marketplace add Sdaas/sdlc-lite
 
 # install the plugin from it
-claude plugin install implement-feature@daas-plugins
+claude plugin install implement-feature@sdaas-sdlc-lite
 ```
 
 Then, inside a Claude Code session, activate it in the current session:
@@ -223,4 +223,4 @@ transcript.
 
 **How do I uninstall it?**
 `claude plugin uninstall implement-feature`, and optionally
-`claude plugin marketplace remove daas-plugins`. Everything is reversible.
+`claude plugin marketplace remove sdaas-sdlc-lite`. Everything is reversible.

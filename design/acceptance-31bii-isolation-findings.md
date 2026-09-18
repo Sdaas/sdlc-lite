@@ -108,7 +108,7 @@ carried forbidden content).
 - **Dev-container plugin install gap:** a fresh `sdlc-lite-claude` volume gets `settings.json` with
   `enabledPlugins`/`extraKnownMarketplaces` written by `postStartCommand`, but **nothing runs the
   actual `claude plugin install`**, so `/implement-feature` is not registered until you run
-  `claude plugin install implement-feature@daas-plugins` by hand. This blocked the start of this run.
+  `claude plugin install implement-feature@sdaas-sdlc-lite` by hand. This blocked the start of this run.
   Candidate fix: add that install (idempotent) to `postStartCommand`, or document it in
   `DEVCONTAINER.md`. Needed before #31b-iii.
 - **`claude plugin install` creates a pinned cache copy** at `~/.claude/plugins/cache/…/<version>/`

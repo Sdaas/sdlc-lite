@@ -152,7 +152,7 @@ Then, inside the container's Claude session:
 claude plugin marketplace add /workspaces/sdlc-lite   # CLI form is deterministic
 ```
 ```bash
-claude plugin install toy-greet@daas-plugins   # CLI form is deterministic
+claude plugin install toy-greet@sdaas-sdlc-lite   # CLI form is deterministic
 ```
 ```
 /reload-plugins

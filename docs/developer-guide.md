@@ -540,62 +540,79 @@ promised and what is verified cannot drift — the discipline ADR-11 gives the i
   hidden — observability holds even where prevention is not possible (effort has no rank-1 lever at
   all, so it can only ever be proven, never forced).
 
-### ADR-13 — Two-channel distribution: a live dev entry and a tag-pinned release entry in one catalog
+### ADR-13 — One `sdlc-lite` plugin; two channels are two marketplaces in two repos
 
 > **Status (2026-09-18):** decision settled for [#41](https://github.com/Sdaas/sdlc-lite/issues/41);
-> the mechanism is *proven* only when the clean-room verify (below) passes. Until #41 closes, treat the
-> `release.sh` procedure and `RELEASING.md` §4/§5 as intended-but-unverified.
+> the mechanism is *proven* only when the clean-room verify passes. Execution plan + progress:
+> [`41-plan.md`](../41-plan.md). Until #41 closes, treat `release.sh`, `RELEASING.md` §2/§4/§5, and the
+> install commands as intended-but-unverified.
+>
+> *Supersedes an earlier draft of this ADR* (a single repo carrying two catalog entries —
+> `implement-feature` github-pinned + `implement-feature-dev` directory). That approach worked but was
+> abandoned once we chose separate repos per plugin (below); the two-marketplace split is cleaner and is
+> the ecosystem's documented pattern.
 
-*Decision:* the root marketplace catalog ([`.claude-plugin/marketplace.json`](../.claude-plugin/marketplace.json))
-carries **two entries for the same plugin folder**:
+*Decision — the product is one plugin, `sdlc-lite`.* The plugin bundles the whole SDLC workflow — the
+commands `/implement-feature` and `/analyze-run` today, `/plan-feature` next — over **one** shared
+guard hook, **one** set of five model-pinned isolated gates, and **one** quality-standards SSOT. The
+plugin folder is `sdlc-lite-plugin/`; `plugin.json` `name` is `sdlc-lite`; the isolated gates dispatch
+as `sdlc-lite:<agent>` (e.g. `sdlc-lite:test-writer`). **Command names are independent of the plugin
+name** and do not change. *Boundary rule:* a new command joins `sdlc-lite` **iff** it uses that shared
+isolation infrastructure; an unrelated tool (say a personal-finance plugin) becomes a **separate plugin
+in its own repo**.
 
-- **`implement-feature`** — a `github` source pinned to a release tag
-  (`{"source":"github","repo":"Sdaas/sdlc-lite","ref":"vX.Y.Z","sha":"…"}`). This is the **customer**
-  channel: `claude plugin marketplace add Sdaas/sdlc-lite` reads this catalog at the default branch and
-  installs *exactly* the tagged commit.
-- **`implement-feature-dev`** — a directory source (`./implement-feature-plugin`), *loaded in place*.
-  This is the **dev** channel: the dev container enables `implement-feature-dev@daas-plugins` and gets
-  the live workspace copy (edit → restart → live).
+*Decision — two channels, two marketplaces, two repos.* A Claude marketplace is exactly **one catalog
+(`.claude-plugin/marketplace.json`) in one repo**, and a directory source loaded in place is **never
+version-pinned**. So the channels are physically separate catalogs:
 
-Both entries share one `plugin.json` (same `name`, `/implement-feature` command, guard hook); only
-*resolution* differs. A release is cut by `release.sh`, which **bumps `plugin.json` `version`**, tags
-`vX.Y.Z`, and rewrites the `implement-feature` entry's `ref`/`sha`. The customer path is **verified
-before a release is real**, from a *release-verify* environment with an **isolated Claude config**
-(no dev marketplace present) so the GitHub fetch cannot silently fall back to the workspace copy.
+| Channel | Lives in | Catalog `name` | `sdlc-lite` entry source | Audience |
+|---|---|---|---|---|
+| **dev** | **this repo** (`Sdaas/sdlc-lite`) root catalog | `sdlc-lite-dev` | **directory** `./sdlc-lite-plugin` (live) | dev container only — enables `sdlc-lite@sdlc-lite-dev` |
+| **release** | **umbrella repo** `Sdaas/claude-plugins` | `sdaas` | **github** `Sdaas/sdlc-lite`, pinned `ref: vX.Y.Z` + `sha` | customers — `marketplace add Sdaas/claude-plugins` → `install sdlc-lite@sdaas` |
+
+The **umbrella** repo (`Sdaas/claude-plugins`, catalog `sdaas`) is the maintainer's cross-product
+marketplace: each future plugin (in its **own** repo) gets one github-pinned entry here, so `sdaas`
+*honestly* aggregates plugins that live in different repos — which a single per-product catalog cannot.
+This repo's root catalog is now **dev-only** (the container reads it via a directory source; it also
+lists `toy-greet` for the Tutorial). Customers never read it — a README pointer routes them to the
+umbrella so nobody accidentally `marketplace add Sdaas/sdlc-lite` and gets an unpinned live install.
+
+A **release** is cut by `release.sh` (cross-repo): **bump `plugin.json` `version`** → **tag `vX.Y.Z`**
+in this repo → **repoint the umbrella's `sdlc-lite` entry** `ref`/`sha` to that tag. All three are
+required (see below). Verification is the gate — see the last bullet.
 
 *Why:*
 
-- **The bug, concretely.** With only the directory entry (the pre-#41 state), a customer's
-  `marketplace add` reads root `marketplace.json` on `main` → directory source → *loaded in place* → a
-  plugin the docs say is **never version-pinned**. Example: a customer installs Monday; you push a
-  broken experiment to `main` Tuesday; Wednesday their tool re-resolves against `main` HEAD and runs
-  your broken code — you never "released," yet their install moved under them. `plugin.json`'s
-  `"version"` does no work for a directory source, so **you cannot freeze customers at
-  `1.0.0-beta.1`**. That is #41 in one sentence.
-- **The fix, concretely.** With the `github`-pinned `implement-feature` entry, the customer resolves
-  the commit behind `v1.0.0-beta.1` and *stops there*. Same Monday–Wednesday: your Tuesday push to
-  `main` doesn't touch them, because their source is pinned to the tag's commit; meanwhile the dev
-  container, on `implement-feature-dev`, *does* see Tuesday's code live — which is exactly what a
-  developer wants. They only move when *you* cut the next release and they run `plugin update`.
-- **Two entries in one catalog — not a subdirectory or a release branch.** A plugin `source` may not
-  use `../`, and two `.claude-plugin/marketplace.json` files can't both live at repo root, so a
-  separate dev catalog physically can't reach up to `implement-feature-plugin/`. Co-locating both
-  entries sidesteps that with no symlink and no second branch, and keeps the customer's documented
-  `marketplace add Sdaas/sdlc-lite` command unchanged. (The `implement-feature-dev` entry is visible
-  to customers too but is plainly a dev entry and undocumented for them; only the container enables it.)
+- **The bug, concretely.** A directory source *loaded in place* is never version-pinned. If customers
+  installed off such an entry: they install Monday; you push a broken experiment to `main` Tuesday;
+  Wednesday their tool re-resolves against `main` HEAD and runs your broken code — you never
+  "released," yet their install moved under them. `plugin.json`'s `"version"` does no work for a
+  directory source, so you **cannot freeze customers at a version**. That is #41 in one sentence.
+- **The fix, concretely.** Customers install `sdlc-lite@sdaas`, whose source is the umbrella's
+  `github` entry pinned to `v1.0.0-beta.1`'s commit — and *stop there*. Your Tuesday push to
+  `Sdaas/sdlc-lite` `main` doesn't touch them; meanwhile the dev container, on the directory-source
+  `sdlc-lite@sdlc-lite-dev`, *does* see Tuesday's code live — exactly what a developer wants. Customers
+  move only when *you* cut the next release and they run `plugin update`.
+- **Why separate repos + an umbrella, not one repo.** The maintainer will ship unrelated plugins
+  (agentic-coding tools here, a finances plugin elsewhere) that shouldn't share a repo. Since one
+  marketplace = one repo, aggregating across products *requires* a dedicated umbrella repo whose
+  entries are github sources into each product repo. Doing this now — at **zero customers** — avoids a
+  customer-breaking marketplace migration later. It also matches the ecosystem's documented
+  "separate stable/canary marketplaces at different refs" pattern and pins to a **commit SHA, not a
+  moving tag** (`sha` wins over `ref` when both are set).
 - **The version bump is the update trigger.** `/plugin update` compares the resolved `version` and
-  **skips if it is unchanged** — so a release is *not* just a new tag, it is `version` bump + tag +
-  repoint, all three, which is precisely what `release.sh` automates. (Set `version` in `plugin.json`
-  only, never also in the marketplace entry — the platform silently prefers `plugin.json`.)
+  **skips if it is unchanged** — so a release is `version` bump **+** tag **+** umbrella repoint, all
+  three. (Set `version` in `plugin.json` only, never also in the marketplace entry — the platform
+  silently prefers `plugin.json`.)
 - **The dev container is a development harness, not a customer simulator.** It wears two hats: the
   pinned toolchain (a customer needs this too) *and* a directory-source marketplace that loads the
-  plugin live (the opposite of a customer). The second hat sabotages a naive customer test — an install
-  run while the workspace marketplace is active can resolve the *local* copy and "pass" without proving
-  anything. The earlier §8 install-from-GitHub check (2026-09-12) dodged this by running from `/tmp`,
-  but it only proved *files arrive*, not a **tag pin**, and it polluted the shared login volume. #41's
-  verify therefore uses an **isolated Claude config with no dev marketplace**: with no directory source
-  to fall back to, `marketplace add` → `install` *must* fetch the tag, making the customer path
-  un-fudgeable and leaving dev state pristine.
+  plugin live (the opposite of a customer). That second hat sabotages a naive customer test — an
+  install run while the dev marketplace is active can resolve the *local* copy and "pass" without
+  proving anything. So #41's verify runs from an **isolated Claude config with no dev marketplace**:
+  with no directory source to fall back to, `marketplace add Sdaas/claude-plugins` → `install
+  sdlc-lite@sdaas` *must* fetch the tagged commit — making the customer path un-fudgeable and leaving
+  dev state pristine. Only after that clean-room install runs `/implement-feature` end-to-end is a tag
+  a real release.
 
 ---
 
@@ -672,26 +689,28 @@ provisioning — is in **[DEVCONTAINER.md](../DEVCONTAINER.md)**.
    (`postCreateCommand`) installed cleanly.
 4. **Login** — `devcontainer exec --workspace-folder . claude` (interactive) — first run on a fresh
    volume needs OAuth login; persists into the `sdlc-lite-claude` volume.
-5. **Install plugin** — inside that `claude` session: `/plugin install implement-feature@daas-plugins`
-   (or `claude plugin install implement-feature@daas-plugins` from a container shell) — **known gap:**
-   `postStartCommand` registers the `daas-plugins` marketplace (a `directory` source pointing at the
+5. **Install plugin** — inside that `claude` session: `/plugin install implement-feature-dev@sdaas-sdlc-lite`
+   (or `claude plugin install implement-feature-dev@sdaas-sdlc-lite` from a container shell) — **known gap:**
+   `postStartCommand` registers the `sdaas-sdlc-lite` marketplace (a `directory` source pointing at the
    bind-mounted `/workspaces/sdlc-lite`, per `.devcontainer/claude/settings.json`) but does not install
-   the plugin itself on a fresh volume — this step is required once per fresh volume. This installs
-   from the **local workspace**, not GitHub — see "Install-from-GitHub verification" below for the
-   separate real-user path.
-6. **Verify** — `/plugin` or `/plugin list` inside Claude — confirms `implement-feature` shows enabled.
+   the plugin itself on a fresh volume — this step is required once per fresh volume. **Use the
+   `-dev` entry** (the directory-source channel): the plain `implement-feature` entry is now the
+   github-tag-pinned *customer* channel (ADR-13) and would clone from GitHub, not the workspace. This
+   installs from the **local workspace**, not GitHub — see "Install-from-GitHub verification" below for
+   the separate real-user path.
+6. **Verify** — `/plugin` or `/plugin list` inside Claude — confirms `implement-feature-dev` shows enabled.
 
 To rename the container, set `runArgs: ["--name", "<name>"]` in `.devcontainer/devcontainer.json`
 before step 2 — `devcontainer` CLI has no `--name` flag of its own.
 
 **Clarification — step 5 installs from the local workspace, not GitHub.** The container's
-`settings.json` pre-registers the `daas-plugins` marketplace as a `directory` source pointing at
-`/workspaces/sdlc-lite` (the bind-mounted repo, source `./implement-feature-plugin` in
-`.claude-plugin/marketplace.json`). `/plugin install implement-feature@daas-plugins` just resolves
-that name against the already-known marketplace and copies it into `~/.claude/plugins/cache/`. This
-is the dev path — the "Install-from-GitHub verification" note below documents the *separate*
-real-user path (`claude plugin marketplace add Sdaas/sdlc-lite`, a real GitHub clone) as something
-checked once, not the path used here.
+`settings.json` pre-registers the `sdaas-sdlc-lite` marketplace as a `directory` source pointing at
+`/workspaces/sdlc-lite` (the bind-mounted repo). It resolves `implement-feature-dev` — the
+directory-source entry (`./implement-feature-plugin`) in `.claude-plugin/marketplace.json` — and
+copies it into `~/.claude/plugins/cache/`. (The sibling `implement-feature` entry in the same catalog
+is the github-tag-pinned *customer* channel; the container never enables it — ADR-13.) This is the dev
+path — the "Install-from-GitHub verification" note below documents the *separate* real-user path
+(`claude plugin marketplace add Sdaas/sdlc-lite` → install `implement-feature`, a real GitHub clone).
 
 Two harnesses:
 
@@ -734,16 +753,16 @@ Guide documents that distinction.
 ### Install-from-GitHub verification (real user path, checked)
 
 The **real end-user path** — `claude plugin marketplace add Sdaas/sdlc-lite` +
-`claude plugin install implement-feature@daas-plugins` — was verified for real on 2026-09-12,
+`claude plugin install implement-feature@sdaas-sdlc-lite` — was verified for real on 2026-09-12,
 inside the dev container but from `/tmp` (outside the bind-mounted workspace, so `marketplace add`
 had no local copy to fall back to):
 
 - `claude plugin marketplace add Sdaas/sdlc-lite` logged `cloning via HTTPS:
   https://github.com/Sdaas/sdlc-lite.git` and `Clone complete, validating marketplace…` — a genuine
   network clone, not the directory source.
-- `claude plugin install implement-feature@daas-plugins` succeeded; `claude plugin list` showed it
+- `claude plugin install implement-feature@sdaas-sdlc-lite` succeeded; `claude plugin list` showed it
   `✔ enabled`.
-- The installed cache (`~/.claude/plugins/cache/daas-plugins/implement-feature/0.1.0/`) was
+- The installed cache (`~/.claude/plugins/cache/sdaas-sdlc-lite/implement-feature/0.1.0/`) was
   spot-checked for completeness: `skills/implement-feature/SKILL.md` (615 lines, 53 `Gate`
   mentions) and all five `agents/*.md` files were present and intact.
 - The test marketplace/plugin were removed afterward so they don't linger in the persisted

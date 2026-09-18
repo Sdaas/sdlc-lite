@@ -130,7 +130,7 @@ $TAG is prepared${PUSH:+ and pushed}. It is NOT a real release until VERIFIED.
 Clean-room verify (isolated env, NO dev marketplace — see ADR-13 / RELEASING.md §4):
   1. From a fresh Claude config (own CLAUDE_CONFIG_DIR/HOME, toolchain installed):
        claude plugin marketplace add $REPO_SLUG
-       claude plugin install $RELEASE_ENTRY@daas-plugins
+       claude plugin install $RELEASE_ENTRY@sdaas-sdlc-lite
   2. Confirm the install log shows a genuine GitHub clone/checkout of $TAG
      (NOT a local directory source), and the cached version is $VERSION.
   3. Run /implement-feature end-to-end on test-fixtures/python-starter — it must pass.

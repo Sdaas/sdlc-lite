@@ -86,7 +86,7 @@ marked `done` in the ledger.
    (`implement-feature-plugin/.claude-plugin/`, `toy-greet-plugin/.claude-plugin/`),
    `implement-feature-plugin/hooks/hooks.json`, `commands/*.md`. Do names, versions, paths, and
    namespaces resolve and cross-reference correctly? Does the marketplace publish what the docs
-   say (`daas-plugins`, both plugins)? Do hooks register the events/matchers the docs claim?
+   say (`sdaas-sdlc-lite`, both plugins)? Do hooks register the events/matchers the docs claim?
 2. **SKILL.md** — `skills/implement-feature/SKILL.md`. The 12-gate (0–11) conductor logic: is
    every gate present, ordered, and internally consistent? Does each gate's declared
    **inbox/outbox** actually carry what the next gate needs? Is the **interface/internal design
