@@ -146,6 +146,47 @@ Commit per logical unit; **never commit before human approval**; **never push/ta
       update` picks up a version bump (needs a beta.2 cut).)
 - [ ] **F** — RELEASING.md / README / User Guide finalized; ADR-13 proven; #41 closed
 
+## ▶ NEXT SESSION — resume here (2026-09-18 session boundary)
+
+**State:** Phases A–D done + merged to `main` (pushed). `v1.0.0-beta.1` is CUT & PUBLIC
+(`Sdaas/sdlc-lite` tag @ 53a892e; umbrella `Sdaas/claude-plugins` pins it via a **git-subdir**
+source). Automated clean-room verify (`release-verify.sh`) passes **15/15**. `.env` (git-ignored)
+holds `CLAUDE_CODE_OAUTH_TOKEN`; `.env.example` committed. Umbrella local clone: `../claude-plugins`.
+
+**Decisions locked this session:**
+- E2E: the full human `/implement-feature` run was NOT finished. Accept `release-verify.sh`'s
+  automated **install + Gate 0/Gate 1** as the beta Phase-E evidence; the full customer-install
+  green run is a **documented residual** (low risk — plugin content is identical to the fully
+  dry-run dev install). Optionally drive a full one later.
+- **Cut `1.0.0-beta.2`** to prove `/plugin update` (main already has real post-beta.1 improvements,
+  so beta.2 is genuine, not synthetic).
+
+**Planned order for next session:**
+1. **Phase F docs FIRST** (so beta.2 is the finalized beta). Fix stale customer-install commands:
+   - `docs/user-guide.md:46` (`marketplace add Sdaas/sdlc-lite` → `Sdaas/claude-plugins`), `:49`
+     (`install implement-feature@sdaas-sdlc-lite` → `install sdlc-lite@sdaas`), `:226`
+     (`marketplace remove sdaas-sdlc-lite` → `remove sdaas`).
+   - `README.md` install/use → umbrella commands (verified path).
+   - `RELEASING.md` §2 (line 37 still says the release channel is a **github** source — it's now
+     **git-subdir** targeting `sdlc-lite-plugin/`; update the channels table), §4 procedure (release.sh
+     cross-repo + `--umbrella`), §5 consume (`marketplace add Sdaas/claude-plugins` → `install
+     sdlc-lite@sdaas`), and §84 intended-shape line.
+   - **ADR-13** (`docs/developer-guide.md:543`) → flip status to **proven** (distribution: install +
+     Gate 0/1 via release-verify.sh); capture the **git-subdir** requirement (github sources can't
+     target a subdir) and the **explicit-https-url** fix (avoids SSH-default clone failure). The
+     CLAUDE_CONFIG_DIR two-profile + release-verify sections are already added (§8).
+2. **Cut beta.2:** `./release.sh 1.0.0-beta.2 --umbrella /Users/sdaas/dev/claude-plugins` on `main`
+   (bumps plugin.json, tags, repoints umbrella git-subdir ref/sha, pushes both — confirmation-gated).
+   **Checkpoint before the real push.**
+3. **Prove `/plugin update`:** fresh clean-room install of beta.1 → (after beta.2 cut) refresh
+   marketplace + `claude plugin update` → assert version becomes `1.0.0-beta.2`. (Verify the exact
+   update subcommand: `claude plugin --help`.) Consider adding this to `release-verify.sh`.
+4. **Close #41:** flip ADR-13 done, update `release-plan.md` narrative (beta shipped), `git rm
+   41-plan.md` in the closing commit, close the issue.
+
+**Env note:** the container's global git has an `insteadOf` https rewrite (set while debugging the
+SSH clone) — now harmless (umbrella uses an explicit https url); leave or clean.
+
 ## Open items / risks
 - **Namespace churn safety** — the 93-ref `sdlc-lite:` change is only as safe as the guard/analyzer
   unit tests; run them after Phase A before anything else.
