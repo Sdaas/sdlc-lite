@@ -689,28 +689,28 @@ provisioning — is in **[DEVCONTAINER.md](../DEVCONTAINER.md)**.
    (`postCreateCommand`) installed cleanly.
 4. **Login** — `devcontainer exec --workspace-folder . claude` (interactive) — first run on a fresh
    volume needs OAuth login; persists into the `sdlc-lite-claude` volume.
-5. **Install plugin** — inside that `claude` session: `/plugin install implement-feature-dev@sdaas-sdlc-lite`
-   (or `claude plugin install implement-feature-dev@sdaas-sdlc-lite` from a container shell) — **known gap:**
-   `postStartCommand` registers the `sdaas-sdlc-lite` marketplace (a `directory` source pointing at the
+5. **Install plugin** — inside that `claude` session: `/plugin install sdlc-lite@sdlc-lite-dev`
+   (or `claude plugin install sdlc-lite@sdlc-lite-dev` from a container shell) — **known gap:**
+   `postStartCommand` registers the `sdlc-lite-dev` marketplace (a `directory` source pointing at the
    bind-mounted `/workspaces/sdlc-lite`, per `.devcontainer/claude/settings.json`) but does not install
-   the plugin itself on a fresh volume — this step is required once per fresh volume. **Use the
-   `-dev` entry** (the directory-source channel): the plain `implement-feature` entry is now the
-   github-tag-pinned *customer* channel (ADR-13) and would clone from GitHub, not the workspace. This
-   installs from the **local workspace**, not GitHub — see "Install-from-GitHub verification" below for
-   the separate real-user path.
-6. **Verify** — `/plugin` or `/plugin list` inside Claude — confirms `implement-feature-dev` shows enabled.
+   the plugin itself on a fresh volume — this step is required once per fresh volume. This dev catalog
+   holds a **single directory-source entry** (`sdlc-lite` → `./sdlc-lite-plugin`), so the install loads
+   from the **local workspace**, not GitHub. The tag-pinned *customer* channel lives in a separate
+   umbrella repo (`Sdaas/claude-plugins`, `sdlc-lite@sdaas`) — see the channels table in ADR-13 and the
+   clean-room verification note below.
+6. **Verify** — `/plugin` or `/plugin list` inside Claude — confirms `sdlc-lite` shows enabled.
 
 To rename the container, set `runArgs: ["--name", "<name>"]` in `.devcontainer/devcontainer.json`
 before step 2 — `devcontainer` CLI has no `--name` flag of its own.
 
 **Clarification — step 5 installs from the local workspace, not GitHub.** The container's
-`settings.json` pre-registers the `sdaas-sdlc-lite` marketplace as a `directory` source pointing at
-`/workspaces/sdlc-lite` (the bind-mounted repo). It resolves `implement-feature-dev` — the
-directory-source entry (`./sdlc-lite-plugin`) in `.claude-plugin/marketplace.json` — and
-copies it into `~/.claude/plugins/cache/`. (The sibling `implement-feature` entry in the same catalog
-is the github-tag-pinned *customer* channel; the container never enables it — ADR-13.) This is the dev
-path — the "Install-from-GitHub verification" note below documents the *separate* real-user path
-(`claude plugin marketplace add Sdaas/sdlc-lite` → install `implement-feature`, a real GitHub clone).
+`settings.json` pre-registers the `sdlc-lite-dev` marketplace as a `directory` source pointing at
+`/workspaces/sdlc-lite` (the bind-mounted repo). It resolves `sdlc-lite` — the sole directory-source
+entry (`./sdlc-lite-plugin`) in `.claude-plugin/marketplace.json` — and copies it into
+`~/.claude/plugins/cache/`. The github-tag-pinned *customer* channel is **not in this repo's catalog**;
+it lives in the umbrella repo `Sdaas/claude-plugins` (`sdlc-lite@sdaas`) — ADR-13. This is the dev
+path — the "Clean-room verification" note below documents the *separate* real-user path
+(`claude plugin marketplace add Sdaas/claude-plugins` → install `sdlc-lite@sdaas`, a real GitHub clone).
 
 Two harnesses:
 
@@ -751,6 +751,12 @@ tool call). Note this differs from a *real end-user* install, which hits the cac
 Guide documents that distinction.
 
 ### Install-from-GitHub verification (real user path, checked)
+
+> **⚠️ Superseded by the umbrella design (ADR-13, #41).** The run below verified the *old* single-repo
+> path (`marketplace add Sdaas/sdlc-lite` → `install implement-feature@sdaas-sdlc-lite`), which no
+> longer exists — the customer channel moved to the umbrella repo `Sdaas/claude-plugins`
+> (`sdlc-lite@sdaas`). Kept as a historical record that a github-clone install works end to end; the
+> **new** customer path is re-verified for real in #41 Phase E (clean-room verify) before the tag is cut.
 
 The **real end-user path** — `claude plugin marketplace add Sdaas/sdlc-lite` +
 `claude plugin install implement-feature@sdaas-sdlc-lite` — was verified for real on 2026-09-12,

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code when working in this repository.
 
 ## Repo Contents
 
-- Ships `implement-feature` plugin that turns a one-line feature request into a reviewed, tested, committed python change — through an interview-driven, test-first, human-in-the-loop workflow.
+- Ships the `sdlc-lite` plugin (command `/implement-feature`) that turns a one-line feature request into a reviewed, tested, committed python change — through an interview-driven, test-first, human-in-the-loop workflow.
 - Top-level `README.md` routing to three audiences
   - **User Guide** (`docs/user-guide.md`) — install from GitHub, Python-only setup + toolchain
   prerequisite, how to run, FAQ. For a real user on their **own machine / own repo**.
@@ -12,7 +12,7 @@ This file provides guidance to Claude Code when working in this repository.
   hook, the analyzer, and the testing / dry-run methodology. For someone improving the plugin.
   - **Tutorial** (`docs/tutorial.md`) — concepts (plugin vs command vs skill vs workflow) + subagent isolation, with `toy-greet-plugin/` as the runnable example.
 - `toy-greet-plugin/` a minimal 2-gate example, kept for the Tutorial
-- Both are published through `.claude-plugin/marketplace.json` (the `sdaas-sdlc-lite` marketplace).
+- **Two channels (ADR-13):** this repo's root `.claude-plugin/marketplace.json` is the **dev** catalog (`name: sdlc-lite-dev`, directory source, live) holding `sdlc-lite` + the tutorial-only `toy-greet`; the **release** channel is a separate umbrella repo `Sdaas/claude-plugins` (`name: sdaas`, github-tag-pinned) — customers `marketplace add Sdaas/claude-plugins` → `install sdlc-lite@sdaas`.
 
 ## Working conventions
 - **Process:** plan → approve → phased execution. Commit per **logical unit**. Keep git history.

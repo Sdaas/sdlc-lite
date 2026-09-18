@@ -71,7 +71,7 @@ The container's Claude gets a curated setup provisioned from **`.devcontainer/cl
 - **`settings.json`** is written **only if absent**, so a **fresh volume self-heals** but your
   in-session `/config` and plugin toggles are **never clobbered**. It ships: permissive sandbox
   permissions (`Bash(*)`, `defaultMode: auto`), the status line + smart-rm hook, `document-quality-pdf`
-  off, and the enabled plugins/marketplaces (`implement-feature-dev` — the live directory-source
+  off, and the enabled plugins/marketplaces (`sdlc-lite@sdlc-lite-dev` — the live directory-source
   channel of the plugin, see ADR-13; `mattpocock-skills`, `understand-anything`).
 - **Intentionally NOT ported:** the Mac's `Stop` / `Notification` **osascript** alert hooks — they're
   macOS-only and meaningless in a headless container.
