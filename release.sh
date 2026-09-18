@@ -184,10 +184,11 @@ if [[ "$PUSH" -eq 1 ]]; then
 fi
 
 # ── verify handoff (THE GATE — RELEASING.md §4 step 5) ───────────────────────
+PUSHED_MSG=""; [[ "$PUSH" -eq 1 ]] && PUSHED_MSG=" and pushed"
 cat <<EOF
 
 ────────────────────────────────────────────────────────────────────────────
-$TAG is prepared${PUSH:+ and pushed}. It is NOT a real release until VERIFIED.
+$TAG is prepared${PUSHED_MSG}. It is NOT a real release until VERIFIED.
 
 Clean-room verify (isolated env, NO dev marketplace — see ADR-13 / RELEASING.md §4):
   1. From a fresh Claude config (own CLAUDE_CONFIG_DIR/HOME, toolchain installed):
