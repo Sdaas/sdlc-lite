@@ -132,7 +132,9 @@ Commit per logical unit; **never commit before human approval**; **never push/ta
 - [x] **C** — umbrella repo `Sdaas/claude-plugins` created + catalog + README
       (2026-09-18: public repo pushed; `marketplace add Sdaas/claude-plugins` validated the `sdaas`
       catalog via a real HTTPS clone; local clone at `../claude-plugins` for release.sh Phase D)
-- [ ] **D** — cross-repo `release.sh` + surgery unit-tests
+- [x] **D** — cross-repo `release.sh` + surgery unit-tests
+      (2026-09-18: reworked to bump+tag here → repoint umbrella via `--umbrella <clone>` /
+      `$UMBRELLA_DIR` → push both confirmation-gated; `release.test.sh` 21/21 in throwaway repos)
 - [ ] **E** — clean-room verify (isolated config) install→run + `/plugin update` check  ← **the gate**
 - [ ] **F** — RELEASING.md / README / User Guide finalized; ADR-13 proven; #41 closed
 
