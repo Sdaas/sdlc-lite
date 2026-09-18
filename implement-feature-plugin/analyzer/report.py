@@ -56,12 +56,20 @@ def render_runlog(a: RunLogAnalysis) -> str:
 
     lines += ["", "### Isolation compliance", ""]
     for c in a.checks:
-        mark = "✅" if c.passed else "❌"
+        mark = "✅" if c.passed else "⚠️"
         lines.append(f"- {mark} **{c.name}** — {c.detail}")
         if not c.passed and c.evidence:
             for ev in c.evidence[:10]:
                 lines.append(f"    - `{ev}`")
-    verdict = "✅ all isolation checks passed" if a.all_passed else "❌ isolation VIOLATION(S) detected"
+    # This check re-derives from policy.py what SHOULD have been denied — it does not
+    # itself confirm the live guard actually blocked each attempt (that's `guard_decision`
+    # in the raw run-log, cross-checkable via the Sources section). So a failed check here
+    # means "an agent attempted this," not "isolation broke" — the guard's own real-time
+    # denial is what actually held the boundary. Don't conflate the two in the verdict.
+    verdict = ("✅ all isolation checks passed — no attempts to escape confinement"
+               if a.all_passed else
+               "⚠️ attempted confinement escape(s) detected — see evidence above for whether "
+               "the guard's real-time `guard_decision` blocked each one")
     lines += ["", f"**Verdict: {verdict}.**", ""]
     return "\n".join(lines)
 

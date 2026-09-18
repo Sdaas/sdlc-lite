@@ -132,8 +132,17 @@ def _handoff_dir(runlog_path: str) -> str:
     """The run's real handoff dir: the directory holding the run-log (by convention
     <artifact_dir>/handoff/run-log.jsonl). Anchors the reviewer write-confinement check,
     exactly as guard.py's _handoff_dir() anchors the preventive side — same value, same
-    seam, so the two legs agree on what counts as 'inside the outbox'."""
-    return os.path.normpath(os.path.dirname(runlog_path))
+    seam, so the two legs agree on what counts as 'inside the outbox'.
+
+    **Must be absolute.** The guard logs write-targets as absolute paths (Write/Edit tool
+    targets and resolved Bash redirects are always absolute in practice), and
+    `policy.is_within()` does a plain string-prefix comparison — no implicit normalization
+    against cwd. A relative `runlog_path` (e.g. `--workdir` passed as a relative path, which
+    `analyze_run.py` does not itself require to be absolute) would silently produce a
+    relative handoff_dir that can never match those absolute targets, misclassifying every
+    legitimate handoff-outbox write as a policy violation. `abspath()` makes this correct
+    regardless of what the caller passes."""
+    return os.path.abspath(os.path.normpath(os.path.dirname(runlog_path)))
 
 
 def parse_runlog(path: str) -> RunLogAnalysis:

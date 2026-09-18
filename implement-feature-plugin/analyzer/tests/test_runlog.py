@@ -1,6 +1,8 @@
 """Tests for the load-bearing run-log reader."""
 from __future__ import annotations
 
+import os
+
 from analyzer.runlog import parse_runlog
 from policy import bash_write_targets, confined_write_denied
 
@@ -210,6 +212,27 @@ def test_reviewer_outbox_outside_handoff_dir_is_a_violation(tmp_path):
     ])
     a = parse_runlog(str(log))
     assert not _check(a, "read-only critics stayed out of the product tree").passed
+
+
+def test_relative_runlog_path_still_recognizes_own_outbox(tmp_path, monkeypatch):
+    # #31b-iii regression: a live run's conductor passed a RELATIVE --workdir to
+    # analyze_run.py (the CLI does not itself require --workdir to be absolute). Without
+    # abspath() in _handoff_dir(), that produced a relative handoff_dir that could never
+    # string-match the guard's ABSOLUTE logged write targets — misclassifying every
+    # legitimate handoff-outbox write (Write/Edit targets are always absolute) as a
+    # product-tree violation. 5 of 8 "violations" in that run were this false positive.
+    monkeypatch.chdir(tmp_path)
+    run_dir = tmp_path / "run"
+    (run_dir / "handoff").mkdir(parents=True)
+    log_abs = run_dir / "handoff" / "run-log.jsonl"
+    write_runlog(log_abs, [
+        call("implement-feature:test-reviewer", "Write",
+             str(run_dir / "handoff" / "06-test-review-findings.md")),
+    ])
+    relative_path = os.path.relpath(log_abs, tmp_path)
+    a = parse_runlog(relative_path)
+    c = _check(a, "read-only critics stayed out of the product tree")
+    assert c.passed, f"legitimate outbox write misclassified via relative path: {c.evidence}"
 
 
 def test_reviewer_fd_dup_redirect_not_a_violation(tmp_path):
