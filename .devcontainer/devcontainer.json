@@ -10,7 +10,7 @@
   // Fix the container's name so it's the same regardless of which host path
   // the repo is cloned into (the devcontainer CLI otherwise derives the name
   // from a hash of the workspace folder path, which changes across clones).
-  "runArgs": ["--name", "sdlc-lite-devcontainer"],
+  "runArgs": ["--name", "sdlc-lite-test"],
 
   // Run as the non-root user provided by the base image.
   "remoteUser": "vscode",

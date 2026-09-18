@@ -599,6 +599,39 @@ boundary (the product *writes and commits code*) and the environment where Gate 
 Full lifecycle — build, shell in, teardown levels, VS Code palette commands, the container's Claude UX
 provisioning — is in **[DEVCONTAINER.md](../DEVCONTAINER.md)**.
 
+### Fresh setup from zero (no container, image, or volume yet)
+
+1. **Docker up** — `docker ps` — confirms Docker Desktop is running.
+2. **Build + start** — `devcontainer up --workspace-folder .` — builds the image (first time only)
+   and starts the container, named per `runArgs` in `.devcontainer/devcontainer.json`. Creates the
+   `sdlc-lite-claude` volume if absent.
+3. **Verify toolchain** — `devcontainer exec --workspace-folder . bash -c "python --version && ruff
+   --version && mypy --version && pytest --version && python -c \"import importlib.metadata as m;
+   print('mutmut', m.version('mutmut'))\" && claude --version"` — confirms the pinned toolchain
+   (`postCreateCommand`) installed cleanly.
+4. **Login** — `devcontainer exec --workspace-folder . claude` (interactive) — first run on a fresh
+   volume needs OAuth login; persists into the `sdlc-lite-claude` volume.
+5. **Install plugin** — inside that `claude` session: `/plugin install implement-feature@daas-plugins`
+   (or `claude plugin install implement-feature@daas-plugins` from a container shell) — **known gap:**
+   `postStartCommand` registers the `daas-plugins` marketplace (a `directory` source pointing at the
+   bind-mounted `/workspaces/sdlc-lite`, per `.devcontainer/claude/settings.json`) but does not install
+   the plugin itself on a fresh volume — this step is required once per fresh volume. This installs
+   from the **local workspace**, not GitHub — see "Install-from-GitHub verification" below for the
+   separate real-user path.
+6. **Verify** — `/plugin` or `/plugin list` inside Claude — confirms `implement-feature` shows enabled.
+
+To rename the container, set `runArgs: ["--name", "<name>"]` in `.devcontainer/devcontainer.json`
+before step 2 — `devcontainer` CLI has no `--name` flag of its own.
+
+**Clarification — step 5 installs from the local workspace, not GitHub.** The container's
+`settings.json` pre-registers the `daas-plugins` marketplace as a `directory` source pointing at
+`/workspaces/sdlc-lite` (the bind-mounted repo, source `./implement-feature-plugin` in
+`.claude-plugin/marketplace.json`). `/plugin install implement-feature@daas-plugins` just resolves
+that name against the already-known marketplace and copies it into `~/.claude/plugins/cache/`. This
+is the dev path — the "Install-from-GitHub verification" note below documents the *separate*
+real-user path (`claude plugin marketplace add Sdaas/sdlc-lite`, a real GitHub clone) as something
+checked once, not the path used here.
+
 Two harnesses:
 
 - **Host unit tests** — `guard.py` and `analyzer/` have real unit tests (synthetic stdin, synthetic
@@ -607,6 +640,20 @@ Two harnesses:
   branch; the analyzer's cover both transcript-degradation modes.
 - **End-to-end dry runs** — a human drives an actual `/implement-feature` run in a container terminal
   (a TTY constraint), then the analyzer is run over the resulting logs and the fallout is fixed.
+
+**Reviewing handoff files mid-run, from the Mac.** When a run happens against a fixture's scratch
+repo (`/workspaces/<slug>-run/`, see "Standard fixtures" below), its `.implement-feature/` artifacts
+are **container-only** — they're outside the `sdlc-lite` bind mount, so they don't exist on the Mac's
+filesystem and a normal Mac editor/Finder can't see them. Three ways to read a gate's draft/handoff
+file at a STOP:
+1. **`devcontainer exec` + `cat`** — quickest, no GUI: `devcontainer exec --workspace-folder . cat
+   /workspaces/<slug>-run/.implement-feature/<run>/handoff/draft/<file>.md`.
+2. **VS Code, attached to the container** — Command Palette → **"Dev Containers: Attach to Running
+   Container"** → pick the container → open `/workspaces/<slug>-run`. This differs from "Reopen in
+   Container," which only ever shows the bind-mounted `sdlc-lite` folder — *Attach* opens a window on
+   the container's whole filesystem, so fixture scratch repos are visible too.
+3. **`docker cp`** — pull a copy onto the Mac as a real local file: `docker cp
+   <container>:/workspaces/<slug>-run/.implement-feature/<run>/handoff/draft/<file>.md ./review.md`.
 
 **A dry run is a bug-finding machine.** The first full run (`parse_duration`) validated the core design
 *and* shook out ~13 concrete improvements. Subsequent runs (`slugify`, and the async `CachedFetcher`
