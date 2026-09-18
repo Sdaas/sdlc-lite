@@ -1,19 +1,19 @@
 {
-  "name": "daas-plugins",
+  "name": "sdlc-lite-dev",
   "owner": {
     "name": "Soumendra Daas",
     "email": "soumendra.daas@gmail.com"
   },
   "plugins": [
     {
-      "name": "toy-greet",
-      "source": "./toy-greet-plugin",
-      "description": "Toy 2-gate greeting workflow — a learning scaffold for plugin/command mechanics."
+      "name": "sdlc-lite",
+      "source": "./sdlc-lite-plugin",
+      "description": "DEV channel of the sdlc-lite plugin — loaded in place from this workspace (directory source, live). Enabled only by the dev container; end users install the tag-pinned release from the umbrella marketplace `Sdaas/claude-plugins` (`sdlc-lite@sdaas`). See ADR-13."
     },
     {
-      "name": "implement-feature",
-      "source": "./implement-feature-plugin",
-      "description": "Interview-driven, test-first, human-in-the-loop workflow that builds a Python feature via a conductor plus isolated model-pinned subagent gates."
+      "name": "toy-greet",
+      "source": "./toy-greet-plugin",
+      "description": "Toy 2-gate greeting workflow — a tutorial-only prop for plugin/command mechanics. Never published to the release channel."
     }
   ]
 }

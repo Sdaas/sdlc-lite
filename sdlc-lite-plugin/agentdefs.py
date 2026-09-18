@@ -108,7 +108,7 @@ def load_pins(plugin_root: str | None = None) -> dict[str, AgentPin]:
 
 def _role_of(agent_type: str) -> str:
     """De-namespace a (possibly plugin-namespaced) agent/subagent type to its role name,
-    e.g. 'implement-feature:code-reviewer' -> 'code-reviewer'."""
+    e.g. 'sdlc-lite:code-reviewer' -> 'code-reviewer'."""
     return (agent_type or "").split(":", 1)[-1]
 
 

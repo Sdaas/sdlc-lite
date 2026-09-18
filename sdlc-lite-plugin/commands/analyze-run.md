@@ -2,7 +2,7 @@
 description: Analyze a past /implement-feature run — isolation-compliance verdicts, per-gate model/effort integrity (pinned vs actual), and token usage — from its artifact dir. Measurement only; never changes code or git.
 ---
 
-# /implement-feature:analyze-run — post-run observability report
+# /sdlc-lite:analyze-run — post-run observability report
 
 Run the deterministic analyzer over a finished (or in-flight) `/implement-feature` run and
 present its Markdown report. This is **measurement, never orchestration** (P40): it reads
@@ -22,7 +22,7 @@ touches git.
 - **Per-agent activity** — tool-call counts and files read/written.
 
 ## How to run it
-The analyzer is a Python package bundled with this plugin under `implement-feature-plugin/`.
+The analyzer is a Python package bundled with this plugin under `sdlc-lite-plugin/`.
 Resolve `<PLUGIN_ROOT>` = this plugin's install dir (the folder containing `analyzer/`), and
 `<ARTIFACT_DIR>` = the run's `.implement-feature/<NN-slug-TS>/` dir (the value in
 `.implement-feature/.active-run` for the current run, or any past run's dir):

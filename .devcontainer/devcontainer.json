@@ -67,7 +67,7 @@
   // mutmut is version-checked via package metadata, NOT `mutmut --version`:
   // mutmut 3.x eagerly loads its config on ANY invocation and hard-fails when run
   // outside a project with source to mutate. Metadata is a deterministic liveness check.
-  "postCreateCommand": "sudo chown -R vscode:vscode /home/vscode/.claude && sudo env \"PATH=$PATH\" uv pip install --system -r implement-feature-plugin/toolchain/requirements-dev.txt && python --version && ruff --version && mypy --version && pytest --version && python -c \"import importlib.metadata as m; print('mutmut', m.version('mutmut'))\" && (claude --version || echo 'claude not on PATH yet (feature installs it)')",
+  "postCreateCommand": "sudo chown -R vscode:vscode /home/vscode/.claude && sudo env \"PATH=$PATH\" uv pip install --system -r sdlc-lite-plugin/toolchain/requirements-dev.txt && python --version && ruff --version && mypy --version && pytest --version && python -c \"import importlib.metadata as m; print('mutmut', m.version('mutmut'))\" && (claude --version || echo 'claude not on PATH yet (feature installs it)')",
 
   // Runs on EVERY start (idempotent). Provisions our Claude Code UX into the
   // persisted ~/.claude volume from `.devcontainer/claude/`:

@@ -152,7 +152,7 @@ Then, inside the container's Claude session:
 claude plugin marketplace add /workspaces/sdlc-lite   # CLI form is deterministic
 ```
 ```bash
-claude plugin install toy-greet@daas-plugins   # CLI form is deterministic
+claude plugin install toy-greet@sdlc-lite-dev   # CLI form is deterministic
 ```
 ```
 /reload-plugins
@@ -224,7 +224,7 @@ were *wrong*:
    **not** fire in headless runs; a **plugin** hook fired for the conductor *and* every subagent. Put
    reliability-critical hooks in the plugin (or user settings).
 3. **Plugin agents are namespaced.** Address them as `plugin:agent` (e.g.
-   `implement-feature:test-writer`) — the bare name will not resolve.
+   `sdlc-lite:test-writer`) — the bare name will not resolve.
 4. **Effort is frontmatter-only** — pin it in the agent-def; there's no spawn-time override.
 5. **A worktree does not hide files** — `isolation: worktree` is a full branch copy. To keep a file
    from an agent, keep it out of the agent's lane (the fence) or deny it in the hook.
@@ -260,8 +260,8 @@ enforces, never when it orchestrates.**
 ## 9. Where to go next
 
 - **Read the toy:** `toy-greet-plugin/commands/greet.md` — the whole pattern in one short file.
-- **Read the real score:** `implement-feature-plugin/skills/implement-feature/SKILL.md` — the twelve
+- **Read the real score:** `sdlc-lite-plugin/skills/implement-feature/SKILL.md` — the twelve
   gates as an ordered English script.
-- **Read the enforcement:** `implement-feature-plugin/hooks/scripts/guard.py` and `analyzer/` — the
+- **Read the enforcement:** `sdlc-lite-plugin/hooks/scripts/guard.py` and `analyzer/` — the
   only two pieces of real code, and why they're allowed to be code.
 - **Understand the decisions:** the [Developer Guide](developer-guide.md)'s ADRs and design principles.

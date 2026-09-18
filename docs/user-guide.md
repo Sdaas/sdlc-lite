@@ -46,7 +46,7 @@ The plugin is published through a marketplace in this repo. Register the marketp
 claude plugin marketplace add Sdaas/sdlc-lite
 
 # install the plugin from it
-claude plugin install implement-feature@daas-plugins
+claude plugin install implement-feature@sdaas-sdlc-lite
 ```
 
 Then, inside a Claude Code session, activate it in the current session:
@@ -82,13 +82,13 @@ commands in** (use a virtualenv for your project):
 | `pytest-asyncio` | async test support | when the feature is concurrent/async |
 
 The plugin ships the pinned list at
-`implement-feature-plugin/toolchain/requirements-dev.txt`. Install it into your project's environment,
+`sdlc-lite-plugin/toolchain/requirements-dev.txt`. Install it into your project's environment,
 either from the file (after `claude plugin install`, it lives under your Claude Code plugins cache) or
 by name:
 
 ```bash
 # from the pinned file (path is under your plugins cache after install):
-pip install -r ~/.claude/plugins/**/implement-feature-plugin/toolchain/requirements-dev.txt
+pip install -r ~/.claude/plugins/**/sdlc-lite-plugin/toolchain/requirements-dev.txt
 
 # or simply, by name (the pinned floors):
 pip install ruff mypy pytest pytest-cov mutmut hypothesis pytest-asyncio
@@ -218,9 +218,9 @@ active environment.
 
 **Where do I see what each subagent did — which model, which files it read?**
 Gate 11 prints the report automatically, and you can re-run it on any past run with
-`/implement-feature:analyze-run`. It reads the guard hook's tamper-evident audit log and the session
+`/sdlc-lite:analyze-run`. It reads the guard hook's tamper-evident audit log and the session
 transcript.
 
 **How do I uninstall it?**
 `claude plugin uninstall implement-feature`, and optionally
-`claude plugin marketplace remove daas-plugins`. Everything is reversible.
+`claude plugin marketplace remove sdaas-sdlc-lite`. Everything is reversible.

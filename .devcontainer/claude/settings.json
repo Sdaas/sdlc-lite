@@ -31,10 +31,10 @@
     ]
   },
   "enabledPlugins": {
-    "implement-feature@daas-plugins": true
+    "sdlc-lite@sdlc-lite-dev": true
   },
   "extraKnownMarketplaces": {
-    "daas-plugins": {
+    "sdlc-lite-dev": {
       "source": {
         "source": "directory",
         "path": "/workspaces/sdlc-lite"

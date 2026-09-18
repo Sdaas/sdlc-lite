@@ -51,7 +51,7 @@ WRITE = "write"
 CONDUCTOR = "conductor"
 
 # The five isolated roles, matched as a SUBSTRING of the (possibly plugin-namespaced)
-# agent_type — e.g. "implement-feature:test-writer" -> "test-writer". The four hyphenated
+# agent_type — e.g. "sdlc-lite:test-writer" -> "test-writer". The four hyphenated
 # names are mutually distinct substrings; "verifier" is distinct from "code-reviewer".
 ROLES = ("test-writer", "test-reviewer", "implementer", "verifier", "code-reviewer")
 

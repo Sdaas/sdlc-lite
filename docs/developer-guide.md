@@ -46,7 +46,7 @@ observability). Editing the workflow means editing Markdown, not writing code.
 ### Repository layout of the product
 
 ```
-implement-feature-plugin/
+sdlc-lite-plugin/
 ├── .claude-plugin/plugin.json          # identity metadata
 ├── commands/
 │   ├── implement-feature.md            # thin entry point → loads the skill
@@ -81,7 +81,7 @@ The system is a **conductor [C]** plus **isolated subagents [I]**.
   the human, and walks the gates in order. Human-facing gates (interview, design, review) run here.
 - **Isolated subagents [I]** — bias-sensitive gates run as *separate* agents: fresh context, a pinned
   model/effort, and a curated file-only inbox. They are spawned via the Agent tool using the
-  **plugin-namespaced** `subagent_type` — `implement-feature:test-writer`, never the bare name.
+  **plugin-namespaced** `subagent_type` — `sdlc-lite:test-writer`, never the bare name.
 
 **Why isolate?** "Bias" is two distinct problems:
 
@@ -192,7 +192,7 @@ uniform (`medium`) across every gate — a deliberate dev-only spread (`test-rev
 `code-reviewer` `high`) proved the receipt's effort audit end-to-end before release; real-world
 config differentiates on model, not effort (#28, #35).
 
-**The pins are the SSOT for the receipt (#22).** [`agentdefs.py`](../implement-feature-plugin/agentdefs.py)
+**The pins are the SSOT for the receipt (#22).** [`agentdefs.py`](../sdlc-lite-plugin/agentdefs.py)
 reads this frontmatter and hands the model/effort pins to the analyzer's receipt — the same
 seam-not-two-copies discipline `policy.py` gives the isolation rules. **Pinned gates are dispatched
 bare** (no inline `model`) so the frontmatter pin — including the *dated* reviewer pin — is honored;
@@ -211,7 +211,7 @@ verified above), so it is audit-only: the receipt WARNs on any deviation, either
 `hooks/hooks.json` registers a **PreToolUse** hook (`hooks/scripts/guard.py`) that fires for the
 conductor **and every subagent**, on every
 `Read`/`Bash`/`Grep`/`Glob`/`Edit`/`Write`/`NotebookEdit`. It keys on the `agent_type` (namespaced,
-e.g. `implement-feature:test-writer`) and `agent_id` carried on stdin. Five jobs:
+e.g. `sdlc-lite:test-writer`) and `agent_id` carried on stdin. Five jobs:
 
 1. **Audit** — appends `{ts, agent_type, agent_id, tool, target}` per tool call — a tamper-evident,
    per-agent record of exactly what each agent read. Timestamps are logged **UTC/tz-aware** so they
@@ -251,7 +251,7 @@ will actually touch. The design accepts this and closes it with a second, indepe
 changed from the earlier enforcer-only state:
 
 - **One policy, two legs, no drift (the SSOT).** The per-agent allow/deny rules now live once in
-  [`implement-feature-plugin/policy.py`](../implement-feature-plugin/policy.py) — shared predicates
+  [`sdlc-lite-plugin/policy.py`](../sdlc-lite-plugin/policy.py) — shared predicates
   (`looks_secret`, `is_test_path`, the design-internal/draft tests, the Bash parsing) plus a
   data-driven rule table and a single `decide(agent_type, access, path)` authority. **Both** the
   in-hook enforcer (`guard.py`) and the detective analyzer (`runlog.py`) *import* it. Previously each
@@ -265,7 +265,7 @@ changed from the earlier enforcer-only state:
   check — by design, because the backstop is the auditor, not more parsing.
 
 **The authoritative leg reads the *effect*, not the intent.** The analyzer's transcript auditor
-([`analyzer/auditor.py`](../implement-feature-plugin/analyzer/auditor.py)) fingerprints each
+([`analyzer/auditor.py`](../sdlc-lite-plugin/analyzer/auditor.py)) fingerprints each
 content-protected artifact (e.g. `03-design-internal.md`) and scans each subagent transcript's **tool
 output** for it. Because a leak lands in *some* string leaf of the transcript's `toolUseResult` (Read
 → `file.content`, Bash → `stdout`, Edit → `originalFile`) *however* it was read, this catches the
@@ -273,7 +273,7 @@ glob/indirect leak the command-string legs cannot see, and it is **method-agnost
 **trust-voiding**: the Gate-11 report prints `THIS RUN IS UNTRUSTED` and the receipt's *Files seen*
 column shows `❌ LEAK`. *Which* artifact a role is forbidden is decided by `policy.decide()`, so the
 auditor and the guard agree on "protected" by construction. (On-disk record shapes: see
-[`analyzer/TRANSCRIPT-FORMAT.md`](../implement-feature-plugin/analyzer/TRANSCRIPT-FORMAT.md) §5.)
+[`analyzer/TRANSCRIPT-FORMAT.md`](../sdlc-lite-plugin/analyzer/TRANSCRIPT-FORMAT.md) §5.)
 
 **Honesty over false comfort.** The content audit needs the session transcript (it reads tool output),
 so when the transcript is absent/drifted the audit renders **UNKNOWN — not run**, never a silent PASS:
@@ -319,7 +319,7 @@ thing a person deciding whether to trust a run's output needs — not a promise 
 For the concrete on-disk layout and record
 shapes those fields live in — main transcript, `<uuid>/subagents/*.jsonl`, and the `.meta.json`
 sidecar, with real snippets — see the field guide
-[`implement-feature-plugin/analyzer/TRANSCRIPT-FORMAT.md`](../implement-feature-plugin/analyzer/TRANSCRIPT-FORMAT.md).
+[`sdlc-lite-plugin/analyzer/TRANSCRIPT-FORMAT.md`](../sdlc-lite-plugin/analyzer/TRANSCRIPT-FORMAT.md).
 
 Two independent readers, with the fragile one quarantined behind a boundary:
 
@@ -338,7 +338,7 @@ Two independent readers, with the fragile one quarantined behind a boundary:
   ways: **absent** (soft "skipped" note) vs **drift/broken** (loud "format changed, update the parser"
   alarm). A schema self-check deliberately raises the loud error if the depended-on fields vanish.
 - **`receipt.py`** — the **headline**: one per-agent record attesting both guarantees. It fills the
-  *requested* model/effort from the agent-def pins ([`agentdefs.py`](../implement-feature-plugin/agentdefs.py))
+  *requested* model/effort from the agent-def pins ([`agentdefs.py`](../sdlc-lite-plugin/agentdefs.py))
   and the *actual* from the transcript, then verdicts them — a model mismatch is trust-voiding (**FAIL**),
   an effort deviation is a **WARN** (the cost knob, not trust). The match is alias/dated-aware: an alias
   pin (`sonnet`) accepts any same-family resolved id; a dated pin (`claude-opus-4-8`) demands an exact id.
@@ -366,7 +366,7 @@ column flips to `❌ LEAK`.
 The analyzer runs automatically at Gate 11 (full pass, incl. the transcript auditor), and its fast
 intent-level pass runs again just before Gate 9 (`--no-transcript`, so a breach is surfaced for
 explicit human acknowledgement before shipping). It can also be run on any past run via
-`/implement-feature:analyze-run`. Full detail: `analyzer/README.md`.
+`/sdlc-lite:analyze-run`. Full detail: `analyzer/README.md`.
 
 ---
 
@@ -478,7 +478,7 @@ VIOLATION, burying real signal. Guard and analyzer must share the identical pred
 ### ADR-11 — Isolation is proven by intent *and* effect: one policy, two legs
 
 *Decision:* isolation is not a single mechanism but a **policy** feeding two independent legs. One
-declarative per-agent policy ([`policy.py`](../implement-feature-plugin/policy.py) — a data rule table
+declarative per-agent policy ([`policy.py`](../sdlc-lite-plugin/policy.py) — a data rule table
 plus `decide(agent_type, access, path)`) is imported by **both** a real-time in-hook *enforcer*
 (`guard.py`, prevention, best-effort for Bash) and a post-hoc *auditor* (`analyzer/`, detection). The
 auditor itself uses two signals with fixed roles: the transcript **content-fingerprint** (reads each
@@ -509,7 +509,7 @@ inline `model`); the frontmatter pin — including the *dated* reviewer pin `cla
 honored, and the analyzer compares the transcript's *actual* resolved model against the pin: a
 mismatch is a **FAIL**, a resolved model that matches is a PASS. **Effort** is likewise audit-only:
 the receipt WARNs on any deviation from the pin, in either direction, but nothing prevents it. Both
-pins come from one SSOT ([`agentdefs.py`](../implement-feature-plugin/agentdefs.py)), so what is
+pins come from one SSOT ([`agentdefs.py`](../sdlc-lite-plugin/agentdefs.py)), so what is
 promised and what is verified cannot drift — the discipline ADR-11 gives the isolation rules via
 `policy.py`.
 
@@ -539,6 +539,80 @@ promised and what is verified cannot drift — the discipline ADR-11 gives the i
   tier. The receipt reports the *actual* resolved model/effort regardless, so a broken pin is never
   hidden — observability holds even where prevention is not possible (effort has no rank-1 lever at
   all, so it can only ever be proven, never forced).
+
+### ADR-13 — One `sdlc-lite` plugin; two channels are two marketplaces in two repos
+
+> **Status (2026-09-18):** decision settled for [#41](https://github.com/Sdaas/sdlc-lite/issues/41);
+> the mechanism is *proven* only when the clean-room verify passes. Execution plan + progress:
+> [`41-plan.md`](../41-plan.md). Until #41 closes, treat `release.sh`, `RELEASING.md` §2/§4/§5, and the
+> install commands as intended-but-unverified.
+>
+> *Supersedes an earlier draft of this ADR* (a single repo carrying two catalog entries —
+> `implement-feature` github-pinned + `implement-feature-dev` directory). That approach worked but was
+> abandoned once we chose separate repos per plugin (below); the two-marketplace split is cleaner and is
+> the ecosystem's documented pattern.
+
+*Decision — the product is one plugin, `sdlc-lite`.* The plugin bundles the whole SDLC workflow — the
+commands `/implement-feature` and `/analyze-run` today, `/plan-feature` next — over **one** shared
+guard hook, **one** set of five model-pinned isolated gates, and **one** quality-standards SSOT. The
+plugin folder is `sdlc-lite-plugin/`; `plugin.json` `name` is `sdlc-lite`; the isolated gates dispatch
+as `sdlc-lite:<agent>` (e.g. `sdlc-lite:test-writer`). **Command names are independent of the plugin
+name** and do not change. *Boundary rule:* a new command joins `sdlc-lite` **iff** it uses that shared
+isolation infrastructure; an unrelated tool (say a personal-finance plugin) becomes a **separate plugin
+in its own repo**.
+
+*Decision — two channels, two marketplaces, two repos.* A Claude marketplace is exactly **one catalog
+(`.claude-plugin/marketplace.json`) in one repo**, and a directory source loaded in place is **never
+version-pinned**. So the channels are physically separate catalogs:
+
+| Channel | Lives in | Catalog `name` | `sdlc-lite` entry source | Audience |
+|---|---|---|---|---|
+| **dev** | **this repo** (`Sdaas/sdlc-lite`) root catalog | `sdlc-lite-dev` | **directory** `./sdlc-lite-plugin` (live) | dev container only — enables `sdlc-lite@sdlc-lite-dev` |
+| **release** | **umbrella repo** `Sdaas/claude-plugins` | `sdaas` | **github** `Sdaas/sdlc-lite`, pinned `ref: vX.Y.Z` + `sha` | customers — `marketplace add Sdaas/claude-plugins` → `install sdlc-lite@sdaas` |
+
+The **umbrella** repo (`Sdaas/claude-plugins`, catalog `sdaas`) is the maintainer's cross-product
+marketplace: each future plugin (in its **own** repo) gets one github-pinned entry here, so `sdaas`
+*honestly* aggregates plugins that live in different repos — which a single per-product catalog cannot.
+This repo's root catalog is now **dev-only** (the container reads it via a directory source; it also
+lists `toy-greet` for the Tutorial). Customers never read it — a README pointer routes them to the
+umbrella so nobody accidentally `marketplace add Sdaas/sdlc-lite` and gets an unpinned live install.
+
+A **release** is cut by `release.sh` (cross-repo): **bump `plugin.json` `version`** → **tag `vX.Y.Z`**
+in this repo → **repoint the umbrella's `sdlc-lite` entry** `ref`/`sha` to that tag. All three are
+required (see below). Verification is the gate — see the last bullet.
+
+*Why:*
+
+- **The bug, concretely.** A directory source *loaded in place* is never version-pinned. If customers
+  installed off such an entry: they install Monday; you push a broken experiment to `main` Tuesday;
+  Wednesday their tool re-resolves against `main` HEAD and runs your broken code — you never
+  "released," yet their install moved under them. `plugin.json`'s `"version"` does no work for a
+  directory source, so you **cannot freeze customers at a version**. That is #41 in one sentence.
+- **The fix, concretely.** Customers install `sdlc-lite@sdaas`, whose source is the umbrella's
+  `github` entry pinned to `v1.0.0-beta.1`'s commit — and *stop there*. Your Tuesday push to
+  `Sdaas/sdlc-lite` `main` doesn't touch them; meanwhile the dev container, on the directory-source
+  `sdlc-lite@sdlc-lite-dev`, *does* see Tuesday's code live — exactly what a developer wants. Customers
+  move only when *you* cut the next release and they run `plugin update`.
+- **Why separate repos + an umbrella, not one repo.** The maintainer will ship unrelated plugins
+  (agentic-coding tools here, a finances plugin elsewhere) that shouldn't share a repo. Since one
+  marketplace = one repo, aggregating across products *requires* a dedicated umbrella repo whose
+  entries are github sources into each product repo. Doing this now — at **zero customers** — avoids a
+  customer-breaking marketplace migration later. It also matches the ecosystem's documented
+  "separate stable/canary marketplaces at different refs" pattern and pins to a **commit SHA, not a
+  moving tag** (`sha` wins over `ref` when both are set).
+- **The version bump is the update trigger.** `/plugin update` compares the resolved `version` and
+  **skips if it is unchanged** — so a release is `version` bump **+** tag **+** umbrella repoint, all
+  three. (Set `version` in `plugin.json` only, never also in the marketplace entry — the platform
+  silently prefers `plugin.json`.)
+- **The dev container is a development harness, not a customer simulator.** It wears two hats: the
+  pinned toolchain (a customer needs this too) *and* a directory-source marketplace that loads the
+  plugin live (the opposite of a customer). That second hat sabotages a naive customer test — an
+  install run while the dev marketplace is active can resolve the *local* copy and "pass" without
+  proving anything. So #41's verify runs from an **isolated Claude config with no dev marketplace**:
+  with no directory source to fall back to, `marketplace add Sdaas/claude-plugins` → `install
+  sdlc-lite@sdaas` *must* fetch the tagged commit — making the customer path un-fudgeable and leaving
+  dev state pristine. Only after that clean-room install runs `/implement-feature` end-to-end is a tag
+  a real release.
 
 ---
 
@@ -615,32 +689,34 @@ provisioning — is in **[DEVCONTAINER.md](../DEVCONTAINER.md)**.
    (`postCreateCommand`) installed cleanly.
 4. **Login** — `devcontainer exec --workspace-folder . claude` (interactive) — first run on a fresh
    volume needs OAuth login; persists into the `sdlc-lite-claude` volume.
-5. **Install plugin** — inside that `claude` session: `/plugin install implement-feature@daas-plugins`
-   (or `claude plugin install implement-feature@daas-plugins` from a container shell) — **known gap:**
-   `postStartCommand` registers the `daas-plugins` marketplace (a `directory` source pointing at the
+5. **Install plugin** — inside that `claude` session: `/plugin install sdlc-lite@sdlc-lite-dev`
+   (or `claude plugin install sdlc-lite@sdlc-lite-dev` from a container shell) — **known gap:**
+   `postStartCommand` registers the `sdlc-lite-dev` marketplace (a `directory` source pointing at the
    bind-mounted `/workspaces/sdlc-lite`, per `.devcontainer/claude/settings.json`) but does not install
-   the plugin itself on a fresh volume — this step is required once per fresh volume. This installs
-   from the **local workspace**, not GitHub — see "Install-from-GitHub verification" below for the
-   separate real-user path.
-6. **Verify** — `/plugin` or `/plugin list` inside Claude — confirms `implement-feature` shows enabled.
+   the plugin itself on a fresh volume — this step is required once per fresh volume. This dev catalog
+   holds a **single directory-source entry** (`sdlc-lite` → `./sdlc-lite-plugin`), so the install loads
+   from the **local workspace**, not GitHub. The tag-pinned *customer* channel lives in a separate
+   umbrella repo (`Sdaas/claude-plugins`, `sdlc-lite@sdaas`) — see the channels table in ADR-13 and the
+   clean-room verification note below.
+6. **Verify** — `/plugin` or `/plugin list` inside Claude — confirms `sdlc-lite` shows enabled.
 
 To rename the container, set `runArgs: ["--name", "<name>"]` in `.devcontainer/devcontainer.json`
 before step 2 — `devcontainer` CLI has no `--name` flag of its own.
 
 **Clarification — step 5 installs from the local workspace, not GitHub.** The container's
-`settings.json` pre-registers the `daas-plugins` marketplace as a `directory` source pointing at
-`/workspaces/sdlc-lite` (the bind-mounted repo, source `./implement-feature-plugin` in
-`.claude-plugin/marketplace.json`). `/plugin install implement-feature@daas-plugins` just resolves
-that name against the already-known marketplace and copies it into `~/.claude/plugins/cache/`. This
-is the dev path — the "Install-from-GitHub verification" note below documents the *separate*
-real-user path (`claude plugin marketplace add Sdaas/sdlc-lite`, a real GitHub clone) as something
-checked once, not the path used here.
+`settings.json` pre-registers the `sdlc-lite-dev` marketplace as a `directory` source pointing at
+`/workspaces/sdlc-lite` (the bind-mounted repo). It resolves `sdlc-lite` — the sole directory-source
+entry (`./sdlc-lite-plugin`) in `.claude-plugin/marketplace.json` — and copies it into
+`~/.claude/plugins/cache/`. The github-tag-pinned *customer* channel is **not in this repo's catalog**;
+it lives in the umbrella repo `Sdaas/claude-plugins` (`sdlc-lite@sdaas`) — ADR-13. This is the dev
+path — the "Clean-room verification" note below documents the *separate* real-user path
+(`claude plugin marketplace add Sdaas/claude-plugins` → install `sdlc-lite@sdaas`, a real GitHub clone).
 
 Two harnesses:
 
 - **Host unit tests** — `guard.py` and `analyzer/` have real unit tests (synthetic stdin, synthetic
   run-logs + transcripts including both degradation modes). Run them in-container against the pinned
-  toolchain: `python -m pytest implement-feature-plugin -q`. `guard.py`'s tests cover every deny/allow
+  toolchain: `python -m pytest sdlc-lite-plugin -q`. `guard.py`'s tests cover every deny/allow
   branch; the analyzer's cover both transcript-degradation modes.
 - **End-to-end dry runs** — a human drives an actual `/implement-feature` run in a container terminal
   (a TTY constraint), then the analyzer is run over the resulting logs and the fallout is fixed.
@@ -668,7 +744,7 @@ stayed algorithm-blind, the implementer never touched a test file), and the pipe
 ### The plugin loads from the workspace
 
 In the container, the directory-source marketplace loads the plugin **from the mounted workspace**
-(`/workspaces/.../implement-feature-plugin/**`), *not* the `~/.claude/plugins/cache` copy (which is
+(`/workspaces/.../sdlc-lite-plugin/**`), *not* the `~/.claude/plugins/cache` copy (which is
 vestigial there). So editing the plugin needs **no cache-sync step** — a workspace edit takes effect on
 a **fresh container Claude session restart** (SKILL/agents load at startup; the guard hook reloads per
 tool call). Note this differs from a *real end-user* install, which hits the cache path — the User
@@ -676,17 +752,23 @@ Guide documents that distinction.
 
 ### Install-from-GitHub verification (real user path, checked)
 
+> **⚠️ Superseded by the umbrella design (ADR-13, #41).** The run below verified the *old* single-repo
+> path (`marketplace add Sdaas/sdlc-lite` → `install implement-feature@sdaas-sdlc-lite`), which no
+> longer exists — the customer channel moved to the umbrella repo `Sdaas/claude-plugins`
+> (`sdlc-lite@sdaas`). Kept as a historical record that a github-clone install works end to end; the
+> **new** customer path is re-verified for real in #41 Phase E (clean-room verify) before the tag is cut.
+
 The **real end-user path** — `claude plugin marketplace add Sdaas/sdlc-lite` +
-`claude plugin install implement-feature@daas-plugins` — was verified for real on 2026-09-12,
+`claude plugin install implement-feature@sdaas-sdlc-lite` — was verified for real on 2026-09-12,
 inside the dev container but from `/tmp` (outside the bind-mounted workspace, so `marketplace add`
 had no local copy to fall back to):
 
 - `claude plugin marketplace add Sdaas/sdlc-lite` logged `cloning via HTTPS:
   https://github.com/Sdaas/sdlc-lite.git` and `Clone complete, validating marketplace…` — a genuine
   network clone, not the directory source.
-- `claude plugin install implement-feature@daas-plugins` succeeded; `claude plugin list` showed it
+- `claude plugin install implement-feature@sdaas-sdlc-lite` succeeded; `claude plugin list` showed it
   `✔ enabled`.
-- The installed cache (`~/.claude/plugins/cache/daas-plugins/implement-feature/0.1.0/`) was
+- The installed cache (`~/.claude/plugins/cache/sdaas-sdlc-lite/implement-feature/0.1.0/`) was
   spot-checked for completeness: `skills/implement-feature/SKILL.md` (615 lines, 53 `Gate`
   mentions) and all five `agents/*.md` files were present and intact.
 - The test marketplace/plugin were removed afterward so they don't linger in the persisted

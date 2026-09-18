@@ -8,11 +8,11 @@ from __future__ import annotations
 import policy
 from policy import READ, WRITE, decide
 
-TW = "implement-feature:test-writer"
-TR = "implement-feature:test-reviewer"
-IMPL = "implement-feature:implementer"
-VER = "implement-feature:verifier"
-CR = "implement-feature:code-reviewer"
+TW = "sdlc-lite:test-writer"
+TR = "sdlc-lite:test-reviewer"
+IMPL = "sdlc-lite:implementer"
+VER = "sdlc-lite:verifier"
+CR = "sdlc-lite:code-reviewer"
 CONDUCTOR = ""  # empty agent_type == the conductor / main thread
 
 HANDOFF = "/repo/.implement-feature/r/handoff"

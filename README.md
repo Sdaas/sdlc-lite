@@ -53,7 +53,7 @@ docs/
   tutorial.md                  # learn the underlying concepts
 DEVCONTAINER.md                # the dev-container test harness (referenced by the Developer Guide)
 design/                        # standalone design-investigation records referenced by the ADRs
-implement-feature-plugin/      # ← the product
+sdlc-lite-plugin/      # ← the product
 toy-greet-plugin/              # a minimal 2-gate example plugin (used by the Tutorial)
 .claude-plugin/marketplace.json  # publishes both plugins
 .devcontainer/                 # the dev container definition
@@ -83,4 +83,4 @@ dev container. See the [Developer Guide](docs/developer-guide.md) for the testin
 recorded design decisions.
 
 ---
-Built by Soumendra Daas. Licensed MIT (see `implement-feature-plugin/.claude-plugin/plugin.json`).
+Built by Soumendra Daas. Licensed MIT (see `sdlc-lite-plugin/.claude-plugin/plugin.json`).

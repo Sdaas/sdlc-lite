@@ -66,11 +66,11 @@ CONDUCTOR = "conductor"
 
 # The subagent gates we expect a full run to exercise (namespaced, per SKILL.md).
 EXPECTED_AGENTS = (
-    "implement-feature:test-writer",
-    "implement-feature:test-reviewer",
-    "implement-feature:implementer",
-    "implement-feature:verifier",
-    "implement-feature:code-reviewer",
+    "sdlc-lite:test-writer",
+    "sdlc-lite:test-reviewer",
+    "sdlc-lite:implementer",
+    "sdlc-lite:verifier",
+    "sdlc-lite:code-reviewer",
 )
 
 

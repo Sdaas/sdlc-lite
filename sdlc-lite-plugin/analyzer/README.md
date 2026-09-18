@@ -9,7 +9,7 @@ never calls a model, makes a decision, or drives a gate.
 ## Run it
 
 ```bash
-# from implement-feature-plugin/ — primary handle is the run's artifact dir:
+# from sdlc-lite-plugin/ — primary handle is the run's artifact dir:
 python -m analyzer.analyze_run --workdir /path/to/.implement-feature/<run>/
 
 # options

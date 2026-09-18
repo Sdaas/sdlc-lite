@@ -85,7 +85,7 @@ def test_runlog_falls_back_to_project_dir_when_no_pointer(tmp_path):
 def test_subagent_denied_reading_handoff_draft(tmp_path):
     rc, out = run_guard(
         call("Read", "/repo/.implement-feature/r/handoff/draft/02-design-interface.md",
-             agent_type="implement-feature:test-writer"),
+             agent_type="sdlc-lite:test-writer"),
         env_extra={"IF_RUNLOG": str(tmp_path / "l.jsonl")},
     )
     assert rc == 2
@@ -105,7 +105,7 @@ def test_conductor_may_read_handoff_draft(tmp_path):
 def test_subagent_may_read_promoted_handoff_file(tmp_path):
     rc, _ = run_guard(
         call("Read", "/repo/.implement-feature/r/handoff/02-design-interface.md",
-             agent_type="implement-feature:test-writer"),
+             agent_type="sdlc-lite:test-writer"),
         env_extra={"IF_RUNLOG": str(tmp_path / "l.jsonl")},
     )
     assert rc == 0
@@ -123,14 +123,14 @@ def test_secret_read_denied_for_any_agent(tmp_path):
 def test_test_writer_denied_numbered_design_internal(tmp_path):
     rc, out = run_guard(
         call("Read", "/repo/.implement-feature/r/handoff/03-design-internal.md",
-             agent_type="implement-feature:test-writer"),
+             agent_type="sdlc-lite:test-writer"),
         env_extra={"IF_RUNLOG": str(tmp_path / "l.jsonl")},
     )
     assert rc == 2  # numeric prefix still trips the substring match
     assert json.loads(out)["hookSpecificOutput"]["permissionDecision"] == "deny"
 
 
-TW = "implement-feature:test-writer"
+TW = "sdlc-lite:test-writer"
 
 
 # --- #30 R6: wildcard-ban for the algorithm-blind test-writer ---------------
@@ -166,14 +166,14 @@ def test_test_writer_wildcard_outside_handoff_allowed(tmp_path):
 def test_non_blind_agent_wildcard_over_handoff_allowed(tmp_path):
     # The implementer MAY read design-internal, so its handoff glob is not banned.
     rc, _ = run_guard(call("Bash", "cat handoff/*.md",
-                           agent_type="implement-feature:implementer"),
+                           agent_type="sdlc-lite:implementer"),
                       env_extra={"IF_RUNLOG": str(tmp_path / "l.jsonl")})
     assert rc == 0
 
 
 def test_implementer_denied_writing_test_file(tmp_path):
     rc, out = run_guard(
-        call("Write", "/repo/tests/test_foo.py", agent_type="implement-feature:implementer"),
+        call("Write", "/repo/tests/test_foo.py", agent_type="sdlc-lite:implementer"),
         env_extra={"IF_RUNLOG": str(tmp_path / "l.jsonl")},
     )
     assert rc == 2
@@ -186,7 +186,7 @@ def test_implementer_denied_bash_sed_inplace_test_write(tmp_path):
     # Was audited-but-allowed before #30 (sed -i is not a `>` redirect). Now denied.
     rc, out = run_guard(
         call("Bash", "sed -i 's/x/y/' tests/test_foo.py",
-             agent_type="implement-feature:implementer"),
+             agent_type="sdlc-lite:implementer"),
         env_extra={"IF_RUNLOG": str(tmp_path / "l.jsonl")})
     assert rc == 2
     assert json.loads(out)["hookSpecificOutput"]["permissionDecision"] == "deny"
@@ -195,13 +195,13 @@ def test_implementer_denied_bash_sed_inplace_test_write(tmp_path):
 def test_implementer_denied_bash_heredoc_test_write(tmp_path):
     rc, out = run_guard(
         call("Bash", "cat > tests/test_foo.py <<'EOF'\ndef test_x(): assert True\nEOF",
-             agent_type="implement-feature:implementer"),
+             agent_type="sdlc-lite:implementer"),
         env_extra={"IF_RUNLOG": str(tmp_path / "l.jsonl")})
     assert rc == 2
 
 
 @pytest.mark.parametrize("agent", [
-    "implement-feature:verifier", "implement-feature:code-reviewer",
+    "sdlc-lite:verifier", "sdlc-lite:code-reviewer",
 ])
 def test_confined_critics_denied_bash_product_write(agent, tmp_path):
     # #29 (subsumed by #30): verifier + code-reviewer get the test-reviewer's
@@ -236,7 +236,7 @@ BENIGN_BASH = [
 
 @pytest.mark.parametrize("cmd", BENIGN_BASH)
 def test_benign_bash_not_flagged_as_secret(cmd, tmp_path):
-    rc, _ = run_guard(call("Bash", cmd, agent_type="implement-feature:test-reviewer"),
+    rc, _ = run_guard(call("Bash", cmd, agent_type="sdlc-lite:test-reviewer"),
                       env_extra={"IF_RUNLOG": str(tmp_path / "l.jsonl")})
     assert rc == 0, f"benign command false-denied: {cmd!r}"
 
@@ -252,7 +252,7 @@ SECRET_BASH = [
 
 @pytest.mark.parametrize("cmd", SECRET_BASH)
 def test_real_secret_bash_still_denied(cmd, tmp_path):
-    rc, out = run_guard(call("Bash", cmd, agent_type="implement-feature:test-reviewer"),
+    rc, out = run_guard(call("Bash", cmd, agent_type="sdlc-lite:test-reviewer"),
                         env_extra={"IF_RUNLOG": str(tmp_path / "l.jsonl")})
     assert rc == 2, f"secret read NOT denied: {cmd!r}"
     assert json.loads(out)["hookSpecificOutput"]["permissionDecision"] == "deny"
@@ -313,7 +313,7 @@ def test_bash_recursive_grep_over_clean_directory_allowed(tmp_path):
 
 # --- #12: test-reviewer write-confinement ----------------------------------
 
-REVIEWER = "implement-feature:test-reviewer"
+REVIEWER = "sdlc-lite:test-reviewer"
 
 # The run's real handoff dir is derived from IF_RUNLOG's directory (guard.py's
 # `_handoff_dir()`), so confinement tests that write into "the outbox" must point
@@ -441,17 +441,17 @@ def test_dispatch_pinned_agent_without_model_is_allowed_and_audited(tmp_path):
     # #36: the dated-pin reviewer is dispatched bare — allowed, and recorded in the run-log so the
     # dispatch is still observable (the receipt verifies the actual resolved model).
     log = tmp_path / "l.jsonl"
-    rc, _ = run_guard(dispatch("implement-feature:code-reviewer"),
+    rc, _ = run_guard(dispatch("sdlc-lite:code-reviewer"),
                       env_extra={"IF_RUNLOG": str(log)})
     assert rc == 0  # bare dispatch of a pinned gate is honored, not denied
     line = json.loads(log.read_text().strip())
-    assert line["tool"] == "Task" and line["target"] == "implement-feature:code-reviewer"
+    assert line["tool"] == "Task" and line["target"] == "sdlc-lite:code-reviewer"
     assert line["guard_decision"] == "allow"
 
 
 def test_dispatch_with_explicit_model_is_allowed(tmp_path):
     log = tmp_path / "l.jsonl"
-    rc, _ = run_guard(dispatch("implement-feature:code-reviewer", model="opus"),
+    rc, _ = run_guard(dispatch("sdlc-lite:code-reviewer", model="opus"),
                       env_extra={"IF_RUNLOG": str(log)})
     assert rc == 0
     assert json.loads(log.read_text().strip())["guard_decision"] == "allow"
@@ -470,11 +470,11 @@ def test_dispatch_missing_subagent_type_is_allowed():
 
 def test_dispatch_agent_tool_name_also_allowed():
     # The matcher covers both Task and Agent dispatch verbs; neither is model-enforced now.
-    rc, _ = run_guard(dispatch("implement-feature:test-reviewer", tool="Agent"))
+    rc, _ = run_guard(dispatch("sdlc-lite:test-reviewer", tool="Agent"))
     assert rc == 0
 
 
 def test_dispatch_alias_pinned_agent_without_model_is_allowed():
     # A producer pinned to the `sonnet` alias also dispatches bare — the frontmatter pin governs.
-    rc, _ = run_guard(dispatch("implement-feature:implementer"))
+    rc, _ = run_guard(dispatch("sdlc-lite:implementer"))
     assert rc == 0
