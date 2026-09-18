@@ -1,3 +1,10 @@
+# Secrets — auth tokens for release-verify.sh (NEVER commit). Store CLAUDE_CODE_OAUTH_TOKEN
+# (from `claude setup-token`) or ANTHROPIC_API_KEY here; keep it out of git entirely.
+.env
+.env.*
+*.env
+!.env.example
+
 # Temp/scratch
 *.tmp
 *.log
