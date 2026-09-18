@@ -171,8 +171,8 @@ Gate 0 below is the first application of this style; later STOP gates follow the
    Tell the human its contents (the active `<artifact_dir>`) and ask them to finish or
    abandon that run before starting a new one. (There is no in-workflow resume yet; a
    stale lock is removed by hand.)
-1. **Preflight (hard-fail).** Confirm we are inside the dev container and run this
-   **inline** tool check — the command is reproduced here on purpose so you do **not** open
+1. **Preflight (hard-fail).** Run this **inline** tool check against the target repo's active
+   Python environment — the command is reproduced here on purpose so you do **not** open
    `references/quality-standards.md` just to run it (that read trips the "read outside
    working directories" prompt — the reference-file read tax, P53):
    `ruff --version && mypy --version && pytest --version && python -c "import
@@ -180,8 +180,9 @@ Gate 0 below is the first application of this style; later STOP gates follow the
    version-checked via package metadata, **not** `mutmut --version` — mutmut eagerly loads
    its config on *any* invocation and hard-fails outside a project with a discoverable
    source layout, so `mutmut --version` would false-fail the preflight. **If any tool is
-   missing, STOP** and tell the human to rebuild/enter the dev container
-   (`.devcontainer` postCreate installs `toolchain/requirements-dev.txt`). Do not proceed.
+   missing, STOP** and tell the human to install the pinned toolchain
+   (`toolchain/requirements-dev.txt`) into this repo's active Python environment — see the
+   User Guide. Do not proceed.
 2. Restate the feature in **one sentence**. Confirm the stack is **Python** (this
    workflow targets Python).
 3. **Detect the code layout, human confirms.** Inspect `pyproject.toml` / `setup.cfg`,
@@ -269,9 +270,9 @@ Gate 0 below is the first application of this style; later STOP gates follow the
    glyph-led, terse on the happy path, expand only deviations.
 
    **(a) Preflight failed → terminal render (nothing else prints; the run STOPs):**
-   > 🔴 **Preflight failed — `<tool>` not found.** This workflow runs inside the dev
-   > container; rebuild/enter it (`.devcontainer` postCreate installs
-   > `toolchain/requirements-dev.txt`), then re-run. Stopping.
+   > 🔴 **Preflight failed — `<tool>` not found.** Install the pinned toolchain
+   > (`toolchain/requirements-dev.txt`) into this repo's active Python environment — see the
+   > User Guide (`docs/user-guide.md`) — then re-run. Stopping.
 
    **(b) Preflight passed → full Gate 0 summary:**
    > ✅ **Preflight passed** — ruff `<v>`, mypy `<v>`, pytest `<v>`, mutmut `<v>`. No
