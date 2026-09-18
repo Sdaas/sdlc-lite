@@ -31,29 +31,31 @@ _Last updated: 2026-09-18._
 The order to implement the current milestone's open issues — **numbers only**; GitHub owns the detail.
 Regenerate the set from the milestone (step 2) and keep this list to the *sequence* and any blockers.
 
-- `1.0.0-beta.1`: **#41** (release engineering) — the sole blocker; nothing else sequences behind it
-  until it lands.
+- `1.0.0-beta.1`: **#41** (release engineering) — **landed** 2026-09-18; the milestone has no other
+  open issues, so the beta channel is cut. Nothing sequences behind it.
 
 ## Where we are
 
 The trust-claim engine is **built and merged to `main`**: isolated, model/effort-pinned gates, a
 policy SSOT + guard enforcement, a transcript-based auditor, and a per-run **trust receipt** proving
-isolation and bounded model/effort held. That is the substance of the first release — but it has
-**never been cut as a versioned, installable release**, and has **not been validated by a real
-customer**. Those two gaps define the current release.
+isolation and bounded model/effort held. As of **2026-09-18** it is also **cut as a versioned,
+installable release**: #41 shipped the two-channel distribution + `release.sh`, and `1.0.0-beta.1`
+and `1.0.0-beta.2` are tagged and public via the `Sdaas/claude-plugins` umbrella, verified by an
+automated clean-room install (`release-verify.sh`, 15/15) and a proven `/plugin update` bump. The
+one remaining gap that defines the beta→GA arc is **real-customer validation**.
 
 ## Current release — `1.0.0-beta.1`
 
 A shippable, 1.0-quality build put in front of early customers before we commit to GA. Not
 "half-built" — 1.0 on probation. Milestone: `1.0.0-beta.1`.
 
-**One blocker to shipping it: [#41 — release engineering](../../issues/41).** The repo can't produce
-a versioned release today (the directory-source marketplace is loaded in place, so version pins don't
-apply). #41 builds the **two-channel distribution** (dev directory-source vs. github tag-pinned release
-channel) + a `release.sh`, and — the real gate — **proves** a process-produced plugin installs cleanly
-and runs `/implement-feature` end-to-end from a clean environment, finalizing `RELEASING.md` §4/§5 and
-the README install/use instructions against that verified path. **Until #41 closes, "release" is not
-real.**
+**Shipped.** [#41 — release engineering](../../issues/41) landed 2026-09-18, building the
+**two-channel distribution** (dev directory-source vs. umbrella git-subdir tag-pinned release channel)
++ a cross-repo `release.sh`, and — the real gate — **proving** the process-produced plugin installs
+cleanly from a clean environment (`release-verify.sh` 15/15: git-subdir GitHub install + Gate 0/Gate 1),
+with `/plugin update` proven to pick up a version bump. `RELEASING.md` §2/§4/§5 and the README/User
+Guide install commands are finalized against that verified path. Beta validation with early customers
+is now the open work toward GA.
 
 ## Next release — `1.0.0` GA
 
