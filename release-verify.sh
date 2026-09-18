@@ -19,7 +19,11 @@
 #   3. Gate-0/Gate-1 smoke (headless, two `claude -p` calls) on a fresh fixture:
 #        call 1: /implement-feature <request>  → assert "Preflight passed" + Gate 0 STOP
 #        call 2: --continue "<approval>"        → assert the Gate 1 interview started
-#   4. Prints the human handoff for the full gated run.
+#   4. /plugin update proof (git/fs only, no model calls): install the PREVIOUS release
+#      from an old-pinned catalog, advance the catalog to the current pin, then
+#      `marketplace update` + `plugin update` → assert the installed version moved.
+#      Skipped automatically on the very first release (no previous tag).
+#   5. Prints the human handoff for the full gated run.
 #
 # WHAT IT DOES NOT DO (by design)
 #   The full /implement-feature run is human-in-the-loop (approval gates; never commits
@@ -168,6 +172,53 @@ else
   step "3. smoke skipped (--no-smoke)"
 fi
 
+# ── 4. /plugin update proof (previous release → current pin) ──────────────────
+# Pure git/fs (no model calls). Simulates the umbrella BEFORE this cut by rewriting a
+# clone's catalog to the previous tag, installing that, then advancing the catalog to
+# the current pin and running marketplace-update + plugin-update — asserting the move.
+step "4. /plugin update proof"
+PREV_TAG="$(git tag -l 'v*' --sort=-version:refname | sed -n '2p')"
+if [[ -z "$PREV_TAG" ]]; then
+  ok "first release (no previous tag) — /plugin update check skipped"
+else
+  PREV_VER="${PREV_TAG#v}"
+  # Resolve the previous tag's commit in THIS (product) repo — the umbrella clone has no product tags.
+  PREV_SHA="$(git rev-list -n1 "$PREV_TAG")"
+  UPD_CFG="/home/vscode/.claude-verify-upd"
+  UMB_CLONE="/tmp/rv-umbrella"
+  CACHE_UPD="$UPD_CFG/plugins/cache/$MARKETPLACE/$PLUGIN"
+  UPD_OUT="$(dx '
+    set -e
+    rm -rf "'"$UPD_CFG"'" "'"$UMB_CLONE"'"; mkdir -p "'"$UPD_CFG"'"
+    export CLAUDE_CONFIG_DIR="'"$UPD_CFG"'"
+    git clone -q https://github.com/'"$UMBRELLA_SLUG"' "'"$UMB_CLONE"'"
+    CAT="'"$UMB_CLONE"'/.claude-plugin/marketplace.json"
+    cp "$CAT" /tmp/rv-cat-current.json
+    python3 - "$CAT" "'"$PLUGIN"'" "'"$PREV_TAG"'" "'"$PREV_SHA"'" <<'"'"'PY'"'"'
+import json, sys
+p, name, ref, sha = sys.argv[1:5]
+d = json.load(open(p))
+for e in d["plugins"]:
+    if e.get("name") == name:
+        e["source"]["ref"] = ref; e["source"]["sha"] = sha
+json.dump(d, open(p, "w"), indent=2)
+PY
+    claude plugin marketplace add "'"$UMB_CLONE"'" >/dev/null 2>&1
+    claude plugin install "'"$PLUGIN@$MARKETPLACE"'" -y >/dev/null 2>&1
+    echo "INSTALLED=$(ls "'"$CACHE_UPD"'" 2>/dev/null | head -1 | tr -d "\r")"
+    cp /tmp/rv-cat-current.json "$CAT"
+    claude plugin marketplace update "'"$MARKETPLACE"'" >/dev/null 2>&1
+    claude plugin update "'"$PLUGIN"'" -y >/dev/null 2>&1
+    echo "UPDATED=$(claude plugin list 2>/dev/null | grep -A2 "'"$PLUGIN"'" | grep -oE "Version: .*" | head -1 | tr -d "\r")"
+    rm -rf "'"$UPD_CFG"'" "'"$UMB_CLONE"'"
+  ')"
+  echo "$UPD_OUT" | grep -E '^(INSTALLED|UPDATED)=' | sed 's/^/    /'
+  echo "$UPD_OUT" | grep -qx "INSTALLED=$PREV_VER" \
+    && ok "installed previous release $PREV_VER" || no "did not install previous $PREV_VER"
+  echo "$UPD_OUT" | grep -qx "UPDATED=Version: $EXPECT_VER" \
+    && ok "plugin update $PREV_VER → $EXPECT_VER" || no "plugin update did not reach $EXPECT_VER"
+fi
+
 # ── teardown ─────────────────────────────────────────────────────────────────
 if [[ "$KEEP" -eq 0 ]]; then
   dx "rm -rf '$VERIFY_CFG' '$VERIFY_RUN'" && echo && echo "→ cleaned up verify config + fixture (--keep to retain)"
@@ -181,7 +232,8 @@ if [[ "$fail" -eq 0 ]]; then
   cat <<EOF
 
 ✅ AUTOMATED clean-room verification PASSED: the released $PLUGIN@$MARKETPLACE installs from
-   GitHub (git-subdir), loads its commands, and reaches Gate 0 preflight-pass + Gate 1.
+   GitHub (git-subdir), loads its commands, reaches Gate 0 preflight-pass + Gate 1, and
+   \`/plugin update\` advances a prior release to this one.
 
 The remaining step is HUMAN (approval-gated, by design). To drive the full run:
    devcontainer exec --workspace-folder . bash -c \\

@@ -41,7 +41,8 @@ policy SSOT + guard enforcement, a transcript-based auditor, and a per-run **tru
 isolation and bounded model/effort held. As of **2026-09-18** it is also **cut as a versioned,
 installable release**: #41 shipped the two-channel distribution + `release.sh`, and `1.0.0-beta.1`
 and `1.0.0-beta.2` are tagged and public via the `Sdaas/claude-plugins` umbrella, verified by an
-automated clean-room install (`release-verify.sh`, 15/15) and a proven `/plugin update` bump. The
+automated clean-room run (`release-verify.sh`, 17/17 — install + Gate 0/1 + a proven `/plugin update`
+bump). The
 one remaining gap that defines the beta→GA arc is **real-customer validation**.
 
 ## Current release — `1.0.0-beta.1`
@@ -52,8 +53,8 @@ A shippable, 1.0-quality build put in front of early customers before we commit 
 **Shipped.** [#41 — release engineering](../../issues/41) landed 2026-09-18, building the
 **two-channel distribution** (dev directory-source vs. umbrella git-subdir tag-pinned release channel)
 + a cross-repo `release.sh`, and — the real gate — **proving** the process-produced plugin installs
-cleanly from a clean environment (`release-verify.sh` 15/15: git-subdir GitHub install + Gate 0/Gate 1),
-with `/plugin update` proven to pick up a version bump. `RELEASING.md` §2/§4/§5 and the README/User
+cleanly from a clean environment (`release-verify.sh` 17/17: git-subdir GitHub install + Gate 0/Gate 1
++ a `/plugin update` bump proven to pick up a version change). `RELEASING.md` §2/§4/§5 and the README/User
 Guide install commands are finalized against that verified path. Beta validation with early customers
 is now the open work toward GA.
 

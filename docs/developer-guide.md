@@ -542,12 +542,13 @@ promised and what is verified cannot drift — the discipline ADR-11 gives the i
 
 ### ADR-13 — One `sdlc-lite` plugin; two channels are two marketplaces in two repos
 
-> **Status (2026-09-18):** **proven.** `1.0.0-beta.1` was cut with `release.sh` (tag in this repo +
-> umbrella repoint) and verified by an automated clean-room install (`release-verify.sh`, 15/15): from
-> an isolated `CLAUDE_CONFIG_DIR` with no dev marketplace, `marketplace add Sdaas/claude-plugins` →
-> `install sdlc-lite@sdaas` fetched the tagged commit via a **git-subdir** source (cached version
-> `1.0.0-beta.1`) and passed Gate 0 preflight + Gate 1 interview headless. `release.sh`, `RELEASING.md`
-> §2/§4/§5, and the customer install commands are now authoritative.
+> **Status (2026-09-18):** **proven.** `1.0.0-beta.1` and `1.0.0-beta.2` were cut with `release.sh`
+> (tag in this repo + umbrella repoint) and verified by an automated clean-room run
+> (`release-verify.sh`, 17/17): from an isolated `CLAUDE_CONFIG_DIR` with no dev marketplace,
+> `marketplace add Sdaas/claude-plugins` → `install sdlc-lite@sdaas` fetched the tagged commit via a
+> **git-subdir** source (cached version matching `plugin.json`), passed Gate 0 preflight + Gate 1
+> interview headless, and a `/plugin update` step advanced beta.1 → beta.2. `release.sh`,
+> `RELEASING.md` §2/§4/§5, and the customer install commands are now authoritative.
 >
 > *Supersedes an earlier draft of this ADR* (a single repo carrying two catalog entries —
 > `implement-feature` github-pinned + `implement-feature-dev` directory). That approach worked but was
@@ -787,6 +788,13 @@ present), then runs a **headless two-call Gate 0/Gate 1 smoke** on a fresh fixtu
   the confirm-STOP (`.active-run` written);
 - **call 2** — `claude --continue -p "APPROVED …"` → asserts the **Gate 1 interview** started.
 
+Finally it proves **`/plugin update`** (git/fs only, no model calls): it reconstructs the umbrella
+catalog **as of the previous tag** (rewriting the entry's `ref`/`sha` to `v<prev>` in a throwaway
+clone), installs that older release, then advances the catalog to the current pin and runs
+`marketplace update` + `plugin update <plugin>` — asserting the installed version moves `<prev>` →
+`<current>`. Skipped automatically on the first release (no previous tag). The whole run is **17/17**
+when a previous tag exists.
+
 The full gated run past Gate 1 stays a **human** step (approval gates; never commits before a human
 approves), which the script prints as a handoff.
 
@@ -821,7 +829,7 @@ Guide documents that distinction.
 > longer exists — the customer channel moved to the umbrella repo `Sdaas/claude-plugins`
 > (`sdlc-lite@sdaas`). Kept as a historical record that a github-clone install works end to end; the
 > **new** customer path is verified by the automated **`release-verify.sh`** clean-room run (see the
-> CLAUDE_CONFIG_DIR two-profile section below) — 15/15 against `v1.0.0-beta.1`.
+> CLAUDE_CONFIG_DIR two-profile section below) — 17/17, incl. a `/plugin update` bump.
 
 The **real end-user path** — `claude plugin marketplace add Sdaas/sdlc-lite` +
 `claude plugin install implement-feature@sdaas-sdlc-lite` — was verified for real on 2026-09-12,

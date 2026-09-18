@@ -4,8 +4,8 @@ How this repo is versioned, how issues are triaged, and how a release is cut and
 
 > **Status (2026-09-18):** the conventions **and** the procedure (§4) below are settled and in force
 > *now*, proven by **[#41 — release engineering](../../issues/41)**: `1.0.0-beta.1` was cut with
-> `release.sh` and verified by an automated clean-room install (`release-verify.sh`, 15/15 — GitHub
-> git-subdir install + Gate 0/Gate 1 from an isolated config). ADR-13 (Developer Guide §6) carries the
+> `release.sh` and verified by an automated clean-room run (`release-verify.sh`, 17/17 — GitHub
+> git-subdir install + Gate 0/Gate 1 + a `/plugin update` bump, from an isolated config). ADR-13 (Developer Guide §6) carries the
 > durable rationale.
 
 ---
@@ -94,8 +94,10 @@ closed or explicitly punted before announcing the release.
 `CLAUDE_CONFIG_DIR` (no dev marketplace, no cached plugins): `marketplace add Sdaas/claude-plugins`
 → `install sdlc-lite@sdaas` → assert a genuine GitHub git-subdir clone at the tag, cached version
 `<version>` → headless Gate 0 preflight-pass + Gate 1 interview (authed from `.env`'s
-`CLAUDE_CODE_OAUTH_TOKEN`; see `.env.example`). The full human-driven `/implement-feature` run to
-green+commit is the final belt-and-suspenders check (see the User Guide).
+`CLAUDE_CODE_OAUTH_TOKEN`; see `.env.example`) → a `/plugin update` proof (installs the previous
+release from an old-pinned catalog, then `marketplace update` + `plugin update` must reach
+`<version>`). The full human-driven `/implement-feature` run to green+commit is the final
+belt-and-suspenders check (see the User Guide).
 
 ## 5. Consuming a release (customer)
 

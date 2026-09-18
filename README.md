@@ -1,7 +1,8 @@
 # Contents
 
-The main deliverable is **implement-feature** - a **Claude Code plugin** that turns a one-line feature request into a reviewed, tested, committed python change — through an interview-driven, test-first, human-in-the-loop workflow.
+Interview-driven, test-first, human-in-the-loop workflow that builds a reviewed, tested, committed Python feature via a conductor + isolated, model/effort-pinned subagent gates.
 
+# Features
 ## Implement Feature
 
 `/implement-feature` runs as a **conductor** (the interactive session that holds the through-line and
@@ -12,33 +13,35 @@ whole workflow is expressed in Markdown, and the agent is the runtime.
 
 What that buys you:
 
-- **Test-first, for real.** Tests are written by an *algorithm-blind* subagent (it sees the public
-  contract, never the internal design), reviewed by an independent critic *before* any code exists,
-  and the implementer is *barred from editing them*.
-- **Reviews stronger than the code.** Design and every review gate run on a higher model than
-  implementation — an invariant the plugin pins and the analyzer verifies.
-- **Not "done" on green tests.** A separate verifier drives the *real* feature against every
+- Tests are written by an *algorithm-blind* subagent, reviewed by an independent critic *before* any code exists, and the implementer is *barred from editing them*.
+- Design and every review gate run on a higher model than implementation
+- A separate verifier drives the *real* feature against every
   acceptance criterion and exercises every external boundary un-mocked.
-- **You own the ship decision.** Nothing is committed until you review the real artifacts and approve.
-- **Two guarantees.** Every gate is *isolated* (it reads only the files
-  curated for its role) and runs at a *pinned model/effort*. After each run a deterministic audit
-  produces a **receipt** that verifies both from the ground-truth session transcript — turning "we
-  isolate and we bound the reasoning budget" from a claim into a per-run, checkable fact. The pieces
-  are honest about *how* each is held: the model, effort, and isolation are all **verified** by the
-  receipt from the transcript, with **best-effort real-time prevention** by the guard (isolation).
-  This is observability plus
-  best-effort prevention — not a hard cost cap**: the receipt tells you exactly what happened and
-  flips to *untrusted* on any violation, which is the property a reviewer of the run actually needs.
+- Nothing is committed until you review the real artifacts and approve.
+- Every gate is *isolated* (it reads only the files
+  curated for its role) and runs at a *pinned model/effort*. 
+- After each run a deterministic audit produces a **receipt** that verifies both from the ground-truth session transcript — turning "we
+  isolate and we bound the reasoning budget" from a claim into a per-run, checkable fact. The model, effort, and isolation are all **verified** by the receipt from the transcript, with **best-effort real-time prevention** by the guard (isolation).
 
 ---
 
-## Pick your path
+## User Guide
 
-| You are… | Go to | What you'll find |
-|---|---|---|
-| **A user** — you want to run `/implement-feature` on your own Python repo | **[User Guide](docs/user-guide.md)** | Install from GitHub, one-time Python + toolchain setup, how to run a feature end-to-end, and an FAQ. |
-| **A developer** — you want to understand, extend, or improve the plugin | **[Developer Guide](docs/developer-guide.md)** | Architecture (conductor + isolated gates), the guard hook, the analyzer, the design decisions (ADRs), and the container testing methodology. |
-| **A learner** — you want to understand *how* a plugin like this is built | **[Tutorial](docs/tutorial.md)** | The concepts (plugin vs command vs skill vs subagent), subagent isolation, and a runnable `toy-greet` example to build intuition before reading the real product. |
+Install the plugin
+```
+claude plugin marketplace add Sdaas/claude-plugins
+claude plugin install sdlc-lite@sdaas
+```
+
+- Start a github repo and install the toochain
+- Run `/implement-feature` and point it at an issue, file, or a 1-2 line description of the feautre
+
+## Developer Guide
+
+Read the **[Developer Guide](docs/developer-guide.md)** - Architecture (conductor + isolated gates), the guard hook, the analyzer, the design decisions (ADRs), and the container testing methodology. 
+
+Also there is a **[Tutorial](docs/tutorial.md)** that demonstrates how to build a basic plugin.
+The concepts (plugin vs command vs skill vs subagent), subagent isolation, and a runnable `toy-greet` example to build intuition before reading the real product.
 
 ---
 
@@ -60,16 +63,13 @@ toy-greet-plugin/              # a minimal 2-gate example plugin (used by the Tu
 REVIEW-PROMPT.md               # read-only review methodology (findings now tracked as GitHub issues)
 ```
 
-**Two channels (ADR-13).** This repo's root `.claude-plugin/marketplace.json` is the **dev** catalog
+This repo's root `.claude-plugin/marketplace.json` is the **dev** catalog
 (`name: sdlc-lite-dev`, a live directory source used by the maintainer + dev container). It carries:
 
 - **`sdlc-lite`** — the product this repo exists to ship (command `/implement-feature`).
 - **`toy-greet`** — a two-file, two-gate `/greet` workflow kept as the Tutorial's runnable example
   (tutorial-only; never published to customers).
 
-**Customers** install from the separate **`Sdaas/claude-plugins`** umbrella marketplace, which pins
-`sdlc-lite` to a released tag — `marketplace add Sdaas/claude-plugins` → `install sdlc-lite@sdaas`.
-See the [User Guide](docs/user-guide.md).
 
 ---
 
