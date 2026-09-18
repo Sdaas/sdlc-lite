@@ -1,18 +1,32 @@
 #!/usr/bin/env python3
 """PreToolUse guard hook for /implement-feature.
 
-Does six jobs on every Read/Bash/Grep/Glob/Edit/Write/NotebookEdit (conductor AND every subagent):
-  1. AUDIT  — append one JSONL line per tool call (agent_id/agent_type/tool/target).
-  2. SECRETS GUARDRAIL — deny reads of .env / keys / credentials for ANY agent.
-  3. ALGORITHM-BLIND — deny reads of design-internal for the test-writer agent only.
-  3b. DRAFT-CONFINEMENT — deny ANY subagent reading anything under handoff/draft/ (an
-     unapproved draft must never reach an isolated gate; the conductor promotes on
-     approval, and only then is a file readable at handoff/).
-  4. TEST-INTEGRITY — deny the implementer editing/writing any test file (it must make
-     the code pass the tests, never weaken the tests to pass).
-  5. REVIEWER-CONFINEMENT — deny the test-reviewer any write (Write/Edit or a Bash
-     redirection) outside its handoff/ outbox and a scratch dir; it is an analytical
-     critic and must never mutate the product tree (build no reference implementation).
+Does two jobs on every Read/Bash/Grep/Glob/Edit/Write/NotebookEdit (conductor AND every
+subagent): AUDIT (append one JSONL line per tool call) and ENFORCE (deny unauthorized
+access). The deny decision is computed FIRST so the audit line can record it truthfully;
+the audit still logs every call regardless of the decision.
+
+  1. AUDIT  — append one JSONL line per tool call (agent_id/agent_type/tool/target +
+     `guard_decision: allow|deny`, the guard's own pre-execution decision — #31 R4).
+  2. ENFORCE — the allow/deny rules now live in ONE place: `policy.py` (the #30 SSOT that
+     the analyzer's detective leg also imports). This hook is the tool-aware, real-time,
+     best-effort-for-Bash CALLER of that policy:
+       - single-target tools (Read/Grep/Glob/Edit/Write/NotebookEdit) name one inspectable
+         path -> `policy.decide()` on it is precise;
+       - Bash is best-effort: the guard extracts the write-redirect targets and scans
+         path-like tokens, then applies the same policy. It cannot see the full set of files
+         an arbitrary `python -c …` or pipeline touches (documented limitation — the
+         transcript-based auditor in analyzer/ is the authoritative backstop).
+     Two enforcement mechanics stay here because they need I/O the pure policy must not do:
+     the secret DIRECTORY scan (a recursive search over a dir that merely CONTAINS a secret
+     file) and the R6 wildcard-ban.
+  Task/Agent dispatches are AUDITED here but never model-enforced. #22 once added a
+  "deny a dispatch that names no model" hook (the "Witt" technique) on the premise that a
+  frontmatter `model:` pin is silently droppable; that premise is false on this platform (a
+  bare-dispatch frontmatter pin IS honored) and the hook broke the dated reviewer pins by
+  forcing an alias-only inline model. #36 reverted it: pinned gates are dispatched bare and the
+  honored frontmatter pin governs. Model/effort integrity is proven after the fact by the
+  transcript-based receipt (the analyzer), which is authoritative — not by this hook.
 
 Reads the hook JSON on stdin. To DENY: print a hookSpecificOutput deny decision and
 exit 2. To ALLOW: exit 0.
@@ -25,7 +39,17 @@ exported env, hence the pointer file rather than an env var):
   3. today's fallback $CLAUDE_PROJECT_DIR/if-runlog.jsonl, else
   4. /tmp/if-runlog.jsonl.
 """
-import json, os, re, sys, datetime, shlex
+import json, os, sys, datetime
+
+# The guard runs as a standalone script (`python guard.py`), so sys.path[0] is this
+# script's dir, not the plugin root where policy.py lives. Add the plugin root
+# (hooks/scripts -> hooks -> <plugin root>) so `import policy` resolves — the ONE home
+# for the isolation rules, shared with the analyzer (#30 R1).
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+import policy  # noqa: E402
+
+_DENY_PREFIX = "Blocked by implement-feature guard: "
+
 
 def _active_run_runlog():
     """Resolve the run-log from the .active-run pointer file, if present/usable."""
@@ -41,6 +65,7 @@ def _active_run_runlog():
         return None
     return os.path.join(workdir, "handoff", "run-log.jsonl")
 
+
 def runlog_path():
     return (os.environ.get("IF_RUNLOG")
             or _active_run_runlog()
@@ -48,63 +73,18 @@ def runlog_path():
                 if os.environ.get("CLAUDE_PROJECT_DIR") else None)
             or "/tmp/if-runlog.jsonl")
 
-# --- secret detection (PATH-aware, not raw-substring) ----------------------
-# KEEP IN SYNC with analyzer/runlog.py (the detective mirror of this predicate).
-#
-# #16: the old code substring-matched these hints against the tool's whole target.
-# For a Bash call the target is the ENTIRE command string, so a benign command like
-# `python -c "os.environ.get('X')"` tripped the `.env` hint (".env" is inside
-# "os.environ"). Fix: match on PATH COMPONENTS, and for Bash scan tokens that actually
-# look like file paths — never the raw command body.
-_SECRET_EXTS = (".pem", ".key")                       # matched as a component suffix
-_SECRET_NAMES = ("id_rsa", "id_ed25519", "credentials", ".netrc", ".pgpass")  # in a component
-_SECRET_FRAGMENTS = (".ssh/", ".aws/credentials")     # matched anywhere in the path
 
-def _is_secret_component(comp: str) -> bool:
-    return (comp == ".env" or comp.startswith(".env.")
-            or comp.startswith("secrets.")
-            or comp.endswith(_SECRET_EXTS)
-            or any(n in comp for n in _SECRET_NAMES))
+def _handoff_dir() -> str:
+    """The run's real handoff dir: the directory containing run-log.jsonl (by convention
+    <artifact_dir>/handoff/run-log.jsonl — see runlog_path()). Anchors write-confinement."""
+    return os.path.normpath(os.path.dirname(runlog_path()))
 
-def _is_secret_path(target: str) -> bool:
-    """True if `target`, read as a filesystem path, points at a secret. Over-broad on
-    purpose for real file targets (a false positive just makes an agent ask again)."""
-    t = target.strip().strip("'\"").lower().replace("\\", "/")
-    if not t:
-        return False
-    if any(frag in t for frag in _SECRET_FRAGMENTS):
-        return True
-    return any(_is_secret_component(c) for c in t.split("/") if c)
 
-def _bash_token_is_secret(token: str) -> bool:
-    """Stricter than _is_secret_path: only flag a Bash token that clearly denotes a
-    secret FILE (a path, a dotfile, or a secret extension). A bare identifier like
-    `environ` or `credentials` in a command is NOT a file read — don't false-deny it."""
-    t = token.strip().strip("'\"").lower().replace("\\", "/")
-    if not t:
-        return False
-    pathlike = ("/" in t) or t.startswith(".") or t.endswith(_SECRET_EXTS)
-    return pathlike and _is_secret_path(t)
-
-def _bash_tokens(command: str) -> list[str]:
-    try:
-        return shlex.split(command, posix=True)
-    except ValueError:
-        return command.split()  # unbalanced quotes (common in code heredocs): degrade safely
-
-def looks_secret(tool: str, target: str) -> bool:
-    """Secret-read predicate, split by tool. Bash scans path-like tokens (never the raw
-    command body, #16); every other tool's target IS a path -> path-component match."""
-    if tool == "Bash":
-        return any(_bash_token_is_secret(tok) for tok in _bash_tokens(target))
-    return _is_secret_path(target)
-
-# --- #m-05: directory-scoped reads must not surface secret file contents ----
-# A direct open of .env is caught above by path matching. But a recursive/broad read
-# over a DIRECTORY that merely contains a secret file (`grep -r ... /repo`, a `Grep`
-# tool call scoped to a directory) returns matching secret lines without the target
-# itself ever being a secret path. Walk the directory (bounded) and look for a
-# secret-named file rather than trying to match file *contents*.
+# --- secret DIRECTORY scan (guard-only I/O; the policy stays pure) ----------
+# #m-05: a direct open of .env is caught by policy.is_secret_path. But a recursive/broad
+# read over a DIRECTORY that merely CONTAINS a secret file (`grep -r … /repo`, a `Grep`
+# call scoped to a directory) returns matching secret lines without the target itself ever
+# being a secret path. Walk the directory (bounded) and look for a secret-named file.
 def _dir_contains_secret(path: str, max_files: int = 5000) -> bool:
     if not path or not os.path.isdir(path):
         return False
@@ -114,18 +94,19 @@ def _dir_contains_secret(path: str, max_files: int = 5000) -> bool:
             seen += 1
             if seen > max_files:
                 return False  # bail out on huge trees rather than hang the hook
-            if _is_secret_component(f.lower()):
+            if policy.is_secret_component(f.lower()):
                 return True
     return False
+
 
 _RECURSIVE_SEARCH_TOOLS = {"grep": "flag", "rg": "always", "ag": "always",
                             "ack": "always", "find": "always"}
 
+
 def _bash_secret_dir_targets(command: str) -> list[str]:
-    """Best-effort (#m-05): directory arguments to a recursive-search-style Bash
-    command, e.g. `grep -r ... /repo`. Only fires for known recursive tools/flags —
-    conservative, not a full shell parser."""
-    toks = _bash_tokens(command)
+    """Best-effort (#m-05): directory arguments to a recursive-search-style Bash command,
+    e.g. `grep -r … /repo`. Only fires for known recursive tools/flags."""
+    toks = policy.bash_tokens(command)
     if not toks:
         return []
     prog = os.path.basename(toks[0])
@@ -139,93 +120,83 @@ def _bash_secret_dir_targets(command: str) -> list[str]:
             return []
     return [t for t in toks[1:] if not t.startswith("-") and os.path.isdir(t)]
 
-READISH = {"Read", "Bash", "Grep", "Glob"}
-WRITEISH = {"Write", "Edit", "NotebookEdit"}
 
-def is_test_path(target: str) -> bool:
-    base = os.path.basename(target)
-    return ("/tests/" in target or "/test/" in target
-            or base.startswith("test_") or base.endswith("_test.py")
-            or base == "conftest.py")
+def _deny_reason(tool: str, ti: dict, agent_type: str, target: str) -> str | None:
+    """The guard's pre-execution decision, as a deny reason (or None to allow).
 
-# --- test-reviewer write-confinement (#12) ---------------------------------
-# A Bash-granted critic can't be made read-only by removing Write/Edit (P44), so we
-# enforce the property we actually want: the test-reviewer NEVER mutates the product
-# tree. Its only sanctioned writes are its outbox (under handoff/) and throwaway probes
-# in a scratch/temp dir. Everything else — the repo's src/tests — is denied.
-#
-# Both allowlist checks are ANCHORED (real temp-root prefix / the run's actual handoff
-# dir), not free substrings — a product-tree path that merely *contains* "scratchpad",
-# "/scratch/", or "/handoff/" (e.g. `src/handoff/impl.py`) must NOT escape confinement.
-_TEMP_ROOTS = ("/tmp/", "/private/tmp/", "/var/folders/")
+    Pure w.r.t. process state (no exit) so main() can learn the decision BEFORE writing the
+    audit line — the run-log then records `guard_decision` truthfully (#31 R4). The
+    allow/deny logic is delegated to policy.decide(); this function is the tool-aware
+    extraction that turns a tool call into the (access, path) probes decide() adjudicates,
+    plus the two I/O-bearing mechanics (secret dir-scan) that can't live in the pure policy."""
+    # A Task/Agent dispatch carries no file target to adjudicate; it is audited by main() but
+    # never model-enforced here (#36 reverted the deny-if-unnamed hook — pinned gates dispatch
+    # bare and the receipt verifies the actual model). Allow.
+    if tool in ("Task", "Agent"):
+        return None
 
-def _is_scratch_path(t: str) -> bool:
-    if t == "/tmp":
-        return True
-    tn = t if t.endswith("/") else t + "/"
-    return any(tn.startswith(root) for root in _TEMP_ROOTS)
-
-def _handoff_dir() -> str:
-    """The run's real handoff dir: the directory containing run-log.jsonl (by
-    convention <artifact_dir>/handoff/run-log.jsonl — see runlog_path())."""
-    return os.path.normpath(os.path.dirname(runlog_path()))
-
-def _is_handoff_path(t: str) -> bool:
     handoff = _handoff_dir()
-    tn = os.path.normpath(t)
-    return tn == handoff or tn.startswith(handoff + os.sep)
 
-def reviewer_write_denied(target: str) -> bool:
-    """True if the test-reviewer must NOT write here (i.e. not its outbox/scratchpad)."""
-    t = target.strip().strip("'\"").replace("\\", "/")
-    if not t:
-        return False
-    if t.startswith("/dev/"):
-        return False   # /dev/null etc. are the bit bucket, not the product tree
-    if _is_handoff_path(t):
-        return False   # its named outbox (06-test-review-findings.md) lives under handoff/
-    if _is_scratch_path(t):
-        return False   # tiny throwaway probes are legitimate (P45)
-    return True        # anything else = the product tree / repo -> denied
+    if tool == "Bash":
+        return _bash_deny_reason(agent_type, target, handoff)
 
-# Heredoc start: `<<`, optional `-`, optional ws, optional quote, delimiter word.
-_HEREDOC_RE = re.compile(r"<<-?\s*(['\"]?)([A-Za-z_][A-Za-z0-9_]*)\1")
+    # Single-target tools: one inspectable path -> precise policy decision.
+    #   read side:  Read/Grep/Glob, plus Edit (which reads the file to diff).
+    #   write side: Write/NotebookEdit, plus Edit.
+    if tool in ("Read", "Grep", "Glob") or tool == "Edit":
+        d = policy.decide(agent_type, policy.READ, target, handoff)
+        if not d.allowed:
+            return _DENY_PREFIX + d.reason
+        # secret DIRECTORY scan for a Grep scoped to a directory (I/O — see above).
+        if tool == "Grep" and _dir_contains_secret(str(ti.get("path") or "")):
+            return (_DENY_PREFIX + "this directory contains a secrets/.env file — a "
+                    "directory-scoped search would surface its contents.")
+    if tool in ("Write", "NotebookEdit") or tool == "Edit":
+        d = policy.decide(agent_type, policy.WRITE, target, handoff)
+        if not d.allowed:
+            return _DENY_PREFIX + d.reason
+    return None
 
-def _strip_heredocs(command: str) -> str:
-    """Drop heredoc *bodies* so their literal text (e.g. markdown `>` blockquotes) is never
-    mistaken for shell redirections. The `cmd > file <<EOF` redirection sits OUTSIDE the
-    body and is preserved. KEEP IN SYNC with analyzer/runlog.py."""
-    lines = command.split("\n")
-    out: list[str] = []
-    i = 0
-    while i < len(lines):
-        out.append(lines[i])
-        m = _HEREDOC_RE.search(lines[i])
-        i += 1
-        if m:
-            delim = m.group(2)
-            while i < len(lines) and lines[i].strip() != delim:
-                i += 1
-            i += 1  # consume the terminator line (not a command)
-    return "\n".join(out)
 
-def bash_write_targets(command: str) -> list[str]:
-    """Best-effort: the paths a Bash command redirects/writes into (`>`, `>>`, `tee`).
-    Bash write-detection is inherently fragile (P44) — key on the targets we can see."""
-    toks = _bash_tokens(_strip_heredocs(command))
-    targets: list[str] = []
-    for i, tok in enumerate(toks):
-        stripped = tok.lstrip("012")  # 1>, 2>> ...
-        if stripped in (">", ">>", ">|") and i + 1 < len(toks):
-            targets.append(toks[i + 1])
-        elif stripped.startswith(">") and len(stripped) > 1:
-            targets.append(stripped.lstrip(">|"))   # `>file` with no space
-        elif tok == "tee" and i + 1 < len(toks):
-            nxt = toks[i + 1]
-            targets.append(nxt if not nxt.startswith("-") else (toks[i + 2] if i + 2 < len(toks) else ""))
-    # Drop fd-duplication targets (`2>&1`, `>&2`, ...): `&N` is a file descriptor, not a
-    # file write — parsing it as one false-flagged a reviewer's `pytest ... 2>&1`.
-    return [t for t in targets if t and not t.startswith("&")]
+def _bash_deny_reason(agent_type: str, command: str, handoff: str) -> str | None:
+    """Best-effort Bash enforcement. The Bash target is the whole command string, so this
+    can't just hand a path to decide(): it (a) scans path-like tokens for secrets, (b)
+    substring-tests the command for the design-internal / draft READ invariants, and (c)
+    resolves write-redirect targets and adjudicates each via decide(WRITE)."""
+    # (a) secret reads — token scan (never the raw command body, #16) + directory scan.
+    if policy.looks_secret("Bash", command):
+        return _DENY_PREFIX + "reading secrets/.env is not allowed."
+    for d in _bash_secret_dir_targets(command):
+        if _dir_contains_secret(d):
+            return (_DENY_PREFIX + f"recursive search of {d} would surface a "
+                    "secrets/.env file's contents.")
+
+    # (b) READ invariants that the command string exposes literally. A wildcard read that
+    #     could resolve to design-internal is handled by the R6 ban (added next commit).
+    if "test-writer" in agent_type and policy.is_design_internal(command):
+        return (_DENY_PREFIX + "the test-writer is algorithm-blind and must not read "
+                "design-internal.md.")
+    # R6 wildcard-ban: an algorithm-blind agent may not run an UNRESOLVABLE wildcard read
+    # over handoff/ — the glob (`cat handoff/*.md`) could expand to design-internal.md, and
+    # the literal-substring rule above can't see it. Ban the glob; read files by exact name.
+    if policy.is_algorithm_blind(agent_type):
+        globs = policy.bash_wildcard_handoff_reads(command)
+        if globs:
+            return (_DENY_PREFIX + "the test-writer is algorithm-blind; a wildcard read over "
+                    "handoff/ could resolve to design-internal.md. Read the files you need by "
+                    f"exact name instead (offending: {', '.join(globs)[:120]}).")
+    if agent_type and policy.is_draft(command):
+        return (_DENY_PREFIX + "handoff/draft/ holds unapproved drafts. Subagents read "
+                "only promoted files under handoff/. (Conductor promotes on approval.)")
+
+    # (c) writes — resolve redirect/tee targets and adjudicate each against the policy
+    #     (implementer test-integrity + the confined roles' product-tree ban).
+    for t in policy.bash_write_targets(command):
+        d = policy.decide(agent_type, policy.WRITE, t, handoff)
+        if not d.allowed:
+            return _DENY_PREFIX + d.reason
+    return None
+
 
 def main():
     try:
@@ -238,9 +209,15 @@ def main():
     agent_type = str(data.get("agent_type") or "")
     agent_id = str(data.get("agent_id") or "")
     target = str(ti.get("file_path") or ti.get("path") or ti.get("command")
-                 or ti.get("pattern") or "")
+                 or ti.get("pattern") or ti.get("subagent_type") or "")
 
-    # 1. AUDIT (best-effort; never fail the tool because of logging)
+    # Decide FIRST (job #2), so the audit line can record the guard's own decision.
+    reason = _deny_reason(tool, ti, agent_type, target)
+
+    # 1. AUDIT (best-effort; never fail the tool because of logging). A denied call has no
+    #    transcript effect, so `guard_decision` here is the ONLY record that a denial happened.
+    #    The target is logged AT FULL LENGTH (the intent record — #30 R3): the transcript-based
+    #    auditor needs the whole command string, not a 300-char prefix.
     try:
         with open(runlog_path(), "a") as f:
             f.write(json.dumps({
@@ -250,69 +227,21 @@ def main():
                 # offset and break the time-window match. See analyzer/transcript.py.
                 "ts": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
                 "agent_type": agent_type, "agent_id": agent_id,
-                "tool": tool, "target": target[:300],
+                "tool": tool, "target": target,
+                # #31 R4: the guard's OWN pre-execution decision — not the platform's final
+                # verdict or the command's exit status.
+                "guard_decision": "deny" if reason else "allow",
             }) + "\n")
     except Exception:
         pass
 
-    def deny(reason):
+    if reason:
         print(json.dumps({"hookSpecificOutput": {
             "hookEventName": "PreToolUse",
             "permissionDecision": "deny",
             "permissionDecisionReason": reason,
         }}))
         sys.exit(2)
-
-    # 2. SECRETS GUARDRAIL — any agent, read-ish tools, plus Edit (which reads the file
-    #    to diff even though it's in WRITEISH)
-    if (tool in READISH or tool == "Edit") and looks_secret(tool, target):
-        deny(f"Blocked by implement-feature guard: reading secrets/.env is not allowed "
-             f"(target: {os.path.basename(target) or target[:60]}).")
-
-    # 2b. SECRETS GUARDRAIL — directory-scoped reads (#m-05): a Grep call scoped to a
-    #     directory, or a Bash recursive search (`grep -r`, `rg`, `find`, ...) over one,
-    #     that contains a secret file would surface its contents without the target
-    #     itself ever being a secret path.
-    if tool == "Grep" and _dir_contains_secret(str(ti.get("path") or "")):
-        deny("Blocked by implement-feature guard: this directory contains a secrets/.env "
-             "file — a directory-scoped search would surface its contents.")
-    if tool == "Bash":
-        for d in _bash_secret_dir_targets(target):
-            if _dir_contains_secret(d):
-                deny(f"Blocked by implement-feature guard: recursive search of {d} would "
-                     f"surface a secrets/.env file's contents.")
-
-    # 3. ALGORITHM-BLIND — only the test-writer is denied design-internal
-    #    (substring match is prefix-tolerant: "03-design-internal.md" still trips it).
-    if "test-writer" in agent_type and "design-internal" in target:
-        deny("Blocked by implement-feature guard: the test-writer is algorithm-blind and "
-             "must not read design-internal.md.")
-
-    # 3b. DRAFT-CONFINEMENT — no subagent may read an unapproved draft. Only the
-    #     conductor (empty agent_type) authors/reviews drafts; a subagent seeing
-    #     handoff/draft/ means an unpromoted artifact is leaking into an isolated gate.
-    if agent_type and tool in READISH and "handoff/draft/" in target.replace("\\", "/"):
-        deny("Blocked by implement-feature guard: handoff/draft/ holds unapproved drafts. "
-             "Subagents read only promoted files under handoff/. (Conductor promotes on approval.)")
-
-    # 4. TEST-INTEGRITY — the implementer may not edit/write test files
-    if "implementer" in agent_type and tool in WRITEISH and is_test_path(target):
-        deny("Blocked by implement-feature guard: the implementer must make the code pass "
-             "the tests, not modify the tests. Editing test files is not allowed.")
-
-    # 5. REVIEWER-CONFINEMENT (#12) — the test-reviewer never mutates the product tree.
-    #    Sanctioned writes: its handoff/ outbox and throwaway probes in a scratch dir.
-    if "test-reviewer" in agent_type:
-        if tool in WRITEISH and reviewer_write_denied(target):
-            deny("Blocked by implement-feature guard: the test-reviewer is an analytical "
-                 "critic — it may write only its handoff/ findings outbox and throwaway "
-                 f"probes in a scratch dir, never the product tree (target: {target[:80]}).")
-        if tool == "Bash":
-            bad = [t for t in bash_write_targets(target) if reviewer_write_denied(t)]
-            if bad:
-                deny("Blocked by implement-feature guard: the test-reviewer must not write "
-                     "into the product tree via Bash (build no reference implementation; use "
-                     f"a scratch dir for probes). Offending write target(s): {', '.join(bad)[:120]}.")
 
     sys.exit(0)
 

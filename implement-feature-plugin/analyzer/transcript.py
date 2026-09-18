@@ -66,6 +66,13 @@ class ModelUsage:
         self.thinking_tokens += int(details.get("thinking_tokens") or 0)
 
 
+def _bump(counts: dict[str, int], key: str | None) -> None:
+    """Count one observation of a top-level per-turn field (e.g. effort). None/empty
+    is skipped so a turn that simply lacks the field never invents a bucket (#31 R3)."""
+    if key:
+        counts[key] = counts.get(key, 0) + 1
+
+
 @dataclass
 class SubagentUsage:
     """One isolated-gate subagent run: its transcript file, the agent it was (from the
@@ -73,6 +80,9 @@ class SubagentUsage:
     agent_label: str
     session_file: str
     by_model: dict[str, ModelUsage] = field(default_factory=dict)
+    # effort value -> turn count, from each assistant record's top-level `effort` (#31 R3).
+    # The actual effort each gate ran at; #22 compares it against the agent-def pin.
+    efforts: dict[str, int] = field(default_factory=dict)
 
     @property
     def total_turns(self) -> int:
@@ -85,6 +95,11 @@ class TranscriptAnalysis:
     turns_in_window: int
     main: dict[str, ModelUsage] = field(default_factory=dict)       # model -> usage
     sidechain: dict[str, ModelUsage] = field(default_factory=dict)   # model -> usage
+    # Per-turn top-level `effort`, aggregated as effort -> turn count, split the same way
+    # as the model buckets (main thread vs sidechain). The actual effort observed; #22
+    # compares it against the pin. Absent field => empty (verdict degrades to UNKNOWN). (#31 R3)
+    main_efforts: dict[str, int] = field(default_factory=dict)
+    sidechain_efforts: dict[str, int] = field(default_factory=dict)
     # Per-subagent breakdown, parsed from <uuid>/subagents/*.jsonl (#15). This is the
     # per-gate model/token split — the analyzer's primary purpose. Best-effort satellite:
     # a missing/malformed subagents dir leaves this empty, never raises.
@@ -169,11 +184,15 @@ def parse_transcript(path: Path, window_start, window_end) -> TranscriptAnalysis
         usable_turns += 1
         analysis.turns_in_window += 1
 
-        bucket = analysis.sidechain if rec.get("isSidechain") else analysis.main
+        is_side = bool(rec.get("isSidechain"))
+        bucket = analysis.sidechain if is_side else analysis.main
         mu = bucket.get(model)
         if mu is None:
             mu = bucket[model] = ModelUsage(model=model)
         mu.add(usage)
+        # #31 R3: the top-level `effort` (sibling of `message`, not inside it) is the actual
+        # effort this turn ran at. Count it into the same split as the model.
+        _bump(analysis.sidechain_efforts if is_side else analysis.main_efforts, rec.get("effort"))
 
     # Schema self-check: assistant turns present but none parseable => drift.
     if assistant_turns > 0 and usable_turns == 0:
@@ -201,6 +220,8 @@ def parse_transcript(path: Path, window_start, window_end) -> TranscriptAnalysis
             agg.cache_read_tokens += mu.cache_read_tokens
             agg.cache_creation_tokens += mu.cache_creation_tokens
             agg.thinking_tokens += mu.thinking_tokens
+        for effort, n in sub.efforts.items():  # #31 R3: fold effort into the aggregate too
+            analysis.sidechain_efforts[effort] = analysis.sidechain_efforts.get(effort, 0) + n
 
     return analysis
 
@@ -239,6 +260,7 @@ def parse_subagents(main_transcript: Path) -> list[SubagentUsage]:
     out: list[SubagentUsage] = []
     for jsonl in sorted(sdir.glob("*.jsonl")):
         by_model: dict[str, ModelUsage] = {}
+        efforts: dict[str, int] = {}
         try:
             raw_lines = jsonl.read_text(encoding="utf-8").splitlines()
         except OSError:
@@ -262,10 +284,11 @@ def parse_subagents(main_transcript: Path) -> list[SubagentUsage]:
             if mu is None:
                 mu = by_model[model] = ModelUsage(model=model)
             mu.add(usage)
+            _bump(efforts, rec.get("effort"))  # #31 R3: per-gate actual effort
         if by_model:  # skip files with no usable assistant turns
             out.append(SubagentUsage(
                 agent_label=_agent_label_from_meta(jsonl),
-                session_file=str(jsonl), by_model=by_model))
+                session_file=str(jsonl), by_model=by_model, efforts=efforts))
     return out
 
 

@@ -46,6 +46,20 @@ def test_audit_written_to_if_runlog(tmp_path):
     assert line["tool"] == "Read" and line["target"] == "somefile.py"
 
 
+def test_audit_records_guard_decision_allow(tmp_path):
+    log = tmp_path / "l.jsonl"
+    rc, _ = run_guard(call("Read", "somefile.py"), env_extra={"IF_RUNLOG": str(log)})
+    assert rc == 0  # #31 R4: allowed call is stamped allow
+    assert json.loads(log.read_text().strip())["guard_decision"] == "allow"
+
+
+def test_audit_records_guard_decision_deny_even_though_call_is_blocked(tmp_path):
+    log = tmp_path / "l.jsonl"
+    rc, _ = run_guard(call("Read", "/repo/.env"), env_extra={"IF_RUNLOG": str(log)})
+    assert rc == 2  # denied — and the audit line (only record of a denial) says so
+    assert json.loads(log.read_text().strip())["guard_decision"] == "deny"
+
+
 def test_runlog_resolved_via_active_run_pointer(tmp_path):
     # Layout: <proj>/.implement-feature/.active-run -> <workdir>; log at <workdir>/handoff/.
     proj = tmp_path
@@ -116,6 +130,47 @@ def test_test_writer_denied_numbered_design_internal(tmp_path):
     assert json.loads(out)["hookSpecificOutput"]["permissionDecision"] == "deny"
 
 
+TW = "implement-feature:test-writer"
+
+
+# --- #30 R6: wildcard-ban for the algorithm-blind test-writer ---------------
+
+@pytest.mark.parametrize("cmd", [
+    "cat /repo/.implement-feature/r/handoff/*.md",
+    "head /repo/.implement-feature/r/handoff/0[23]-*",
+    "cat handoff/*",
+])
+def test_test_writer_denied_wildcard_read_over_handoff(cmd, tmp_path):
+    # The glob could resolve to 03-design-internal.md; the literal-substring rule can't
+    # see it, so R6 bans the wildcard outright.
+    rc, out = run_guard(call("Bash", cmd, agent_type=TW),
+                        env_extra={"IF_RUNLOG": str(tmp_path / "l.jsonl")})
+    assert rc == 2, f"wildcard handoff read NOT denied: {cmd!r}"
+    assert "algorithm-blind" in json.loads(out)["hookSpecificOutput"]["permissionDecisionReason"]
+
+
+def test_test_writer_may_read_handoff_file_by_exact_name(tmp_path):
+    rc, _ = run_guard(
+        call("Bash", "cat /repo/.implement-feature/r/handoff/01-requirements.md", agent_type=TW),
+        env_extra={"IF_RUNLOG": str(tmp_path / "l.jsonl")})
+    assert rc == 0
+
+
+def test_test_writer_wildcard_outside_handoff_allowed(tmp_path):
+    # A glob that does NOT reference handoff is fine (the test-writer globs its own tests).
+    rc, _ = run_guard(call("Bash", "ls tests/*.py", agent_type=TW),
+                      env_extra={"IF_RUNLOG": str(tmp_path / "l.jsonl")})
+    assert rc == 0
+
+
+def test_non_blind_agent_wildcard_over_handoff_allowed(tmp_path):
+    # The implementer MAY read design-internal, so its handoff glob is not banned.
+    rc, _ = run_guard(call("Bash", "cat handoff/*.md",
+                           agent_type="implement-feature:implementer"),
+                      env_extra={"IF_RUNLOG": str(tmp_path / "l.jsonl")})
+    assert rc == 0
+
+
 def test_implementer_denied_writing_test_file(tmp_path):
     rc, out = run_guard(
         call("Write", "/repo/tests/test_foo.py", agent_type="implement-feature:implementer"),
@@ -123,6 +178,49 @@ def test_implementer_denied_writing_test_file(tmp_path):
     )
     assert rc == 2
     assert json.loads(out)["hookSpecificOutput"]["permissionDecision"] == "deny"
+
+
+# --- #30 R2: Bash write FORMS now enforced (closing the historical Bash gaps) ----
+
+def test_implementer_denied_bash_sed_inplace_test_write(tmp_path):
+    # Was audited-but-allowed before #30 (sed -i is not a `>` redirect). Now denied.
+    rc, out = run_guard(
+        call("Bash", "sed -i 's/x/y/' tests/test_foo.py",
+             agent_type="implement-feature:implementer"),
+        env_extra={"IF_RUNLOG": str(tmp_path / "l.jsonl")})
+    assert rc == 2
+    assert json.loads(out)["hookSpecificOutput"]["permissionDecision"] == "deny"
+
+
+def test_implementer_denied_bash_heredoc_test_write(tmp_path):
+    rc, out = run_guard(
+        call("Bash", "cat > tests/test_foo.py <<'EOF'\ndef test_x(): assert True\nEOF",
+             agent_type="implement-feature:implementer"),
+        env_extra={"IF_RUNLOG": str(tmp_path / "l.jsonl")})
+    assert rc == 2
+
+
+@pytest.mark.parametrize("agent", [
+    "implement-feature:verifier", "implement-feature:code-reviewer",
+])
+def test_confined_critics_denied_bash_product_write(agent, tmp_path):
+    # #29 (subsumed by #30): verifier + code-reviewer get the test-reviewer's
+    # write-confinement — a Bash product-tree write is denied.
+    rc, out = run_guard(
+        call("Bash", "echo x > /repo/src/ref.py", agent_type=agent),
+        env_extra={"IF_RUNLOG": str(tmp_path / "l.jsonl")})
+    assert rc == 2
+    assert "product tree" in json.loads(out)["hookSpecificOutput"]["permissionDecisionReason"]
+
+
+def test_full_length_target_logged_no_truncation(tmp_path):
+    # #30 R3: the run-log is the intent record and must log the WHOLE command (the old
+    # target[:300] truncation was a data-loss bug the transcript auditor can't tolerate).
+    log = tmp_path / "l.jsonl"
+    long_cmd = "echo " + "a" * 500 + " > /tmp/scratchpad/x"
+    rc, _ = run_guard(call("Bash", long_cmd), env_extra={"IF_RUNLOG": str(log)})
+    assert rc == 0
+    assert json.loads(log.read_text().strip())["target"] == long_cmd
 
 
 # --- #16: secret detection must not false-positive on Bash command strings --
@@ -321,3 +419,62 @@ def test_reviewer_benign_redirects_not_flagged(cmd, tmp_path):
     rc, _ = run_guard(call("Bash", cmd, agent_type=REVIEWER),
                       env_extra={"IF_RUNLOG": str(tmp_path / "l.jsonl")})
     assert rc == 0, f"benign redirect false-denied: {cmd!r}"
+
+
+# --- #36: Task/Agent dispatch is AUDITED but never model-enforced ----------
+# The #22 deny-if-unnamed hook was reverted (its premise — "a frontmatter model pin is silently
+# droppable" — is false, and it broke the dated reviewer pins by forcing an alias-only inline
+# model). Pinned gates now dispatch BARE and the honored frontmatter pin governs; the receipt
+# verifies the actual model after the fact. So a bare dispatch is ALLOWED and still audited.
+
+def dispatch(subagent_type: str | None, *, tool: str = "Task",
+             model: str | None = None, agent_type: str = "") -> dict:
+    ti: dict = {}
+    if subagent_type is not None:
+        ti["subagent_type"] = subagent_type
+    if model is not None:
+        ti["model"] = model
+    return {"tool_name": tool, "tool_input": ti, "agent_type": agent_type}
+
+
+def test_dispatch_pinned_agent_without_model_is_allowed_and_audited(tmp_path):
+    # #36: the dated-pin reviewer is dispatched bare — allowed, and recorded in the run-log so the
+    # dispatch is still observable (the receipt verifies the actual resolved model).
+    log = tmp_path / "l.jsonl"
+    rc, _ = run_guard(dispatch("implement-feature:code-reviewer"),
+                      env_extra={"IF_RUNLOG": str(log)})
+    assert rc == 0  # bare dispatch of a pinned gate is honored, not denied
+    line = json.loads(log.read_text().strip())
+    assert line["tool"] == "Task" and line["target"] == "implement-feature:code-reviewer"
+    assert line["guard_decision"] == "allow"
+
+
+def test_dispatch_with_explicit_model_is_allowed(tmp_path):
+    log = tmp_path / "l.jsonl"
+    rc, _ = run_guard(dispatch("implement-feature:code-reviewer", model="opus"),
+                      env_extra={"IF_RUNLOG": str(log)})
+    assert rc == 0
+    assert json.loads(log.read_text().strip())["guard_decision"] == "allow"
+
+
+def test_dispatch_unpinned_agent_is_allowed():
+    rc, _ = run_guard(dispatch("some-random-agent"))
+    assert rc == 0
+
+
+def test_dispatch_missing_subagent_type_is_allowed():
+    # A partial dispatch payload carries no file target — nothing to adjudicate, allow.
+    rc, _ = run_guard(dispatch(None))
+    assert rc == 0
+
+
+def test_dispatch_agent_tool_name_also_allowed():
+    # The matcher covers both Task and Agent dispatch verbs; neither is model-enforced now.
+    rc, _ = run_guard(dispatch("implement-feature:test-reviewer", tool="Agent"))
+    assert rc == 0
+
+
+def test_dispatch_alias_pinned_agent_without_model_is_allowed():
+    # A producer pinned to the `sonnet` alias also dispatches bare — the frontmatter pin governs.
+    rc, _ = run_guard(dispatch("implement-feature:implementer"))
+    assert rc == 0

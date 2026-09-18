@@ -22,16 +22,33 @@ def write_runlog(path: Path, records: list[dict]) -> Path:
     return path
 
 
-def call(agent_type: str, tool: str, target: str, ts: str | None = None) -> dict:
+def call(agent_type: str, tool: str, target: str, ts: str | None = None,
+         guard_decision: str | None = None) -> dict:
     rec = {"agent_type": agent_type, "tool": tool, "target": target}
     if ts is not None:
         rec["ts"] = ts
+    if guard_decision is not None:  # omit to simulate a legacy (pre-R4) line
+        rec["guard_decision"] = guard_decision
+    return rec
+
+
+def gate(name: str, agent: str, *, mode: str = "[I]", result: str = "APPROVE",
+         ts: str | None = None, **extra) -> dict:
+    """A conductor ORCHESTRATION record (one per gate) — the heterogeneous run-log's second
+    shape (M-06). Note: no `tool`/`agent_type`/`target`, and (m-09) no guessed model/effort
+    for an [I] gate. `extra` lets a test simulate a legacy record that still carries them."""
+    rec = {"gate": name, "mode": mode, "agent": agent, "result": result,
+           "inbox": [], "outbox": []}
+    if ts is not None:
+        rec["ts"] = ts
+    rec.update(extra)
     return rec
 
 
 def assistant_turn(model: str, *, sidechain: bool = False, i: int = 0,
                    input_tokens: int = 100, output_tokens: int = 50,
-                   thinking: int = 10, with_usage: bool = True) -> dict:
+                   thinking: int = 10, with_usage: bool = True,
+                   effort: str | None = None) -> dict:
     message: dict[str, object] = {"model": model}
     if with_usage:
         message["usage"] = {
@@ -41,12 +58,15 @@ def assistant_turn(model: str, *, sidechain: bool = False, i: int = 0,
             "cache_creation_input_tokens": 300,
             "output_tokens_details": {"thinking_tokens": thinking},
         }
-    return {
+    rec: dict[str, object] = {
         "type": "assistant",
         "timestamp": BASE_TRANSCRIPT_TS.format(i % 10),
         "isSidechain": sidechain,
         "message": message,
     }
+    if effort is not None:  # top-level, sibling of `message` (matches real transcripts)
+        rec["effort"] = effort
+    return rec
 
 
 def write_transcript(path: Path, turns: list[dict], extra_lines: list[dict] | None = None) -> Path:

@@ -21,6 +21,15 @@ downstream gate see a prior gate's raw transcript — only the **curated handoff
   `implement-feature:test-writer`, `implement-feature:test-reviewer`,
   `implement-feature:implementer`, `implement-feature:verifier`,
   `implement-feature:code-reviewer` — never the bare name. (Verified empirically.)
+- **Dispatch every `[I]` gate bare — never name a model inline (#22, #36).** Do **not** pass a
+  `model` argument on the dispatch. The gate's pinned `model` lives in its `agents/*.md`
+  frontmatter and **is honored on a bare dispatch** (verified across real sessions); naming a
+  model inline is not only unnecessary, it **breaks the dated reviewer pins** — the inline `model`
+  slot accepts only family aliases `{sonnet, opus, haiku, fable}`, so naming a `claude-opus-4-8`
+  reviewer inline collapses it to the `opus` alias → the floating `claude-opus-5`, losing the
+  exact-version reproducibility the dated pin exists for. Let the frontmatter pin govern; the
+  post-run receipt **verifies** the actual resolved model against the pin (a mismatch is a FAIL).
+  (`effort` likewise has no dispatch lever; it stays frontmatter-only and is audited, not enforced.)
 
 ### Two trees: product code vs process artifacts (P48)
 
@@ -102,8 +111,12 @@ Two records, plus a hard guard, run alongside every gate:
 
 1. **Gate run-log (conductor-written).** Append one line to
    `<artifact_dir>/handoff/run-log.jsonl` as each gate completes:
-   `{gate, mode, agent, model, effort, inbox:[...], outbox:[...], result, ts}` — the
-   orchestration story.
+   `{gate, mode, agent, inbox:[...], outbox:[...], result, ts}` — the orchestration story.
+   **Do not write `model`/`effort` for an `[I]` gate** — a subagent's *resolved* model/effort
+   is unobservable to the conductor, so a written value would be a guess. The receipt sources
+   the **requested** model/effort from the agent-def pins (`agents/*.md`) and the **actual**
+   from the transcript; the run-log is not a model source. A `[C]` gate *may* add its own
+   observed `model` (the conductor runs it, so it knows) — never a guess.
 2. **Guard hook audit (automatic).** The plugin ships a **PreToolUse hook**
    (`hooks/hooks.json` → `hooks/scripts/guard.py`) that fires for the conductor **and
    every subagent**, appending `{ts, agent_type, agent_id, tool, target}` for every
@@ -120,7 +133,9 @@ Two records, plus a hard guard, run alongside every gate:
      must pass the tests, not change them); and
    - any write outside its `handoff/` outbox + a scratch dir — for the **test-reviewer**
      (it must not mutate the product tree / build a reference implementation).
-   Each is defense-in-depth with the agents' own role instructions.
+   Each is defense-in-depth with the agents' own role instructions. (The guard does **not**
+   model-enforce a dispatch: pinned gates dispatch bare and the honored frontmatter pin governs;
+   the receipt verifies the actual model after the fact — #22/#36.)
 
 The deterministic analyzer reads the hook audit (stable source of reads) and cross-checks
 the session transcript for per-agent **model + token** figures. See the project's
@@ -197,27 +212,31 @@ Gate 0 below is the first application of this style; later STOP gates follow the
      audit file, written to the repo root before this workdir exists and after the lock is
      cleared (the pointer only routes to `handoff/run-log.jsonl` while `.active-run` lives).
 5. **Per-gate model/effort plan (canonical).** The invariant: **design and every review use
-   a higher model (or effort) than implementation.** This is the reference plan — you render
-   it per the display rule in step 8, not verbatim.
+   a higher model than implementation.** Effort is uniform (`medium`) across every gate —
+   real-world config differentiates on model, not effort (#35). This is the reference plan
+   — you render it per the display rule in step 8, not verbatim.
 
    | Gate | Runs as | Model / effort | Why |
    |---|---|---|---|
    | INTERVIEW | [C] | Opus (session), medium | requirements reasoning = strong model |
    | DESIGN / SPEC | [C] | Opus (session), medium | design = strong model |
    | WRITE-TESTS | [I] `test-writer` | `sonnet` alias, medium | writing tests = implementation |
-   | TEST-REVIEW | [I] `test-reviewer` | **`claude-opus-4-8`** (pinned) | review > implementation |
+   | TEST-REVIEW | [I] `test-reviewer` | **`claude-opus-4-8`** (pinned), medium | review > implementation |
    | IMPLEMENT | [I] `implementer` | `sonnet` alias, medium | implementation |
    | VERIFY | [I] `verifier` | `sonnet` alias, medium | verification |
-   | CODE-REVIEW | [I] `code-reviewer` | **`claude-opus-4-8`** (pinned) | review > implementation |
+   | CODE-REVIEW | [I] `code-reviewer` | **`claude-opus-4-8`** (pinned), medium | review > implementation |
    | REVIEW-GUIDE / COMMIT | [C] | Sonnet or Haiku (session) | mechanical presentation + commit |
 
-   The `[I]` subagent models are pinned in `agents/*.md` and **never deviate**, but in two
-   different ways: the two **reviewers** (`test-reviewer`, `code-reviewer`) pin the **explicit,
-   dated** `claude-opus-4-8` — on purpose, for **reproducible review behavior** (a floating
-   alias would silently change the reviewer as new Opus tiers ship); `test-writer` /
-   `implementer` / `verifier` pin the **`sonnet` alias** (whatever the latest Sonnet tier is).
-   So the reviewers are `claude-opus-4-8` regardless of what this environment resolves `opus`
-   to. **Conductor `[C]` gates run on the session's own model** (the plugin cannot pin it), so
+   The `[I]` subagent models are pinned in `agents/*.md`, in two different ways: the two
+   **reviewers** (`test-reviewer`, `code-reviewer`) pin the **explicit, dated** `claude-opus-4-8`
+   — on purpose, for **reproducible review behavior** (a floating alias would silently change the
+   reviewer as new Opus tiers ship); `test-writer` / `implementer` / `verifier` pin the **`sonnet`
+   alias** (whatever the latest Sonnet tier is). Both are **dispatched bare** so the frontmatter
+   pin — including the dated one — is honored (#36). The pin is **verified** (#22): the post-run
+   receipt compares the transcript's *actual* model against the pin — a mismatch is a **FAIL**.
+   (Effort has no dispatch lever, so it is verified only — a deviation is a WARN, not enforced.)
+   **Conductor `[C]` gates run on the
+   session's own model** (the plugin cannot pin it), so
    only the three `[C]` rows can be wrong — and only when the session's tier is *below* that
    row's required tier (INTERVIEW/DESIGN want Opus; REVIEW-GUIDE/COMMIT is *correct* on
    Sonnet/Haiku).
@@ -408,7 +427,7 @@ findings file added to its inbox.)*
 
 An **independent** critic reviews the tests **before** any implementation exists. Spawn a
 **different** agent than the writer — `subagent_type: implement-feature:test-reviewer`
-(Opus/high per the model plan; pinned in `agents/test-reviewer.md`).
+(Opus/medium per the model plan; pinned in `agents/test-reviewer.md`).
 
 **Its inbox (it sees more than the writer):** `01-requirements.md`, the **full** design
 (`02-design-interface.md` **and** `03-design-internal.md`), `04-test-plan.md`, the tests,
@@ -440,7 +459,7 @@ the changes on the next loop.
 
 ## Gate 5 — IMPLEMENT  [I] `implementer`  (inner loop)
 
-Delegate to `subagent_type: implement-feature:implementer` (Sonnet/high; has
+Delegate to `subagent_type: implement-feature:implementer` (Sonnet/medium; has
 Write/Edit/Bash, pinned in `agents/implementer.md`). Its inbox is `01-requirements.md` +
 the **tests** + the **full** design (`02-design-interface.md` + `03-design-internal.md`) +
 the standards file.
@@ -464,7 +483,7 @@ are the slow checks, enforced at CODE-REVIEW — not here.)
 ## Gate 6 — VERIFY  [I] `verifier`  (outer loop)
 
 **Green unit tests are not Done.** Spawn a **fresh, read-only** verifier —
-`subagent_type: implement-feature:verifier` (Sonnet/high; observes, cannot fix — pinned in
+`subagent_type: implement-feature:verifier` (Sonnet/medium; observes, cannot fix — pinned in
 `agents/verifier.md`). It did not write the code, so it won't drive it the way the author
 expects. Its inbox: `01-requirements.md` (the ACs + boundary inventory) and `<code_root>/`
 (to invoke the real thing, not to trust it).
@@ -488,7 +507,7 @@ converge). On all-PASS → append the run-log entry and proceed to CODE-REVIEW.
 ## Gate 7 — CODE-REVIEW + quality  [I] `code-reviewer`  (the last unattended gate)
 
 Spawn a fresh, read-only whole-diff reviewer —
-`subagent_type: implement-feature:code-reviewer` (Opus/high; pinned in
+`subagent_type: implement-feature:code-reviewer` (Opus/medium; pinned in
 `agents/code-reviewer.md`). "One senior engineer reviewing the entire PR": fresh context
 kills anchoring, a stronger model than the implementer kills monoculture. Its inbox:
 `01-requirements.md` + the full design + the **whole change** (tests + `<code_root>/`) +
@@ -608,7 +627,7 @@ later with the standalone `/implement-feature:analyze-run` command.) The pipelin
 ## Rules
 - Curated handoffs only — a gate never sees a prior gate's raw transcript.
 - The test-writer is blind to `03-design-internal.md`.
-- Design & every review use a higher model/effort than implementation.
+- Design & every review use a higher model than implementation.
 - Not Done on green tests alone — VERIFY observed behavior.
 - Bound every automated loop; surface to the human on no progress.
 - Never ask a human to approve an artifact they have not seen in full (P47).

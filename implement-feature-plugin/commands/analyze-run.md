@@ -1,5 +1,5 @@
 ---
-description: Analyze a past /implement-feature run — isolation-compliance verdicts, per-gate pinned model, and token usage — from its artifact dir. Measurement only; never changes code or git.
+description: Analyze a past /implement-feature run — isolation-compliance verdicts, per-gate model/effort integrity (pinned vs actual), and token usage — from its artifact dir. Measurement only; never changes code or git.
 ---
 
 # /implement-feature:analyze-run — post-run observability report
@@ -13,9 +13,12 @@ touches git.
 - **Isolation compliance** — the guard's invariants held: test-writer stayed
   algorithm-blind, implementer never touched tests, test-reviewer never wrote the product
   tree, no agent read secrets, and the distinct subagents actually ran.
-- **Per-gate model split** — each isolated gate's pinned model + token usage (from the
-  subagent transcripts), which is the evidence for the "reviews run on a higher model than
-  implementation" invariant.
+- **Per-gate model/effort integrity** — each isolated gate's **requested** pin (from its
+  `agents/*.md` frontmatter) vs its **actual** model/effort (from the subagent transcript),
+  with a verdict: a model mismatch is trust-voiding (**FAIL**), an effort deviation is a
+  **WARN**. This is the evidence for the "reviews run on a higher model than implementation"
+  invariant — and the proof each gate ran on its pinned model.
+- **Per-gate token usage** — per-model token counts from the subagent transcripts.
 - **Per-agent activity** — tool-call counts and files read/written.
 
 ## How to run it

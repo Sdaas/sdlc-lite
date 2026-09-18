@@ -25,6 +25,10 @@ from `--workdir`, else `$IF_RUNLOG` / `$CLAUDE_PROJECT_DIR/if-runlog.jsonl` / `.
 The analyzer **never reads `.active-run`** — knowing the *active* run is a higher-layer
 concern (that pointer is the conductor↔guard channel, not the analyzer's).
 
+The report's headline is the **per-agent trust receipt** — see
+[`SAMPLE-RECEIPT.md`](SAMPLE-RECEIPT.md) for a rendered example (skeleton state + a preview of the
+fully-adjudicated form once #22/#30 land).
+
 ## Architecture — two independent readers
 
 ```
@@ -52,6 +56,10 @@ inside `try/except` and degrades two ways:
 
 `transcript.py` runs a **schema self-check**: assistant turns present but none
 carrying `message.model` / `message.usage` ⇒ deliberate `TranscriptFormatError`.
+
+> **Working on `transcript.py`?** [`TRANSCRIPT-FORMAT.md`](TRANSCRIPT-FORMAT.md) is a field guide to
+> the on-disk layout and record shapes (main transcript, `<uuid>/subagents/*.jsonl`, and the
+> `.meta.json` sidecar), with real snippets and which field proves which claim — start there.
 
 ### Transcript↔run selection
 The main transcript file is chosen by **time-window correlation** (option *b*):

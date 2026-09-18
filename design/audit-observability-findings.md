@@ -72,7 +72,7 @@ once per turn, matching the assistant-turn count exactly (35/35 subagent, 92/92 
 | Claim | Requested (intent) | Actual (effect) | Deviation policy |
 |---|---|---|---|
 | **Model** | agent-def frontmatter · `.meta.json.model` (alias) | transcript `message.model` (resolved) | enforce at launch (#22); **FAIL** on mismatch |
-| **Effort** | agent-def frontmatter (meta has none) | transcript top-level `effort` | **report-only** (effort is the cost knob; a downgrade is a WARN, not trust-voiding) |
+| **Effort** | agent-def frontmatter (meta has none) | transcript top-level `effort` | **report-only** (effort is the cost knob, never trust-voiding): **any deviation from the pin — either direction, a downgrade *or* an upgrade — is a WARN** (#31) |
 | **File content that entered an agent's context** | run-log (guard, intent) | transcript (effect) | corroborate; **UNKNOWN** (never PASS) if the transcript is blind |
 | **Command granted / denied** | run-log `guard_decision` (**only** source) | — (a denied call has no effect) | log the guard's own decision |
 | **Tokens** | — | transcript `message.usage` | observability only |
