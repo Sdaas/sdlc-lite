@@ -741,6 +741,59 @@ with a fault-injection pass) confirmed the fixes and the invariants: model pinni
 designed (reviews on Opus, producers on Sonnet — transcript-proven), isolation holds (the test-writer
 stayed algorithm-blind, the implementer never touched a test file), and the pipeline commits.
 
+### Two Claude profiles in one container (`CLAUDE_CONFIG_DIR`)
+
+`CLAUDE_CONFIG_DIR` is where Claude Code keeps a **per-user profile** (default `~/.claude`): the
+login/credentials, `settings.json` (model, permissions, hooks, `enabledPlugins`,
+`extraKnownMarketplaces`), the installed-plugin cache, and which marketplaces are registered. Point
+that variable at a **different directory** and you get a **completely separate Claude profile** — a
+different login, different marketplaces, different installed plugins — on the **same machine, same
+filesystem, same toolchain**. That one lever lets a single dev container be **two environments at
+once**:
+
+| | `~/.claude` (default) — **DEV** | `~/.claude-*` — **CUSTOMER / clean-room** |
+|---|---|---|
+| Marketplace | `sdlc-lite-dev` (directory source) | `sdaas` (umbrella, `git-subdir` from GitHub) |
+| Plugin source | **live from the workspace** | **the real GitHub release** (tag-pinned) |
+| Purpose | iterate on the plugin | simulate exactly what a stranger installs |
+| Python toolchain | **shared** — installed system-wide (`uv pip install --system`) | **shared** — the same one |
+
+The toolchain is installed at the OS level, so the customer profile inherits it for free; the
+isolation is **purely the config layer**. The dev profile answers *"does my edit work live?"*; a
+fresh clean-room profile (no dev marketplace) answers *"does the shipped artifact work for someone
+who's never seen my workspace?"* — which is exactly what the release gate (#41 Phase E) needs. No
+second container required.
+
+### Automated clean-room verification (`release-verify.sh`)
+
+`release-verify.sh` (repo root) automates the customer path end-to-end — *"automate whatever can be
+automated"* — and hands off only the irreducibly-human step. It spins up a **fresh isolated
+`CLAUDE_CONFIG_DIR`** (no dev marketplace), installs `sdlc-lite@sdaas` from the umbrella on GitHub,
+asserts a genuine `git-subdir` install (cached version == `plugin.json` version, commands/agents/hooks
+present), then runs a **headless two-call Gate 0/Gate 1 smoke** on a fresh fixture:
+
+- **call 1** — `claude -p "/implement-feature <request>"` → asserts **Gate 0 "Preflight passed"** and
+  the confirm-STOP (`.active-run` written);
+- **call 2** — `claude --continue -p "APPROVED …"` → asserts the **Gate 1 interview** started.
+
+The full gated run past Gate 1 stays a **human** step (approval gates; never commits before a human
+approves), which the script prints as a handoff.
+
+**Auth — `.env` (git-ignored).** The `claude -p` calls run **inside the container** (that's where the
+toolchain and the clean-room profile live), so they need non-interactive auth. Supply it via a
+repo-root `.env` that the script `source`s *inside* the container (bind-mounted at
+`/workspaces/sdlc-lite/.env`, so the token never appears in host process args, and `*.env` is
+git-ignored so it can't be committed). One line:
+
+```dotenv
+CLAUDE_CODE_OAUTH_TOKEN=<token>
+```
+
+Mint the token **once on the Mac** with **`claude setup-token`** (a long-lived, Claude-subscription
+token — it doesn't expire like a session login) and paste its output. An `ANTHROPIC_API_KEY=…`
+(Console key, API-billed) works instead. Copy `.env.example` → `.env` to start. Run:
+`./release-verify.sh` (add `--keep` to retain the config/fixture, `--no-smoke` for install-verify only).
+
 ### The plugin loads from the workspace
 
 In the container, the directory-source marketplace loads the plugin **from the mounted workspace**
