@@ -1,26 +1,38 @@
-# Plan — current & next release
+# Release plan — current & next release
 
-_Forward-looking only, and designed to be resumed with **"read plan.md and continue."** This file
-holds the **narrative** (where we are, what the current and next releases are *for*). It does **not**
-hold issue lists — **GitHub is the source of truth** for those (milestones = releases), so the two
-never drift. Decision history lives in the issues and the ADRs (`docs/developer-guide.md` §6);
+_Forward-looking only, and designed to be resumed with **"read release-plan.md and continue."** This
+file holds two things: the **narrative** (where we are, what the current and next releases are *for*)
+and the **execution order** (given the milestone's issues, which order to implement them in). It does
+**not** hold issue *lists or specs* — **GitHub is the source of truth** for *which* issues ship
+(milestones = releases); this file only adds the *ordering*, referenced **by issue number only** so
+the two can't drift. Decision history lives in the issues and the ADRs (`docs/developer-guide.md` §6);
 release conventions live in `RELEASING.md`._
 
 _Last updated: 2026-09-18._
 
 ---
 
-## Using this file ("read plan.md and continue")
+## Using this file ("read release-plan.md and continue")
 
 1. **Find the current release** = the earliest open **milestone**:
    `gh api repos/:owner/:repo/milestones --jq '.[] | "\(.title) (open:\(.open_issues))"'`
 2. **List its open issues** — that's the committed work for this release:
    `gh issue list --milestone "<title>" --state open`
-3. **Pick the next issue** (respect stated blockers), then follow **How to work an issue** below.
+3. **Pick the next issue** by the **Execution order** below (respect stated blockers); if the order is
+   silent on an issue, use judgment. Then follow **How to work an issue**.
 4. **If the current milestone has no open issues**, the release is ready to cut — follow the release
    procedure in `RELEASING.md`.
-5. Only touch this file when the *narrative* changes (a release ships, or the current/next release's
-   intent changes). Do **not** enumerate issues here.
+5. Only touch this file when the *narrative* or the *execution order* changes (a release ships, an
+   issue is added/closed/reordered). Reference issues **by number only** — never copy titles or specs
+   here (that's GitHub's job).
+
+## Execution order (current release)
+
+The order to implement the current milestone's open issues — **numbers only**; GitHub owns the detail.
+Regenerate the set from the milestone (step 2) and keep this list to the *sequence* and any blockers.
+
+- `1.0.0-beta.1`: **#41** (release engineering) — the sole blocker; nothing else sequences behind it
+  until it lands.
 
 ## Where we are
 

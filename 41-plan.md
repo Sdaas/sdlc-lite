@@ -119,7 +119,7 @@ Commit per logical unit; **never commit before human approval**; **never push/ta
 - `RELEASING.md` §2 (channels table → two repos), §4 (procedure), §5 (customer consume) to the
   verified commands.
 - `README.md` + `docs/user-guide.md` install/use → the umbrella commands, verified.
-- Flip ADR-13 status → proven; update `plan.md` narrative when beta ships; close #41; delete this file.
+- Flip ADR-13 status → proven; update `release-plan.md` narrative when beta ships; close #41; `git rm` this file in the merge/close commit.
 
 ---
 

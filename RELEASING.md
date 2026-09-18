@@ -87,5 +87,9 @@ after #41 verifies them.
 
 ## 6. Roadmap
 
-Forward-looking scope lives in **`plan.md`** (current + next release only). Decision history lives
-in the **GitHub issues** and the **ADRs** (Developer Guide), not in `plan.md`.
+Forward-looking scope lives in **`release-plan.md`** (current + next release only) — the narrative
+plus the **execution order** of the milestone's issues (GitHub is the SSOT for *which* issues ship;
+`release-plan.md` adds the order, by issue number only). Decision history lives in the **GitHub
+issues** and the **ADRs** (Developer Guide), not in `release-plan.md`. Large, plan-mode-worthy issues
+also get a branch-scoped **`<NN>-plan.md`** working plan (checked in, deleted at merge) — see
+`CLAUDE.md` → Working conventions.
