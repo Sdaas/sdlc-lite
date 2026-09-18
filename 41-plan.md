@@ -126,7 +126,9 @@ Commit per logical unit; **never commit before human approval**; **never push/ta
 ## Progress tracker
 
 - [x] **A** — plugin rename/restructure (`sdlc-lite-plugin/`, name, namespace) + tests green
-- [ ] **B** — dev catalog + container to final names + in-container live-load verified
+- [x] **B** — dev catalog + container to final names + in-container live-load verified
+      (2026-09-18: fresh-volume rebuild, settings self-healed to `sdlc-lite@sdlc-lite-dev`,
+      160 tests green in-container, `/sdlc-lite:implement-feature` loaded live and ran Gate 0)
 - [ ] **C** — umbrella repo `Sdaas/claude-plugins` created + catalog + README
 - [ ] **D** — cross-repo `release.sh` + surgery unit-tests
 - [ ] **E** — clean-room verify (isolated config) install→run + `/plugin update` check  ← **the gate**
@@ -140,3 +142,6 @@ Commit per logical unit; **never commit before human approval**; **never push/ta
   an unpinned live install; mitigate with a clear README pointer (Phase B/C/F).
 - **Backlog** — [#42](../../issues/42) release automation (release-please) still applies, now
   cross-repo aware.
+- **Phase E prep** — the clean-room end-to-end `/implement-feature` run needs the fixture package
+  installed first (`pip install -e .` in `test-fixtures/python-starter/roman-numeral`), else Gate 0
+  hard-fails on the src-layout import (as it correctly did during Phase B's live-load check).
