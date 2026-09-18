@@ -714,6 +714,61 @@ recovers). **No bug** — but the pass surfaced a real methodology trap worth in
 > cached*, distinct from response-level faults. (Applied to `quality-standards.md`,
 > `test-plan-template.md`, `test-writer.md`, and `code-reviewer.md`.)
 
+### Standard fixtures — `test-fixtures/python-starter/`
+
+**Why a committed template, not a generator script.** An empty-folder dry run lets the conductor
+improvise the code layout, which tests nothing about whether `/implement-feature` integrates into a
+*real* codebase — an empty repo is the easy case. A fixture must also be **non-empty**: a small,
+pre-existing package with its own module + tests, so a run genuinely exercises whether the
+implementer places new code correctly alongside code that was already there. Generating that content
+fresh each run (via `uv init` or similar) would make runs non-reproducible — "what did the generator
+do today" becomes a confound in whatever the run is supposed to be testing. So each fixture is
+**committed, versioned, and byte-identical** across runs; a script only *copies* it into a scratch
+location, never invents its content.
+
+**Layout, per fixture** (`test-fixtures/python-starter/<slug>/`):
+- `pyproject.toml` — src-layout, package name derived mechanically from the slug
+  (`roman-numeral` → `src/roman_numeral/`).
+- `src/<pkg>/greet.py` + `tests/test_greet.py` — the **shared pre-existing module**, identical bytes
+  in every fixture: `greet(name) -> f"Hello, {name}!"`, raising `ValueError` on empty/whitespace
+  input. It exists purely as inert "already there" scaffolding for the implementer to coexist with —
+  deliberately boring, so the one thing that varies between fixtures is the feature under test, not
+  the noise around it.
+- `BRIEF.md` — the literal, one-line `/implement-feature` prompt for that fixture, stored verbatim so
+  the invocation is byte-identical run to run. A paraphrased prompt would be a second, invisible
+  variable — if a receipt looks different, you want that to mean the *workflow* changed, not that the
+  wording changed.
+
+**Fixtures today:** `roman-numeral` (int ↔ Roman numeral, both directions, validates malformed
+input). `parse-duration` and `async-cached-json-fetcher` — the pair used in the plugin's earliest dry
+runs — are the next two planned, built the same way once this mechanism is proven.
+
+**What happens when you run one.** `test-fixtures/setup-fixture.sh <slug>`, run **on the Mac**:
+```bash
+test-fixtures/setup-fixture.sh roman-numeral
+```
+It shells into the container and: refuses if `/workspaces/<slug>-run` already exists (a stale
+scratch dir is removed by hand — `rm -rf /workspaces/<slug>-run` — never silently wiped, same
+philosophy as the workflow's own `.active-run` lock); copies the template to
+`/workspaces/<slug>-run/`; `git init`s it fresh on branch `main` and commits the copied baseline
+(so `/implement-feature`'s "never commit on default branch" rule forces the run onto its own
+feature branch); `pip install -e .` so Gate 0's importability preflight passes.
+
+**What a developer does next:**
+```bash
+devcontainer exec --workspace-folder . bash -c "cd /workspaces/roman-numeral-run && claude --model opus"
+```
+then, inside that session, paste `BRIEF.md`'s content after `/implement-feature`. Everything from
+there — layout confirmation, interview, gates — proceeds exactly as any other run, just against a
+known, reproducible starting point instead of an ad hoc one.
+
+**What this is not.** This script only creates the scratch repo — it doesn't drive the workflow's
+gate prompts or destroy/rebuild the container. Those are separate, larger, not-yet-built pieces:
+**#21** (destroy + rebuild the container fresh per run, deterministic setup) is expected to wrap this
+script rather than reinvent it; **#34** (an agent driving the gates unattended, with the receipt —
+never the driver's judgment — as the pass/fail oracle) consumes a fixture's `BRIEF.md` as its input
+prompt. Both are v1.1/v2, independent of this script, and neither blocks using it by hand today.
+
 ---
 
 ## 9. When you edit the product
