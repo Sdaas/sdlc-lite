@@ -135,7 +135,15 @@ Commit per logical unit; **never commit before human approval**; **never push/ta
 - [x] **D** — cross-repo `release.sh` + surgery unit-tests
       (2026-09-18: reworked to bump+tag here → repoint umbrella via `--umbrella <clone>` /
       `$UMBRELLA_DIR` → push both confirmation-gated; `release.test.sh` 21/21 in throwaway repos)
-- [ ] **E** — clean-room verify (isolated config) install→run + `/plugin update` check  ← **the gate**
+- [~] **E** — clean-room verify (isolated config) install→run + `/plugin update` check  ← **the gate**
+      (2026-09-18: DEFECT CAUGHT + FIXED — umbrella entry was a `github` source that can't target
+      the `sdlc-lite-plugin/` subdir, so the customer install loaded zero commands; also hit an
+      SSH-default clone failure. Fixed both by switching the umbrella entry to a `git-subdir` source
+      with an explicit https url (no re-cut; same tag/sha). `release.sh` now accepts git-subdir.
+      AUTOMATED clean-room verify built: `release-verify.sh` 15/15 — GitHub git-subdir install,
+      version `1.0.0-beta.1`, Gate 0 preflight-pass + Gate 1 interview, headless authed from `.env`.
+      REMAINING: (1) the full human-gated `/implement-feature` run to green+commit; (2) `/plugin
+      update` picks up a version bump (needs a beta.2 cut).)
 - [ ] **F** — RELEASING.md / README / User Guide finalized; ADR-13 proven; #41 closed
 
 ## Open items / risks
