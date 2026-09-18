@@ -6,14 +6,23 @@
   },
   "plugins": [
     {
+      "name": "implement-feature",
+      "source": {
+        "source": "github",
+        "repo": "Sdaas/sdlc-lite",
+        "ref": "v1.0.0-beta.1"
+      },
+      "description": "Interview-driven, test-first, human-in-the-loop workflow that builds a Python feature via a conductor plus isolated model-pinned subagent gates. Release channel: pinned to a tag; `release.sh` moves the pin. See ADR-13."
+    },
+    {
+      "name": "implement-feature-dev",
+      "source": "./implement-feature-plugin",
+      "description": "DEV channel of implement-feature (same plugin folder, loaded in place / live). Enabled only by the dev container — not for end users. See ADR-13."
+    },
+    {
       "name": "toy-greet",
       "source": "./toy-greet-plugin",
       "description": "Toy 2-gate greeting workflow — a learning scaffold for plugin/command mechanics."
-    },
-    {
-      "name": "implement-feature",
-      "source": "./implement-feature-plugin",
-      "description": "Interview-driven, test-first, human-in-the-loop workflow that builds a Python feature via a conductor plus isolated model-pinned subagent gates."
     }
   ]
 }
