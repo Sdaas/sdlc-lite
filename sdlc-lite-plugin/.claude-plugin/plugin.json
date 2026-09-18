@@ -1,8 +1,17 @@
 {
   "name": "sdlc-lite",
-  "version": "0.1.0",
+  "version": "1.0.0-beta.1",
   "description": "Interview-driven, test-first, human-in-the-loop workflow that builds a Python feature via a conductor plus isolated, model-pinned subagent gates.",
-  "author": { "name": "Soumendra Daas", "email": "soumendra.daas@gmail.com" },
+  "author": {
+    "name": "Soumendra Daas",
+    "email": "soumendra.daas@gmail.com"
+  },
   "license": "MIT",
-  "keywords": ["tdd", "workflow", "python", "subagents", "code-review"]
+  "keywords": [
+    "tdd",
+    "workflow",
+    "python",
+    "subagents",
+    "code-review"
+  ]
 }
