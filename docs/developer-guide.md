@@ -540,6 +540,63 @@ promised and what is verified cannot drift — the discipline ADR-11 gives the i
   hidden — observability holds even where prevention is not possible (effort has no rank-1 lever at
   all, so it can only ever be proven, never forced).
 
+### ADR-13 — Two-channel distribution: a live dev entry and a tag-pinned release entry in one catalog
+
+> **Status (2026-09-18):** decision settled for [#41](https://github.com/Sdaas/sdlc-lite/issues/41);
+> the mechanism is *proven* only when the clean-room verify (below) passes. Until #41 closes, treat the
+> `release.sh` procedure and `RELEASING.md` §4/§5 as intended-but-unverified.
+
+*Decision:* the root marketplace catalog ([`.claude-plugin/marketplace.json`](../.claude-plugin/marketplace.json))
+carries **two entries for the same plugin folder**:
+
+- **`implement-feature`** — a `github` source pinned to a release tag
+  (`{"source":"github","repo":"Sdaas/sdlc-lite","ref":"vX.Y.Z","sha":"…"}`). This is the **customer**
+  channel: `claude plugin marketplace add Sdaas/sdlc-lite` reads this catalog at the default branch and
+  installs *exactly* the tagged commit.
+- **`implement-feature-dev`** — a directory source (`./implement-feature-plugin`), *loaded in place*.
+  This is the **dev** channel: the dev container enables `implement-feature-dev@daas-plugins` and gets
+  the live workspace copy (edit → restart → live).
+
+Both entries share one `plugin.json` (same `name`, `/implement-feature` command, guard hook); only
+*resolution* differs. A release is cut by `release.sh`, which **bumps `plugin.json` `version`**, tags
+`vX.Y.Z`, and rewrites the `implement-feature` entry's `ref`/`sha`. The customer path is **verified
+before a release is real**, from a *release-verify* environment with an **isolated Claude config**
+(no dev marketplace present) so the GitHub fetch cannot silently fall back to the workspace copy.
+
+*Why:*
+
+- **The bug, concretely.** With only the directory entry (the pre-#41 state), a customer's
+  `marketplace add` reads root `marketplace.json` on `main` → directory source → *loaded in place* → a
+  plugin the docs say is **never version-pinned**. Example: a customer installs Monday; you push a
+  broken experiment to `main` Tuesday; Wednesday their tool re-resolves against `main` HEAD and runs
+  your broken code — you never "released," yet their install moved under them. `plugin.json`'s
+  `"version"` does no work for a directory source, so **you cannot freeze customers at
+  `1.0.0-beta.1`**. That is #41 in one sentence.
+- **The fix, concretely.** With the `github`-pinned `implement-feature` entry, the customer resolves
+  the commit behind `v1.0.0-beta.1` and *stops there*. Same Monday–Wednesday: your Tuesday push to
+  `main` doesn't touch them, because their source is pinned to the tag's commit; meanwhile the dev
+  container, on `implement-feature-dev`, *does* see Tuesday's code live — which is exactly what a
+  developer wants. They only move when *you* cut the next release and they run `plugin update`.
+- **Two entries in one catalog — not a subdirectory or a release branch.** A plugin `source` may not
+  use `../`, and two `.claude-plugin/marketplace.json` files can't both live at repo root, so a
+  separate dev catalog physically can't reach up to `implement-feature-plugin/`. Co-locating both
+  entries sidesteps that with no symlink and no second branch, and keeps the customer's documented
+  `marketplace add Sdaas/sdlc-lite` command unchanged. (The `implement-feature-dev` entry is visible
+  to customers too but is plainly a dev entry and undocumented for them; only the container enables it.)
+- **The version bump is the update trigger.** `/plugin update` compares the resolved `version` and
+  **skips if it is unchanged** — so a release is *not* just a new tag, it is `version` bump + tag +
+  repoint, all three, which is precisely what `release.sh` automates. (Set `version` in `plugin.json`
+  only, never also in the marketplace entry — the platform silently prefers `plugin.json`.)
+- **The dev container is a development harness, not a customer simulator.** It wears two hats: the
+  pinned toolchain (a customer needs this too) *and* a directory-source marketplace that loads the
+  plugin live (the opposite of a customer). The second hat sabotages a naive customer test — an install
+  run while the workspace marketplace is active can resolve the *local* copy and "pass" without proving
+  anything. The earlier §8 install-from-GitHub check (2026-09-12) dodged this by running from `/tmp`,
+  but it only proved *files arrive*, not a **tag pin**, and it polluted the shared login volume. #41's
+  verify therefore uses an **isolated Claude config with no dev marketplace**: with no directory source
+  to fall back to, `marketplace add` → `install` *must* fetch the tag, making the customer path
+  un-fudgeable and leaving dev state pristine.
+
 ---
 
 ## 7. Design principles (distilled)
