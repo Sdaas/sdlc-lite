@@ -125,7 +125,7 @@ Commit per logical unit; **never commit before human approval**; **never push/ta
 
 ## Progress tracker
 
-- [ ] **A** — plugin rename/restructure (`sdlc-lite-plugin/`, name, namespace) + tests green
+- [x] **A** — plugin rename/restructure (`sdlc-lite-plugin/`, name, namespace) + tests green
 - [ ] **B** — dev catalog + container to final names + in-container live-load verified
 - [ ] **C** — umbrella repo `Sdaas/claude-plugins` created + catalog + README
 - [ ] **D** — cross-repo `release.sh` + surgery unit-tests

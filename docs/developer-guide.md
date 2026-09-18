@@ -46,7 +46,7 @@ observability). Editing the workflow means editing Markdown, not writing code.
 ### Repository layout of the product
 
 ```
-implement-feature-plugin/
+sdlc-lite-plugin/
 ├── .claude-plugin/plugin.json          # identity metadata
 ├── commands/
 │   ├── implement-feature.md            # thin entry point → loads the skill
@@ -81,7 +81,7 @@ The system is a **conductor [C]** plus **isolated subagents [I]**.
   the human, and walks the gates in order. Human-facing gates (interview, design, review) run here.
 - **Isolated subagents [I]** — bias-sensitive gates run as *separate* agents: fresh context, a pinned
   model/effort, and a curated file-only inbox. They are spawned via the Agent tool using the
-  **plugin-namespaced** `subagent_type` — `implement-feature:test-writer`, never the bare name.
+  **plugin-namespaced** `subagent_type` — `sdlc-lite:test-writer`, never the bare name.
 
 **Why isolate?** "Bias" is two distinct problems:
 
@@ -192,7 +192,7 @@ uniform (`medium`) across every gate — a deliberate dev-only spread (`test-rev
 `code-reviewer` `high`) proved the receipt's effort audit end-to-end before release; real-world
 config differentiates on model, not effort (#28, #35).
 
-**The pins are the SSOT for the receipt (#22).** [`agentdefs.py`](../implement-feature-plugin/agentdefs.py)
+**The pins are the SSOT for the receipt (#22).** [`agentdefs.py`](../sdlc-lite-plugin/agentdefs.py)
 reads this frontmatter and hands the model/effort pins to the analyzer's receipt — the same
 seam-not-two-copies discipline `policy.py` gives the isolation rules. **Pinned gates are dispatched
 bare** (no inline `model`) so the frontmatter pin — including the *dated* reviewer pin — is honored;
@@ -211,7 +211,7 @@ verified above), so it is audit-only: the receipt WARNs on any deviation, either
 `hooks/hooks.json` registers a **PreToolUse** hook (`hooks/scripts/guard.py`) that fires for the
 conductor **and every subagent**, on every
 `Read`/`Bash`/`Grep`/`Glob`/`Edit`/`Write`/`NotebookEdit`. It keys on the `agent_type` (namespaced,
-e.g. `implement-feature:test-writer`) and `agent_id` carried on stdin. Five jobs:
+e.g. `sdlc-lite:test-writer`) and `agent_id` carried on stdin. Five jobs:
 
 1. **Audit** — appends `{ts, agent_type, agent_id, tool, target}` per tool call — a tamper-evident,
    per-agent record of exactly what each agent read. Timestamps are logged **UTC/tz-aware** so they
@@ -251,7 +251,7 @@ will actually touch. The design accepts this and closes it with a second, indepe
 changed from the earlier enforcer-only state:
 
 - **One policy, two legs, no drift (the SSOT).** The per-agent allow/deny rules now live once in
-  [`implement-feature-plugin/policy.py`](../implement-feature-plugin/policy.py) — shared predicates
+  [`sdlc-lite-plugin/policy.py`](../sdlc-lite-plugin/policy.py) — shared predicates
   (`looks_secret`, `is_test_path`, the design-internal/draft tests, the Bash parsing) plus a
   data-driven rule table and a single `decide(agent_type, access, path)` authority. **Both** the
   in-hook enforcer (`guard.py`) and the detective analyzer (`runlog.py`) *import* it. Previously each
@@ -265,7 +265,7 @@ changed from the earlier enforcer-only state:
   check — by design, because the backstop is the auditor, not more parsing.
 
 **The authoritative leg reads the *effect*, not the intent.** The analyzer's transcript auditor
-([`analyzer/auditor.py`](../implement-feature-plugin/analyzer/auditor.py)) fingerprints each
+([`analyzer/auditor.py`](../sdlc-lite-plugin/analyzer/auditor.py)) fingerprints each
 content-protected artifact (e.g. `03-design-internal.md`) and scans each subagent transcript's **tool
 output** for it. Because a leak lands in *some* string leaf of the transcript's `toolUseResult` (Read
 → `file.content`, Bash → `stdout`, Edit → `originalFile`) *however* it was read, this catches the
@@ -273,7 +273,7 @@ glob/indirect leak the command-string legs cannot see, and it is **method-agnost
 **trust-voiding**: the Gate-11 report prints `THIS RUN IS UNTRUSTED` and the receipt's *Files seen*
 column shows `❌ LEAK`. *Which* artifact a role is forbidden is decided by `policy.decide()`, so the
 auditor and the guard agree on "protected" by construction. (On-disk record shapes: see
-[`analyzer/TRANSCRIPT-FORMAT.md`](../implement-feature-plugin/analyzer/TRANSCRIPT-FORMAT.md) §5.)
+[`analyzer/TRANSCRIPT-FORMAT.md`](../sdlc-lite-plugin/analyzer/TRANSCRIPT-FORMAT.md) §5.)
 
 **Honesty over false comfort.** The content audit needs the session transcript (it reads tool output),
 so when the transcript is absent/drifted the audit renders **UNKNOWN — not run**, never a silent PASS:
@@ -319,7 +319,7 @@ thing a person deciding whether to trust a run's output needs — not a promise 
 For the concrete on-disk layout and record
 shapes those fields live in — main transcript, `<uuid>/subagents/*.jsonl`, and the `.meta.json`
 sidecar, with real snippets — see the field guide
-[`implement-feature-plugin/analyzer/TRANSCRIPT-FORMAT.md`](../implement-feature-plugin/analyzer/TRANSCRIPT-FORMAT.md).
+[`sdlc-lite-plugin/analyzer/TRANSCRIPT-FORMAT.md`](../sdlc-lite-plugin/analyzer/TRANSCRIPT-FORMAT.md).
 
 Two independent readers, with the fragile one quarantined behind a boundary:
 
@@ -338,7 +338,7 @@ Two independent readers, with the fragile one quarantined behind a boundary:
   ways: **absent** (soft "skipped" note) vs **drift/broken** (loud "format changed, update the parser"
   alarm). A schema self-check deliberately raises the loud error if the depended-on fields vanish.
 - **`receipt.py`** — the **headline**: one per-agent record attesting both guarantees. It fills the
-  *requested* model/effort from the agent-def pins ([`agentdefs.py`](../implement-feature-plugin/agentdefs.py))
+  *requested* model/effort from the agent-def pins ([`agentdefs.py`](../sdlc-lite-plugin/agentdefs.py))
   and the *actual* from the transcript, then verdicts them — a model mismatch is trust-voiding (**FAIL**),
   an effort deviation is a **WARN** (the cost knob, not trust). The match is alias/dated-aware: an alias
   pin (`sonnet`) accepts any same-family resolved id; a dated pin (`claude-opus-4-8`) demands an exact id.
@@ -366,7 +366,7 @@ column flips to `❌ LEAK`.
 The analyzer runs automatically at Gate 11 (full pass, incl. the transcript auditor), and its fast
 intent-level pass runs again just before Gate 9 (`--no-transcript`, so a breach is surfaced for
 explicit human acknowledgement before shipping). It can also be run on any past run via
-`/implement-feature:analyze-run`. Full detail: `analyzer/README.md`.
+`/sdlc-lite:analyze-run`. Full detail: `analyzer/README.md`.
 
 ---
 
@@ -478,7 +478,7 @@ VIOLATION, burying real signal. Guard and analyzer must share the identical pred
 ### ADR-11 — Isolation is proven by intent *and* effect: one policy, two legs
 
 *Decision:* isolation is not a single mechanism but a **policy** feeding two independent legs. One
-declarative per-agent policy ([`policy.py`](../implement-feature-plugin/policy.py) — a data rule table
+declarative per-agent policy ([`policy.py`](../sdlc-lite-plugin/policy.py) — a data rule table
 plus `decide(agent_type, access, path)`) is imported by **both** a real-time in-hook *enforcer*
 (`guard.py`, prevention, best-effort for Bash) and a post-hoc *auditor* (`analyzer/`, detection). The
 auditor itself uses two signals with fixed roles: the transcript **content-fingerprint** (reads each
@@ -509,7 +509,7 @@ inline `model`); the frontmatter pin — including the *dated* reviewer pin `cla
 honored, and the analyzer compares the transcript's *actual* resolved model against the pin: a
 mismatch is a **FAIL**, a resolved model that matches is a PASS. **Effort** is likewise audit-only:
 the receipt WARNs on any deviation from the pin, in either direction, but nothing prevents it. Both
-pins come from one SSOT ([`agentdefs.py`](../implement-feature-plugin/agentdefs.py)), so what is
+pins come from one SSOT ([`agentdefs.py`](../sdlc-lite-plugin/agentdefs.py)), so what is
 promised and what is verified cannot drift — the discipline ADR-11 gives the isolation rules via
 `policy.py`.
 
@@ -706,7 +706,7 @@ before step 2 — `devcontainer` CLI has no `--name` flag of its own.
 **Clarification — step 5 installs from the local workspace, not GitHub.** The container's
 `settings.json` pre-registers the `sdaas-sdlc-lite` marketplace as a `directory` source pointing at
 `/workspaces/sdlc-lite` (the bind-mounted repo). It resolves `implement-feature-dev` — the
-directory-source entry (`./implement-feature-plugin`) in `.claude-plugin/marketplace.json` — and
+directory-source entry (`./sdlc-lite-plugin`) in `.claude-plugin/marketplace.json` — and
 copies it into `~/.claude/plugins/cache/`. (The sibling `implement-feature` entry in the same catalog
 is the github-tag-pinned *customer* channel; the container never enables it — ADR-13.) This is the dev
 path — the "Install-from-GitHub verification" note below documents the *separate* real-user path
@@ -716,7 +716,7 @@ Two harnesses:
 
 - **Host unit tests** — `guard.py` and `analyzer/` have real unit tests (synthetic stdin, synthetic
   run-logs + transcripts including both degradation modes). Run them in-container against the pinned
-  toolchain: `python -m pytest implement-feature-plugin -q`. `guard.py`'s tests cover every deny/allow
+  toolchain: `python -m pytest sdlc-lite-plugin -q`. `guard.py`'s tests cover every deny/allow
   branch; the analyzer's cover both transcript-degradation modes.
 - **End-to-end dry runs** — a human drives an actual `/implement-feature` run in a container terminal
   (a TTY constraint), then the analyzer is run over the resulting logs and the fallout is fixed.
@@ -744,7 +744,7 @@ stayed algorithm-blind, the implementer never touched a test file), and the pipe
 ### The plugin loads from the workspace
 
 In the container, the directory-source marketplace loads the plugin **from the mounted workspace**
-(`/workspaces/.../implement-feature-plugin/**`), *not* the `~/.claude/plugins/cache` copy (which is
+(`/workspaces/.../sdlc-lite-plugin/**`), *not* the `~/.claude/plugins/cache` copy (which is
 vestigial there). So editing the plugin needs **no cache-sync step** — a workspace edit takes effect on
 a **fresh container Claude session restart** (SKILL/agents load at startup; the guard hook reloads per
 tool call). Note this differs from a *real end-user* install, which hits the cache path — the User

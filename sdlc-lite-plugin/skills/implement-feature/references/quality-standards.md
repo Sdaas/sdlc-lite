@@ -7,7 +7,7 @@
 ## Environment assumption
 This workflow is **prescriptive about the dev container**: it runs inside the project
 dev container (see `.devcontainer/`), where the pinned toolchain
-(`implement-feature-plugin/toolchain/requirements-dev.txt`) is installed. It is not
+(`sdlc-lite-plugin/toolchain/requirements-dev.txt`) is installed. It is not
 supported to run on a bare host.
 
 ## Toolchain (pinned in the container)

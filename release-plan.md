@@ -84,7 +84,7 @@ Work happens **one issue per fresh session**.
    `agents/*.md` frontmatter. Changing what an agent may read/write = update **both** the agent's prose
    inbox **and** `guard.py` (defense-in-depth).
 5. **"Done" ≠ "the change exists."** Done = a **green end-to-end dry run in the dev container**
-   (`DEVCONTAINER.md`). Host unit tests: `python3 -m pytest implement-feature-plugin -q`.
+   (`DEVCONTAINER.md`). Host unit tests: `python3 -m pytest sdlc-lite-plugin -q`.
 6. **Never commit before human approval.**
 7. When done, close the issue; update this plan only if the release narrative changed.
 

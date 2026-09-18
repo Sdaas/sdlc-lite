@@ -22,9 +22,9 @@ def _bash_leak_record(content: str) -> dict:
 
 def _runlog(tmp_path):
     return str(write_runlog(tmp_path / "rl.jsonl", [
-        call("implement-feature:test-writer", "Read", "handoff/design-interface.md",
+        call("sdlc-lite:test-writer", "Read", "handoff/design-interface.md",
              guard_decision="allow"),
-        call("implement-feature:implementer", "Write", "src/foo.py", guard_decision="allow"),
+        call("sdlc-lite:implementer", "Write", "src/foo.py", guard_decision="allow"),
     ]))
 
 
@@ -49,7 +49,7 @@ def test_subagent_breakdown_rendered_in_report(tmp_path):
     (projects / SLUG).mkdir(parents=True)
     main = write_transcript(projects / SLUG / "s.jsonl", [assistant_turn("claude-opus-4-8", i=1)])
     write_subagent(main, "agent-1", [assistant_turn("claude-opus-5", i=2)],
-                   agent_type="implement-feature:code-reviewer")
+                   agent_type="sdlc-lite:code-reviewer")
     out = build_report(runlog, projects, SLUG)
     assert "Per-subagent (isolated gates)" in out
     assert "code-reviewer" in out
@@ -114,7 +114,7 @@ def test_content_audit_present_and_clean_when_no_leak(tmp_path):
     write_subagent(main_t, "agent-1",
                    [assistant_turn("claude-opus-5", i=2),
                     _bash_leak_record("some innocent test output, nothing forbidden")],
-                   agent_type="implement-feature:test-writer")
+                   agent_type="sdlc-lite:test-writer")
     out = build_report(runlog, projects, SLUG)
     assert "Content isolation audit (authoritative" in out
     assert "No forbidden content reached any isolated gate" in out
@@ -125,7 +125,7 @@ def test_adversarial_glob_leak_flips_run_to_untrusted(tmp_path):
     # THE acceptance case: a test-writer's `cat handoff/*.md` dumps the internal design into
     # its Bash stdout. The run-log/guard are blind to the glob; the content audit catches it.
     runlog = str(write_runlog(tmp_path / "rl.jsonl", [
-        call("implement-feature:test-writer", "Bash", "cat handoff/*.md", guard_decision="allow"),
+        call("sdlc-lite:test-writer", "Bash", "cat handoff/*.md", guard_decision="allow"),
     ]))
     projects = tmp_path / "projects"
     (projects / SLUG).mkdir(parents=True)
@@ -133,7 +133,7 @@ def test_adversarial_glob_leak_flips_run_to_untrusted(tmp_path):
     (tmp_path / "03-design-internal.md").write_text(DESIGN_INTERNAL, encoding="utf-8")
     write_subagent(main_t, "agent-1",
                    [assistant_turn("claude-opus-5", i=2), _bash_leak_record(DESIGN_INTERNAL)],
-                   agent_type="implement-feature:test-writer")
+                   agent_type="sdlc-lite:test-writer")
     out = build_report(runlog, projects, SLUG)
     assert "CONTENT LEAK DETECTED" in out
     assert "THIS RUN IS UNTRUSTED" in out

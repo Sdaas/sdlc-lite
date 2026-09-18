@@ -18,9 +18,9 @@ downstream gate see a prior gate's raw transcript — only the **curated handoff
 - **[I] isolated subagent** — spawned via the Agent/Task tool as a named agent type,
   fresh context, pinned model/effort, sees ONLY its curated inbox. **Plugin agents are
   namespaced by the plugin name**, so the `subagent_type` is
-  `implement-feature:test-writer`, `implement-feature:test-reviewer`,
-  `implement-feature:implementer`, `implement-feature:verifier`,
-  `implement-feature:code-reviewer` — never the bare name. (Verified empirically.)
+  `sdlc-lite:test-writer`, `sdlc-lite:test-reviewer`,
+  `sdlc-lite:implementer`, `sdlc-lite:verifier`,
+  `sdlc-lite:code-reviewer` — never the bare name. (Verified empirically.)
 - **Dispatch every `[I]` gate bare — never name a model inline (#22, #36).** Do **not** pass a
   `model` argument on the dispatch. The gate's pinned `model` lives in its `agents/*.md`
   frontmatter and **is honored on a bare dispatch** (verified across real sessions); naming a
@@ -393,7 +393,7 @@ consumed by test-writer, test-reviewer, and code-reviewer:
 Delegate to the isolated, **algorithm-blind** test-writer. Do NOT write the tests
 yourself, and do NOT coach it on the algorithm.
 
-**Spawn it** via the Agent tool with `subagent_type: implement-feature:test-writer`
+**Spawn it** via the Agent tool with `subagent_type: sdlc-lite:test-writer`
 (namespaced by plugin; its model/effort/tools are pinned in `agents/test-writer.md`). The
 brief you pass must contain ONLY:
 - the absolute `<artifact_dir>`, `<code_root>`, and `<tests_root>`;
@@ -426,7 +426,7 @@ findings file added to its inbox.)*
 ## Gate 4 — TEST-REVIEW  [I] `test-reviewer`
 
 An **independent** critic reviews the tests **before** any implementation exists. Spawn a
-**different** agent than the writer — `subagent_type: implement-feature:test-reviewer`
+**different** agent than the writer — `subagent_type: sdlc-lite:test-reviewer`
 (Opus/medium per the model plan; pinned in `agents/test-reviewer.md`).
 
 **Its inbox (it sees more than the writer):** `01-requirements.md`, the **full** design
@@ -449,7 +449,7 @@ against the real shipped code. The guard confines the reviewer's writes to its o
 a scratch dir (a Bash-holding critic can't be made read-only by tool-removal alone, P44).
 
 It writes `<artifact_dir>/handoff/06-test-review-findings.md` with a **verdict**:
-- **CHANGES-REQUESTED → bounded loop:** re-spawn `implement-feature:test-writer` with the
+- **CHANGES-REQUESTED → bounded loop:** re-spawn `sdlc-lite:test-writer` with the
   findings file added to its inbox; then re-review. **Bound it:** after 2 rounds with no
   progress, STOP and surface to the human.
 - **APPROVE →** append the run-log entry and proceed.
@@ -459,7 +459,7 @@ the changes on the next loop.
 
 ## Gate 5 — IMPLEMENT  [I] `implementer`  (inner loop)
 
-Delegate to `subagent_type: implement-feature:implementer` (Sonnet/medium; has
+Delegate to `subagent_type: sdlc-lite:implementer` (Sonnet/medium; has
 Write/Edit/Bash, pinned in `agents/implementer.md`). Its inbox is `01-requirements.md` +
 the **tests** + the **full** design (`02-design-interface.md` + `03-design-internal.md`) +
 the standards file.
@@ -483,7 +483,7 @@ are the slow checks, enforced at CODE-REVIEW — not here.)
 ## Gate 6 — VERIFY  [I] `verifier`  (outer loop)
 
 **Green unit tests are not Done.** Spawn a **fresh, read-only** verifier —
-`subagent_type: implement-feature:verifier` (Sonnet/medium; observes, cannot fix — pinned in
+`subagent_type: sdlc-lite:verifier` (Sonnet/medium; observes, cannot fix — pinned in
 `agents/verifier.md`). It did not write the code, so it won't drive it the way the author
 expects. Its inbox: `01-requirements.md` (the ACs + boundary inventory) and `<code_root>/`
 (to invoke the real thing, not to trust it).
@@ -507,7 +507,7 @@ converge). On all-PASS → append the run-log entry and proceed to CODE-REVIEW.
 ## Gate 7 — CODE-REVIEW + quality  [I] `code-reviewer`  (the last unattended gate)
 
 Spawn a fresh, read-only whole-diff reviewer —
-`subagent_type: implement-feature:code-reviewer` (Opus/medium; pinned in
+`subagent_type: sdlc-lite:code-reviewer` (Opus/medium; pinned in
 `agents/code-reviewer.md`). "One senior engineer reviewing the entire PR": fresh context
 kills anchoring, a stronger model than the implementer kills monoculture. Its inbox:
 `01-requirements.md` + the full design + the **whole change** (tests + `<code_root>/`) +
@@ -619,7 +619,7 @@ the report** next to the handoff dir via `--out`:
 - **Per-agent activity** + token/cost totals.
 
 The analyzer only **measures** — it never blocks or edits. (Any past run can be re-analyzed
-later with the standalone `/implement-feature:analyze-run` command.) The pipeline (Gates
+later with the standalone `/sdlc-lite:analyze-run` command.) The pipeline (Gates
 0–11) is complete.
 
 ---

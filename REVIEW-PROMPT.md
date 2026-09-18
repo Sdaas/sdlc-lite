@@ -36,7 +36,7 @@ update last each session.
 **Everything in the repo is in scope.** The shipped product, both plugins, all docs, all
 config, and the transient scaffolding.
 
-- **Grade for quality:** `implement-feature-plugin/**`, `toy-greet-plugin/**`,
+- **Grade for quality:** `sdlc-lite-plugin/**`, `toy-greet-plugin/**`,
   `README.md`, `docs/**`, `CLAUDE.md`, `DEVCONTAINER.md`, `.claude-plugin/marketplace.json`,
   `.devcontainer/**`, `.gitignore`.
 - **Do NOT grade for quality, but DO flag if tracked-and-shouldn't-be:**
@@ -83,8 +83,8 @@ Do these **in order**, one per session. Unit 7 is gated: only start it once Unit
 marked `done` in the ledger.
 
 1. **Manifests & wiring** — `.claude-plugin/marketplace.json`, both `plugin.json`
-   (`implement-feature-plugin/.claude-plugin/`, `toy-greet-plugin/.claude-plugin/`),
-   `implement-feature-plugin/hooks/hooks.json`, `commands/*.md`. Do names, versions, paths, and
+   (`sdlc-lite-plugin/.claude-plugin/`, `toy-greet-plugin/.claude-plugin/`),
+   `sdlc-lite-plugin/hooks/hooks.json`, `commands/*.md`. Do names, versions, paths, and
    namespaces resolve and cross-reference correctly? Does the marketplace publish what the docs
    say (`sdaas-sdlc-lite`, both plugins)? Do hooks register the events/matchers the docs claim?
 2. **SKILL.md** — `skills/implement-feature/SKILL.md`. The 12-gate (0–11) conductor logic: is

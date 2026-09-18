@@ -1,6 +1,6 @@
 """CLI entry point for the /implement-feature observability analyzer.
 
-    # from inside implement-feature-plugin/ — primary handle is the run's artifact dir:
+    # from inside sdlc-lite-plugin/ — primary handle is the run's artifact dir:
     python -m analyzer.analyze_run --workdir /path/to/.implement-feature/<run>/
     # or point straight at a run-log:
     python -m analyzer.analyze_run --runlog /path/to/run-log.jsonl

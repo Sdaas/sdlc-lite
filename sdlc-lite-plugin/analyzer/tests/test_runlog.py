@@ -40,9 +40,9 @@ def _check(analysis, name):
 
 def test_guard_decision_counted_per_agent(tmp_path):
     log = write_runlog(tmp_path / "rl.jsonl", [
-        call("implement-feature:implementer", "Read", "src/foo.py", guard_decision="allow"),
-        call("implement-feature:implementer", "Write", "src/foo.py", guard_decision="allow"),
-        call("implement-feature:test-writer", "Read", "handoff/03-design-internal.md",
+        call("sdlc-lite:implementer", "Read", "src/foo.py", guard_decision="allow"),
+        call("sdlc-lite:implementer", "Write", "src/foo.py", guard_decision="allow"),
+        call("sdlc-lite:test-writer", "Read", "handoff/03-design-internal.md",
              guard_decision="deny"),
     ])
     a = parse_runlog(str(log))
@@ -64,8 +64,8 @@ def test_parse_counts_and_per_agent_activity(tmp_path):
     log = write_runlog(tmp_path / "rl.jsonl", [
         call("", "Read", "SKILL.md"),                                  # conductor
         call("", "Bash", "ls"),
-        call("implement-feature:implementer", "Read", "src/foo.py"),
-        call("implement-feature:implementer", "Write", "src/foo.py"),
+        call("sdlc-lite:implementer", "Read", "src/foo.py"),
+        call("sdlc-lite:implementer", "Write", "src/foo.py"),
     ])
     a = parse_runlog(str(log))
     assert a.total_entries == 4
@@ -77,7 +77,7 @@ def test_parse_counts_and_per_agent_activity(tmp_path):
     assert conductor.total_calls == 2
     assert conductor.tool_counts == {"Read": 1, "Bash": 1}
 
-    impl = a.agents["implement-feature:implementer"]
+    impl = a.agents["sdlc-lite:implementer"]
     assert impl.label == "implementer"
     assert impl.reads == ["src/foo.py"]
     assert impl.writes == ["src/foo.py"]
@@ -85,11 +85,11 @@ def test_parse_counts_and_per_agent_activity(tmp_path):
 
 def test_clean_run_passes_all_isolation_checks(tmp_path):
     log = write_runlog(tmp_path / "rl.jsonl", [
-        call("implement-feature:test-writer", "Read", "handoff/design-interface.md"),
-        call("implement-feature:test-reviewer", "Read", "handoff/tests.py"),
-        call("implement-feature:implementer", "Write", "src/foo.py"),
-        call("implement-feature:verifier", "Bash", "pytest"),
-        call("implement-feature:code-reviewer", "Read", "src/foo.py"),
+        call("sdlc-lite:test-writer", "Read", "handoff/design-interface.md"),
+        call("sdlc-lite:test-reviewer", "Read", "handoff/tests.py"),
+        call("sdlc-lite:implementer", "Write", "src/foo.py"),
+        call("sdlc-lite:verifier", "Bash", "pytest"),
+        call("sdlc-lite:code-reviewer", "Read", "src/foo.py"),
     ])
     a = parse_runlog(str(log))
     assert a.all_passed
@@ -99,7 +99,7 @@ def test_clean_run_passes_all_isolation_checks(tmp_path):
 
 def test_test_writer_reading_design_internal_is_a_violation(tmp_path):
     log = write_runlog(tmp_path / "rl.jsonl", [
-        call("implement-feature:test-writer", "Read", "handoff/design-internal.md"),
+        call("sdlc-lite:test-writer", "Read", "handoff/design-internal.md"),
     ])
     a = parse_runlog(str(log))
     c = _check(a, "test-writer stayed algorithm-blind")
@@ -110,8 +110,8 @@ def test_test_writer_reading_design_internal_is_a_violation(tmp_path):
 
 def test_implementer_writing_test_file_is_a_violation(tmp_path):
     log = write_runlog(tmp_path / "rl.jsonl", [
-        call("implement-feature:implementer", "Write", "tests/test_foo.py"),
-        call("implement-feature:implementer", "Edit", "src/foo.py"),  # allowed
+        call("sdlc-lite:implementer", "Write", "tests/test_foo.py"),
+        call("sdlc-lite:implementer", "Edit", "src/foo.py"),  # allowed
     ])
     a = parse_runlog(str(log))
     c = _check(a, "implementer did not touch tests")
@@ -124,7 +124,7 @@ def test_implementer_sed_inplace_on_test_file_is_detected(tmp_path):
     # write the plain redirect scan misses. The detective extracts it via the policy SSOT
     # (bash_write_targets -> sed -i operand) and flags test-integrity, same as the guard.
     log = write_runlog(tmp_path / "rl.jsonl", [
-        call("implement-feature:implementer", "Bash", "sed -i 's/x/y/' tests/test_foo.py"),
+        call("sdlc-lite:implementer", "Bash", "sed -i 's/x/y/' tests/test_foo.py"),
     ])
     a = parse_runlog(str(log))
     c = _check(a, "implementer did not touch tests")
@@ -134,7 +134,7 @@ def test_implementer_sed_inplace_on_test_file_is_detected(tmp_path):
 
 def test_any_agent_reading_secrets_is_a_violation(tmp_path):
     log = write_runlog(tmp_path / "rl.jsonl", [
-        call("implement-feature:verifier", "Read", "/repo/.env"),
+        call("sdlc-lite:verifier", "Read", "/repo/.env"),
     ])
     a = parse_runlog(str(log))
     c = _check(a, "no secret/.env access by any agent")
@@ -145,7 +145,7 @@ def test_any_agent_reading_secrets_is_a_violation(tmp_path):
 def test_benign_bash_environ_is_not_a_secret_violation(tmp_path):
     # #16: a Bash command mentioning os.environ must NOT flip the verdict to VIOLATION.
     log = write_runlog(tmp_path / "rl.jsonl", [
-        call("implement-feature:test-reviewer", "Bash",
+        call("sdlc-lite:test-reviewer", "Bash",
              "python3 -c \"import os; print(os.environ.get('X'))\""),
     ])
     a = parse_runlog(str(log))
@@ -155,7 +155,7 @@ def test_benign_bash_environ_is_not_a_secret_violation(tmp_path):
 
 def test_real_secret_read_via_bash_is_a_violation(tmp_path):
     log = write_runlog(tmp_path / "rl.jsonl", [
-        call("implement-feature:test-reviewer", "Bash", "cat ~/.ssh/id_rsa"),
+        call("sdlc-lite:test-reviewer", "Bash", "cat ~/.ssh/id_rsa"),
     ])
     a = parse_runlog(str(log))
     assert not _check(a, "no secret/.env access by any agent").passed
@@ -164,8 +164,8 @@ def test_real_secret_read_via_bash_is_a_violation(tmp_path):
 def test_reviewer_writing_product_tree_is_a_violation(tmp_path):
     # #12: reviewer writes/edits or Bash-redirects into src/tests -> detected.
     log = write_runlog(tmp_path / "rl.jsonl", [
-        call("implement-feature:test-reviewer", "Write", "/repo/src/ref.py"),
-        call("implement-feature:test-reviewer", "Bash", "cat > tests/test_x.py <<EOF\nx\nEOF"),
+        call("sdlc-lite:test-reviewer", "Write", "/repo/src/ref.py"),
+        call("sdlc-lite:test-reviewer", "Bash", "cat > tests/test_x.py <<EOF\nx\nEOF"),
     ])
     a = parse_runlog(str(log))
     c = _check(a, "read-only critics stayed out of the product tree")
@@ -177,8 +177,8 @@ def test_confinement_generalizes_to_verifier_and_code_reviewer(tmp_path):
     # #29: the verifier and code-reviewer are write-confined exactly like the test-reviewer;
     # the detective now adjudicates all three read-only critics through the policy SSOT.
     log = write_runlog(tmp_path / "rl.jsonl", [
-        call("implement-feature:verifier", "Write", "/repo/src/patch.py"),
-        call("implement-feature:code-reviewer", "Edit", "/repo/src/other.py"),
+        call("sdlc-lite:verifier", "Write", "/repo/src/patch.py"),
+        call("sdlc-lite:code-reviewer", "Edit", "/repo/src/other.py"),
     ])
     a = parse_runlog(str(log))
     c = _check(a, "read-only critics stayed out of the product tree")
@@ -193,10 +193,10 @@ def test_reviewer_outbox_and_probe_are_clean(tmp_path):
     # sanctioned outbox is a file directly inside it. Anchored confinement clears both the
     # real outbox and a /tmp scratch probe.
     log = write_runlog(tmp_path / "rl.jsonl", [
-        call("implement-feature:test-reviewer", "Write",
+        call("sdlc-lite:test-reviewer", "Write",
              str(tmp_path / "06-test-review-findings.md")),
-        call("implement-feature:test-reviewer", "Bash", "cat > /tmp/scratchpad/p.py <<EOF\nx\nEOF"),
-        call("implement-feature:test-reviewer", "Bash", "python -m pytest -q"),
+        call("sdlc-lite:test-reviewer", "Bash", "cat > /tmp/scratchpad/p.py <<EOF\nx\nEOF"),
+        call("sdlc-lite:test-reviewer", "Bash", "python -m pytest -q"),
     ])
     a = parse_runlog(str(log))
     assert _check(a, "read-only critics stayed out of the product tree").passed
@@ -207,7 +207,7 @@ def test_reviewer_outbox_outside_handoff_dir_is_a_violation(tmp_path):
     # containing "/handoff/". The anchored rule denies an outbox-looking path that is NOT
     # inside THIS run's handoff dir — a stale/other-run outbox no longer escapes.
     log = write_runlog(tmp_path / "rl.jsonl", [
-        call("implement-feature:test-reviewer", "Write",
+        call("sdlc-lite:test-reviewer", "Write",
              "/some/other/run/handoff/06-test-review-findings.md"),
     ])
     a = parse_runlog(str(log))
@@ -226,7 +226,7 @@ def test_relative_runlog_path_still_recognizes_own_outbox(tmp_path, monkeypatch)
     (run_dir / "handoff").mkdir(parents=True)
     log_abs = run_dir / "handoff" / "run-log.jsonl"
     write_runlog(log_abs, [
-        call("implement-feature:test-reviewer", "Write",
+        call("sdlc-lite:test-reviewer", "Write",
              str(run_dir / "handoff" / "06-test-review-findings.md")),
     ])
     relative_path = os.path.relpath(log_abs, tmp_path)
@@ -238,7 +238,7 @@ def test_relative_runlog_path_still_recognizes_own_outbox(tmp_path, monkeypatch)
 def test_reviewer_fd_dup_redirect_not_a_violation(tmp_path):
     # #12 regression: `2>&1` is fd duplication, not a write to a file named `&1`.
     log = write_runlog(tmp_path / "rl.jsonl", [
-        call("implement-feature:test-reviewer", "Bash",
+        call("sdlc-lite:test-reviewer", "Bash",
              "python -m pytest tests/ --collect-only -q 2>&1 | tail -20"),
     ])
     a = parse_runlog(str(log))
@@ -267,7 +267,7 @@ def test_orchestration_records_not_counted_as_tool_calls(tmp_path):
     # apart and excluded from the tool aggregation entirely.
     a = parse_runlog(str(write_runlog(tmp_path / "rl.jsonl", [
         gate("WRITE-TESTS", "test-writer"),
-        call("implement-feature:test-writer", "Read", "handoff/x.md", guard_decision="allow"),
+        call("sdlc-lite:test-writer", "Read", "handoff/x.md", guard_decision="allow"),
         gate("IMPLEMENT", "implementer", result="GREEN"),
     ])))
     assert a.total_entries == 1            # only the one real tool call

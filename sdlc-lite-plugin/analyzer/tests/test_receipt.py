@@ -67,7 +67,7 @@ def _transcript(tmp_path):
                             [assistant_turn("claude-opus-4-8", i=1, effort="medium")])
     write_subagent(main, "agent-1",
                    [assistant_turn("claude-opus-5", i=2, effort="high")],
-                   agent_type="implement-feature:code-reviewer")
+                   agent_type="sdlc-lite:code-reviewer")
     from analyzer.transcript import parse_transcript
     return parse_transcript(main, None, None)
 
@@ -75,8 +75,8 @@ def _transcript(tmp_path):
 def test_receipt_fills_actual_from_transcript_and_grants_from_runlog(tmp_path):
     runlog = parse_runlog(str(write_runlog(tmp_path / "rl.jsonl", [
         call("", "Read", "SKILL.md", guard_decision="allow"),
-        call("implement-feature:code-reviewer", "Read", "src/foo.py", guard_decision="allow"),
-        call("implement-feature:code-reviewer", "Write", "/etc/passwd", guard_decision="deny"),
+        call("sdlc-lite:code-reviewer", "Read", "src/foo.py", guard_decision="allow"),
+        call("sdlc-lite:code-reviewer", "Write", "/etc/passwd", guard_decision="deny"),
     ])))
     receipts = {r.label: r for r in build_receipt(runlog, _transcript(tmp_path))}
 
@@ -100,7 +100,7 @@ def test_receipt_pins_fill_requested_and_drive_verdicts(tmp_path):
     pins = {"code-reviewer": AgentPin(model="claude-opus-4-8", effort="high")}
     runlog = parse_runlog(str(write_runlog(tmp_path / "rl.jsonl", [
         call("", "Read", "SKILL.md", guard_decision="allow"),
-        call("implement-feature:code-reviewer", "Read", "src/foo.py", guard_decision="allow"),
+        call("sdlc-lite:code-reviewer", "Read", "src/foo.py", guard_decision="allow"),
     ])))
     receipts = {r.label: r for r in
                 build_receipt(runlog, _transcript(tmp_path), None, pins)}
@@ -124,11 +124,11 @@ def test_receipt_alias_pin_passes_against_resolved_id(tmp_path):
                             [assistant_turn("claude-opus-4-8", i=1, effort="medium")])
     write_subagent(main, "impl", [assistant_turn("claude-sonnet-4-5-20250929", i=2,
                                                   effort="medium")],
-                   agent_type="implement-feature:implementer")
+                   agent_type="sdlc-lite:implementer")
     from analyzer.transcript import parse_transcript
     t = parse_transcript(main, None, None)
     runlog = parse_runlog(str(write_runlog(tmp_path / "rl.jsonl", [
-        call("implement-feature:implementer", "Read", "x.py", guard_decision="allow"),
+        call("sdlc-lite:implementer", "Read", "x.py", guard_decision="allow"),
     ])))
     pins = {"implementer": AgentPin(model="sonnet", effort="medium")}
     r = {x.label: x for x in build_receipt(runlog, t, None, pins)}["implementer"]
@@ -149,8 +149,8 @@ def test_receipt_verdicts_unknown_in_skeleton_state(tmp_path):
 
 def test_receipt_conductor_first_then_alphabetical(tmp_path):
     runlog = parse_runlog(str(write_runlog(tmp_path / "rl.jsonl", [
-        call("implement-feature:verifier", "Bash", "pytest", guard_decision="allow"),
-        call("implement-feature:implementer", "Read", "x.py", guard_decision="allow"),
+        call("sdlc-lite:verifier", "Bash", "pytest", guard_decision="allow"),
+        call("sdlc-lite:implementer", "Read", "x.py", guard_decision="allow"),
         call("", "Read", "SKILL.md", guard_decision="allow"),
     ])))
     labels = [r.label for r in build_receipt(runlog, None)]
@@ -171,8 +171,8 @@ def test_receipt_without_transcript_actual_columns_unknown_grants_intact(tmp_pat
     # No transcript at all (absent/drift/disabled) -> actual model/effort UNKNOWN, but the
     # run-log-derived grant/deny survive (R5: never a silent PASS).
     runlog = parse_runlog(str(write_runlog(tmp_path / "rl.jsonl", [
-        call("implement-feature:implementer", "Read", "x.py", guard_decision="allow"),
-        call("implement-feature:implementer", "Read", "y.py", guard_decision="allow"),
+        call("sdlc-lite:implementer", "Read", "x.py", guard_decision="allow"),
+        call("sdlc-lite:implementer", "Read", "y.py", guard_decision="allow"),
     ])))
     r = build_receipt(runlog, None)[0]
     assert r.actual_model == UNKNOWN and r.actual_effort == UNKNOWN
@@ -183,7 +183,7 @@ def test_receipt_without_transcript_actual_columns_unknown_grants_intact(tmp_pat
 
 def _runlog_tw(tmp_path):
     return parse_runlog(str(write_runlog(tmp_path / "rl.jsonl", [
-        call("implement-feature:test-writer", "Read", "handoff/x.md", guard_decision="allow"),
+        call("sdlc-lite:test-writer", "Read", "handoff/x.md", guard_decision="allow"),
     ])))
 
 
@@ -213,7 +213,7 @@ def test_files_column_unscanned_agent_is_unknown(tmp_path):
     from analyzer.auditor import AuditResult
     runlog = parse_runlog(str(write_runlog(tmp_path / "rl.jsonl", [
         call("", "Read", "SKILL.md", guard_decision="allow"),
-        call("implement-feature:test-writer", "Read", "handoff/x.md", guard_decision="allow"),
+        call("sdlc-lite:test-writer", "Read", "handoff/x.md", guard_decision="allow"),
     ])))
     audit = AuditResult(scanned_agents=["test-writer"])
     cond = {x.label: x for x in build_receipt(runlog, None, audit)}["conductor"]

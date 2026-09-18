@@ -19,7 +19,7 @@ Semantic versioning (`MAJOR.MINOR.PATCH`) with **prerelease identifiers**:
 - `1.0.0` — GA.
 - Post-GA: `1.0.1` (patch), `1.1.0` (minor), `2.0.0` (breaking).
 
-The version lives in **`implement-feature-plugin/.claude-plugin/plugin.json`** (`version` field)
+The version lives in **`sdlc-lite-plugin/.claude-plugin/plugin.json`** (`version` field)
 and is mirrored by a git **tag** `v<version>` on the release commit.
 
 > **Why not `0.5`?** `0.x` signals "expect churn / not feature-complete." Our first release is
@@ -33,7 +33,7 @@ The platform pins a plugin's version **only for git/archive sources**, *not* for
 
 | Channel | Audience | Marketplace source | Moves when |
 |---|---|---|---|
-| **dev / in-place** | maintainer + dev container | local **directory** source (`./implement-feature-plugin`) | every workspace edit (no release needed) |
+| **dev / in-place** | maintainer + dev container | local **directory** source (`./sdlc-lite-plugin`) | every workspace edit (no release needed) |
 | **release / stable** | real customers | **github** source **pinned to a tag** (`ref: v1.0.0-beta.1`, optionally `sha`) | only when a release is cut |
 
 - The dev container keeps loading the plugin from the workspace directory (see `DEVCONTAINER.md`)

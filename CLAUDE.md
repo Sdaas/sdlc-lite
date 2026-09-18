@@ -30,9 +30,9 @@ This file provides guidance to Claude Code when working in this repository.
 The whole product is expressed **declaratively** — a skill (`SKILL.md`) is the "score", agent-definition files pin per-gate models, and a hook enforces isolation. There is no hand-written orchestration driver. (Full detail + the ADRs behind these choices are in `docs/developer-guide.md`.)
 
 - **Conductor [C]** — the interactive session running the skill
-  (`implement-feature-plugin/skills/implement-feature/SKILL.md`). It holds the through-line, talks to the human, and walks 12 gates (0–11) in order.
-- **Isolated subagents [I]** — bias-sensitive gates run as **separate agents** with fresh context, a **pinned model/effort**, and a **curated file inbox**. They are spawned via the Agent tool using the **plugin-namespaced** `subagent_type`, e.g. `implement-feature:test-writer` (never the bare name).
-- Definitions live in `implement-feature-plugin/agents/*.md` — model/effort/tools are pinned there (`effort` can only be set via agent-def frontmatter, not inline).
+  (`sdlc-lite-plugin/skills/implement-feature/SKILL.md`). It holds the through-line, talks to the human, and walks 12 gates (0–11) in order.
+- **Isolated subagents [I]** — bias-sensitive gates run as **separate agents** with fresh context, a **pinned model/effort**, and a **curated file inbox**. They are spawned via the Agent tool using the **plugin-namespaced** `subagent_type`, e.g. `sdlc-lite:test-writer` (never the bare name).
+- Definitions live in `sdlc-lite-plugin/agents/*.md` — model/effort/tools are pinned there (`effort` can only be set via agent-def frontmatter, not inline).
 - **The handoff contract:** every gate reads a curated inbox and writes a defined outbox **as files** —
   a gate **never** sees a prior gate's raw transcript. Code stays in the repo; gate isolation is via git
   plus a per-feature artifact dir (`.implement-feature/<run>/` with numbered handoff files). The
@@ -44,7 +44,7 @@ Core invariants (also in `SKILL.md` → Rules): design & every review use a high
 ### The guard hook 
 Isolation is enforced, not just requested.
 
-`implement-feature-plugin/hooks/hooks.json` registers a **PreToolUse** hook (`hooks/scripts/guard.py`) that fires for the conductor **and every subagent** and keys on `agent_type`. On every Read/Bash/Grep/Glob/Edit/Write/NotebookEdit it does the following 
+`sdlc-lite-plugin/hooks/hooks.json` registers a **PreToolUse** hook (`hooks/scripts/guard.py`) that fires for the conductor **and every subagent** and keys on `agent_type`. On every Read/Bash/Grep/Glob/Edit/Write/NotebookEdit it does the following 
 
 - **audits** — appends a JSONL line per tool call; 
 - **secrets guardrail** — denies reading `.env`/keys/credentials for any agent; -
@@ -55,7 +55,7 @@ Isolation is enforced, not just requested.
 A **plugin** hook (not a project-settings hook) was required for it to fire for subagents in headless.
 
 ### Quality standards / toolchain 
-`implement-feature-plugin/skills/implement-feature/references/quality-standards.md` defines "green", coverage/mutation thresholds, boundary-resilience policy, and concurrency policy. The pinned toolchain is `implement-feature-plugin/toolchain/requirements-dev.txt` (ruff, mypy, pytest, pytest-cov, mutmut, hypothesis, pytest-asyncio). 
+`sdlc-lite-plugin/skills/implement-feature/references/quality-standards.md` defines "green", coverage/mutation thresholds, boundary-resilience policy, and concurrency policy. The pinned toolchain is `sdlc-lite-plugin/toolchain/requirements-dev.txt` (ruff, mypy, pytest, pytest-cov, mutmut, hypothesis, pytest-asyncio). 
 
 Gate 0 preflight hard-fails if any tool is missing. **A real user must install this toolchain into their own environment** (v1: documented manual install; auto-install is a v1.1 backlog item).
 
@@ -76,10 +76,10 @@ devcontainer exec --workspace-folder . claude # jump into Claude Code inside
 ```
 
 The container's directory-source marketplace loads the plugin **from the workspace**
-(`/workspaces/sdlc-lite/implement-feature-plugin/**`), not the `~/.claude/plugins/cache`
+(`/workspaces/sdlc-lite/sdlc-lite-plugin/**`), not the `~/.claude/plugins/cache`
 copy — so a workspace edit takes effect after a fresh container Claude session restart, with no
 cache-sync step. Host unit tests (guard + analyzer, pytest-only): `python3 -m pytest
-implement-feature-plugin -q`. The full pinned toolchain (ruff/mypy/mutmut) runs only in-container.
+sdlc-lite-plugin -q`. The full pinned toolchain (ruff/mypy/mutmut) runs only in-container.
 
 ## When editing the product
 - The **behavior lives in Markdown** (`SKILL.md`, `agents/*.md`, `references/*`, `hooks.json`). Editing

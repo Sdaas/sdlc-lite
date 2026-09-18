@@ -16,7 +16,7 @@
     },
     {
       "name": "implement-feature-dev",
-      "source": "./implement-feature-plugin",
+      "source": "./sdlc-lite-plugin",
       "description": "DEV channel of implement-feature (same plugin folder, loaded in place / live). Enabled only by the dev container — not for end users. See ADR-13."
     },
     {

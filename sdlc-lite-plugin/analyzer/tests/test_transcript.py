@@ -108,7 +108,7 @@ def test_subagent_effort_captured_and_folded_into_sidechain(tmp_path):
     write_subagent(main, "agent-1", [
         assistant_turn("claude-opus-5", i=2, effort="high"),
         assistant_turn("claude-opus-5", i=3, effort="high"),
-    ], agent_type="implement-feature:code-reviewer")
+    ], agent_type="sdlc-lite:code-reviewer")
     a = parse_transcript(main, WIN_START, WIN_END)
     labels = {s.agent_label: s for s in a.subagents}
     assert labels["code-reviewer"].efforts == {"high": 2}
@@ -124,10 +124,10 @@ def test_subagents_parsed_and_attributed_and_folded_into_sidechain(tmp_path):
     write_subagent(main, "agent-1", [
         assistant_turn("claude-opus-5", i=2, input_tokens=100, output_tokens=40),
         assistant_turn("claude-opus-5", i=3, input_tokens=100, output_tokens=40),
-    ], agent_type="implement-feature:code-reviewer")
+    ], agent_type="sdlc-lite:code-reviewer")
     write_subagent(main, "agent-2",
                    [assistant_turn("claude-sonnet-5", i=4, input_tokens=10, output_tokens=5)],
-                   agent_type="implement-feature:implementer")
+                   agent_type="sdlc-lite:implementer")
 
     a = parse_transcript(main, WIN_START, WIN_END)
     # Per-subagent breakdown attributed via .meta.json (namespace stripped).
@@ -162,7 +162,7 @@ def test_malformed_subagent_file_is_skipped_not_raised(tmp_path):
     sdir.mkdir(parents=True)
     (sdir / "broken.jsonl").write_text("not json at all\n{also bad\n", encoding="utf-8")
     write_subagent(main, "good", [assistant_turn("claude-sonnet-5", i=2)],
-                   agent_type="implement-feature:verifier")
+                   agent_type="sdlc-lite:verifier")
     # Must not raise; the good subagent is still parsed, the main analysis intact.
     a = parse_transcript(main, WIN_START, WIN_END)
     assert [s.agent_label for s in a.subagents] == ["verifier"]

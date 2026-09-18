@@ -30,7 +30,7 @@ def test_load_pins_matches_shipped_agent_defs():
 
 
 def test_pin_for_strips_plugin_namespace():
-    assert agentdefs.pin_for("implement-feature:code-reviewer").model == "claude-opus-4-8"
+    assert agentdefs.pin_for("sdlc-lite:code-reviewer").model == "claude-opus-4-8"
     assert agentdefs.pin_for("code-reviewer").effort == "medium"
 
 
