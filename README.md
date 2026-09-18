@@ -27,14 +27,16 @@ What that buys you:
 
 ## User Guide
 
-Install the plugin
-```
-claude plugin marketplace add Sdaas/claude-plugins
-claude plugin install sdlc-lite@sdaas
-```
+Read the **[User Guide](docs/user-guide.md)** for full install, prerequisites, and FAQ. Quick start:
 
-- Start a github repo and install the toochain
-- Run `/implement-feature` and point it at an issue, file, or a 1-2 line description of the feautre
+1. Install the plugin:
+   ```
+   /plugin marketplace add Sdaas/claude-plugins
+   /plugin install sdlc-lite@sdaas
+   ```
+2. Make sure your target project is a git repo.
+3. Install the required toolchain into that repo's environment (see [User Guide](docs/user-guide.md)).
+4. Run `/implement-feature` and point it at a GitHub issue, a file, or a 1-2 line description of the feature.
 
 ## Developer Guide
 
