@@ -4,7 +4,8 @@ This guide is for someone improving `implement-feature`. It explains the archite
 of real code (the guard hook and the analyzer), the design decisions and *why* they were made (ADRs),
 the design principles distilled from building it, and the testing methodology. If you only want to
 *run* the plugin, read the [User Guide](user-guide.md); for the underlying concepts start with the
-[Tutorial](tutorial.md).
+[Tutorial](tutorial.md). For **versioning, issue triage, and how a release is cut and consumed**, see
+[`RELEASING.md`](../RELEASING.md).
 
 ---
 

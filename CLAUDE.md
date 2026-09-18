@@ -19,6 +19,7 @@ This file provides guidance to Claude Code when working in this repository.
 - **Before every commit:** give the user a concise list of the key files / changes to review, and
   wait for explicit approval. Never commit before the user has reviewed and approved.
 - **Bar:** *genuinely usable* — a stranger can install from GitHub and run it against their own Python repo. "Done" = a **green end-to-end dry run in the dev container** (see `DEVCONTAINER.md`), not "docs exist."
+- **Issue triage:** releases are GitHub **milestones** (`1.0.0-beta.1`, `1.0.0`, …); label issues by **type only** (`bug`/`enhancement`/`documentation`); **no milestone = backlog**. Full conventions + release procedure: `RELEASING.md`. Roadmap (current + next release only): `plan.md`.
 - Temp/scratch files go to `/tmp/` or end in `.tmp`, deleted when done.
 
 
