@@ -1,10 +1,64 @@
 # Planning-suite restructure — working plan (branch-scoped)
 
 > **Branch:** `docs/planning-suite-architecture`
-> **Status:** design + documentation-restructure in progress. No code. No commits yet.
-> **Resume with:** "read planning-suite-restructure-plan.md and continue."
+> **Status:** design + documentation-restructure in progress. No code. **No commits yet.**
+> **Resume with:** "read planning-suite-restructure-plan.md and continue." → **next action =
+> standalone-cleanup pass on docs (4)+(5)** then GitHub reconcile + source deletion (see Progress).
 > **Branch-scoped scratch:** `git rm` this file in the commit that finishes the restructure.
 > Durable direction also in memory: `planning-suite-3tier.md`.
+
+## Progress (as of 2026-09-20)
+
+Working one step at a time; **user reviews + approves each doc before the next**. Naming
+convention locked: **durable design docs are un-dated** (like `plan-feature.md`); the dated
+`2026-09-20-planning-suite-architecture.md` is the research launch-pad (delete once absorbed).
+
+- ✅ **Doc (3) DONE + approved** — `docs/design/planning-suite-architecture.md` (the durable spine:
+  substrate, capability-id address, inter-tier handoff contracts, steering, progressive-rigor, the
+  "real seams" principle, shared invariants, per-tier + suite acceptance). Framed as a hypothesis
+  (one revision pass expected after design-system is built).
+- ✅ **Doc (4) DONE + approved** — `docs/design/design-system.md` (tier internals: purpose,
+  pipeline, artifact content, requirements-vs-decisions labelling, assumptions/horizon,
+  progressive rigor, acceptance). It is **all stable-core** (most-upstream tier, no provisional
+  parts). Added during review: a **§3.3 "reframe architecture-first requests" move** and a **§8.1
+  sample eval scenario** (the kanban blurb + expected grilling behavior + expected artifacts).
+- ✅ **Doc (5) DONE + approved** — `docs/design/plan-feature.md` (REPLACED the concept doc).
+  Absorbed ADRs D3, D5 (strengthened w/ locked inter-child seam), D7, D8, D9; reframed D4→STATE.md
+  orientation and D10→wrong-tier kick-up; dropped §6 non-goals overruled this session; added P1
+  vertical-slice Rule; absorbed the desktop 12-point review (decomposition-tier pts 6/8/9/12).
+  Provisional cross-tier parts (child-contract template; P2 inter-child seam format; seam-A inbox)
+  flagged `PROVISIONAL — finalize against real /design-system output`. Old `plan-feature.md` +
+  desktop doc now fully absorbed → deletable on this branch.
+- ✅ **Doc (4) amended + approved** — added `/design-system` **§3.6 self-critique gate** (isolated
+  red-team on capability map + specs, falsifiable seeded defects) and **§3.7 human review & refine
+  loop** (bounded revise-until-approved; map approved first; nothing commits until approved);
+  wired into §3 pipeline + §8 acceptance.
+- 🔜 **NEXT — standalone-cleanup pass on (4)+(5)** (decided while reviewing (5); see "Standalone
+  cleanup" below): the *durable set of three* (spine + (4) + (5)) is the standalone unit —
+  **(Q1a)** scrub only dangling refs to soon-deleted docs, keep spine cross-refs; **(Q2)** keep
+  decision rationale, cut backward-facing history; **(Q3-iii)** strip inline "(external review pt N)"
+  citations, keep a short honest Sources & credit for *surviving* prior art only.
+- Then: GitHub reconcile (#32), delete absorbed sources, `git rm` this plan file. See sequence.
+
+## Standalone cleanup (decided 2026-09-20, reviewing (5))
+
+The two tier docs will be the **buildable basis for the skills**, so they must not depend on files
+about to be deleted. Decisions (grilled):
+- **Q1 = (a):** standalone unit = the **three durable docs together** (spine + design-system +
+  plan-feature). Keep cross-refs among them (spine owns shared content once — avoids drift). Remove
+  only references to deleted docs (launch-pad `2026-09-20-planning-suite-architecture.md`, old
+  `plan-feature.md`, Desktop original).
+- **Q2 = keep rationale, cut history:** rewrite every "changed X from Y / today it works Z" into
+  present-tense "the design is X, because W (rejected V)." No back-references; the *why* survives.
+- **Q3 = (iii):** strip inline "(external review pt N)"-style citations from the body; keep a short
+  "Sources & credit" for *surviving* prior art (the `~/dev/agentic-sdlc-prior-art/` repos + research
+  docs kept under `docs/research/`, #46); drop refs to deleted docs.
+- Open (next grilling round): fate of (5)'s **ADR-provenance table** (pure archaeology?) and the
+  falsifiable **done-test** for the cleanup.
+
+**Confirmed this session:** three-tier split is LOCKED — `/design-system` stops at capability
+depth; detailed per-capability requirements + inter-child seams + A/B/C/Z DAG belong to
+`/plan-feature <capability>` (progressive rigor, not a limitation).
 
 ## Prioritization (decided 2026-09-20)
 
@@ -52,8 +106,10 @@ incoherent docs cleaned up.
 
 ## Agreed safe sequence (order matters — nothing deleted/closed before replacements exist)
 
-1. [ ] Write **(3)** suite architecture (durable) — absorb `2026-09-20-planning-suite-architecture.md`.
-2. [ ] Write **(4)** `/design-system` (durable) and **(5) stable-core** `/plan-feature` (durable;
+1. [x] **DONE + approved** — Wrote **(3)** suite architecture (durable) as
+       `docs/design/planning-suite-architecture.md`; absorbs `2026-09-20-planning-suite-architecture.md`.
+2. [~] **(4) DONE + approved; (5) NEXT.** Wrote **(4)** `/design-system` (durable) as
+       `docs/design/design-system.md`. Still to do: **(5) stable-core** `/plan-feature` (durable;
        provisional cross-tier parts flagged per Q4). **Port the still-valid ADRs from
        `plan-feature.md` (D3, D5-strengthened, D7, D8, D9) and the reframed ones (D4→STATE.md,
        D10→wrong-tier), and absorb the desktop 12 points**, BEFORE deleting sources. Stable-core
@@ -134,8 +190,10 @@ Applied to `/plan-feature`:
 
 | File | Kind | Fate |
 |---|---|---|
-| `docs/design/2026-09-20-planning-suite-architecture.md` | research/synthesis; **the launch pad** | evolves into doc (3); delete once (3)(4)(5) absorb it |
-| `docs/design/plan-feature.md` | concept doc (12 ADRs) — **still in design/, active** | absorb into (5) stable-core, then delete (this branch) |
+| `docs/design/planning-suite-architecture.md` | **doc (3) — durable spine** | ✅ **CREATED + approved** (un-dated = durable) |
+| `docs/design/design-system.md` | **doc (4) — durable, `/design-system` tier** | ✅ **CREATED + approved** (incl. §3.3 reframe move + §8.1 eval scenario) |
+| `docs/design/2026-09-20-planning-suite-architecture.md` | research/synthesis; **the launch pad** | absorbed by (3)(4); **delete once (5) also absorbs it** |
+| `docs/design/plan-feature.md` | concept doc (12 ADRs) — **still in design/, active** | 🔜 absorb into (5) stable-core (REPLACE this file), then it IS doc (5) |
 | `docs/research/2026-09-20-agentic-sdlc-gap-analysis.md` | research + impl-feature gap backlog | **MOVED** ✓ · tracked by epic #46 |
 | `docs/research/2026-09-20-design-review-gate-proposal.md` | impl-feature proposal (Gate 2.5) | **MOVED** ✓ · epic #46 |
 | `docs/research/2026-09-20-interview-gate-proposal.md` | impl-feature proposal (Gate 1) | **MOVED** ✓ (kept its `M` edit) · epic #46 |
