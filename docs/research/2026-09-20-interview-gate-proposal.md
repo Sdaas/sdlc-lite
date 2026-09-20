@@ -6,7 +6,40 @@ under `sdlc-lite-plugin/` has been changed. Three blocking decisions in §1._
 
 _Unlike the design proposal, this one adds **no new gate and no new agent**. Every change below
 is prose in `SKILL.md` Gate 1 or structure in `requirements-template.md`, plus one free
-addition to the already-proposed `design-reviewer`._
+addition to the already-proposed `design-reviewer`. No `guard.py` change, no renumbering, no
+extra model call per run._
+
+---
+
+## Read this first
+
+**Three decisions block everything else** — all in §1:
+
+| | Decision | Recommendation |
+|---|---|---|
+| **D1** | Batching: keep whole-frontier rounds, or one question at a time? | **Capped frontier** (3–4, load-bearing first, tree-reshaping questions asked alone) — not strict one-at-a-time |
+| **D2** | Does the intent hypothesis replace or precede the P57 scope anchor? | **Precede it** — you can perfectly scope the wrong feature |
+| **D3** | Given/When/Then for ACs: universal or conditional? | **Conditional** — GWT for stateful/sequenced ACs only |
+
+**Two things worth flagging before you read the deltas:**
+
+1. **The `➡️` recommended answer is a bias with no counterweight, and P57 aims it.** Attaching a
+   recommendation is right — a human reacts to a wrong guess faster than they generate an answer
+   — but addy ships the same mechanic *and* names the sycophancy risk it carries. We ship it
+   with no mitigation, and P57 additionally tells the conductor to default to the *smaller*
+   option. Together that is a systematic scope-loss bias the human is invited to rubber-stamp.
+   **§2.3 is the mitigation, and it is the highest risk-weighted item in this document** — more
+   so than anything in §2.1 or §2.4, because it degrades silently and looks like agreement.
+
+2. **Principle IDs are unallocated.** Highest `P<n>` currently in use is **P57**. Five additions
+   here would want IDs — the intent hypothesis + stop test, the sycophancy rule, the
+   explicit-approval definition, the evidence-bearing assumption block, and the split check. I
+   have not assigned numbers; that is yours.
+
+**Also worth knowing before reading:** §5 records six ideas considered and deliberately *not*
+proposed (strict one-at-a-time, a persisted `CONTEXT.md` glossary, extracting `grilling` as a
+reusable primitive, a dedicated assumptions subagent, a full intent-discovery phase, and
+user-expertise profiling) — each with the reason, so they are not silently dropped.
 
 ---
 
