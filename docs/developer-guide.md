@@ -515,8 +515,8 @@ promised and what is verified cannot drift — the discipline ADR-11 gives the i
 
 *Why bare dispatch, not a dispatch-time enforcement hook:*
 - **A frontmatter model pin is honored on a bare dispatch** — verified across four real sessions in
-  [`model-pinning-findings.md`](../design/model-pinning-findings.md) §2 and re-probed 2026-09-14 (§7):
-  a `claude-opus-4-8`-pinned agent dispatched by `subagent_type` alone ran on exactly
+  [`model-pinning-findings.md`](../design/model-pinning-findings.md) (Evidence) and re-probed
+  2026-09-14 (Caveat): a `claude-opus-4-8`-pinned agent dispatched by `subagent_type` alone ran on exactly
   `claude-opus-4-8` while its parent ran `claude-sonnet-5`. The documented resolution order is inline
   (1) > **frontmatter (2)** > `CLAUDE_CODE_SUBAGENT_MODEL` (3) > session (4) > account (5); with 1
   and 3 absent, the frontmatter pin governs.
