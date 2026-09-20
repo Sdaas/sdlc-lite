@@ -3,12 +3,14 @@
 _Forward-looking only, and designed to be resumed with **"read release-plan.md and continue."** This
 file holds two things: the **narrative** (where we are, what the current and next releases are *for*)
 and the **execution order** (given the milestone's issues, which order to implement them in). It does
-**not** hold issue *lists or specs* — **GitHub is the source of truth** for *which* issues ship
-(milestones = releases); this file only adds the *ordering*, referenced **by issue number only** so
-the two can't drift. Decision history lives in the issues and the ADRs (`docs/developer-guide.md` §6);
+**not** hold issue *specs* — **GitHub is the source of truth** for *which* issues ship
+(milestones = releases); this file only adds the *ordering*, referencing each issue as
+**`#NN` + its title as a convenience copy** so a reader knows what `#NN` is without a round trip.
+Titles can drift — GitHub wins; re-check with `gh issue list --milestone "<title>" --state open`.
+Decision history lives in the issues and the ADRs (`docs/developer-guide.md` §6);
 release conventions live in `RELEASING.md`._
 
-_Last updated: 2026-09-18._
+_Last updated: 2026-09-20._
 
 ---
 
@@ -23,51 +25,43 @@ _Last updated: 2026-09-18._
 4. **If the current milestone has no open issues**, the release is ready to cut — follow the release
    procedure in `RELEASING.md`.
 5. Only touch this file when the *narrative* or the *execution order* changes (a release ships, an
-   issue is added/closed/reordered). Reference issues **by number only** — never copy titles or specs
-   here (that's GitHub's job).
+   issue is added/closed/reordered). Reference issues as **`#NN` + title**; never copy an issue's
+   *spec* here (that's GitHub's job).
+
+
+--- 
+
+## Current release — `1.0.0` (GA)
+
+The GA build. Theme: **robustness and real-user UX hardening** — beta-validation feedback plus the
+committed follow-ups from v1 acceptance: toolchain auto-install so a stranger can run it unaided, and
+closing the test-quality and isolation-correctness gaps the acceptance runs surfaced. Milestone:
+`1.0.0`; committed issues and their order are in **Execution order** above. Scope may grow or shrink
+during the release — that's expected; when it ships, this section resets to the next release.
 
 ## Execution order (current release)
 
-The order to implement the current milestone's open issues — **numbers only**; GitHub owns the detail.
-Regenerate the set from the milestone (step 2) and keep this list to the *sequence* and any blockers.
+The order to implement the current milestone's open issues. Titles are a convenience copy — regenerate
+the set from the milestone (step 2); GitHub owns the detail.
 
-- **No active milestone.** `1.0.0-beta.1` **closed** 2026-09-18 (its sole issue #41 landed; beta.1 +
-  beta.2 cut & public). The next milestone — **`1.0.0-beta.3`** (more validation) *or* **`1.0.0`**
-  (GA) — is opened once early-customer feedback tells us which. Until then, work is backlog-driven.
+Current milestone: **`1.0.0`** (GA).
 
-## Where we are
+1. **#43** — `fix(guard-hook): bash_write_targets misreads scratch writes as product-tree writes`
+   *First: self-contained, unit-testable on the host, and it removes the false denials that make the
+   other three harder to verify in a dry run.*
+2. **#44** — `feat(gate-7): pre-configure [tool.mutmut] in the python-starter fixtures`
+   *After #43 — its verification is a clean Gate 7 mutmut run, which #43 stops the guard from blocking.*
+3. **#37** — `feat(skill): add a mechanical pytest.raises match= check at gates 3 and 4`
+   *After #43/#44 — proving it needs a Gate 7 run that isn't drowning in mutmut-setup noise.*
+4. **#19** — `feat(toolchain): add a setup command that installs the pinned toolchain`
+   *Last, and largest: a new command with a **blocking Open Question** (the command's name) that must
+   be answered before work starts.*
 
-The trust-claim engine is **built and merged to `main`**: isolated, model/effort-pinned gates, a
-policy SSOT + guard enforcement, a transcript-based auditor, and a per-run **trust receipt** proving
-isolation and bounded model/effort held. As of **2026-09-18** it is also **cut as a versioned,
-installable release**: #41 shipped the two-channel distribution + `release.sh`, and `1.0.0-beta.1`
-and `1.0.0-beta.2` are tagged and public via the `Sdaas/claude-plugins` umbrella, verified by an
-automated clean-room run (`release-verify.sh`, 17/17 — install + Gate 0/1 + a proven `/plugin update`
-bump). The
-one remaining gap that defines the beta→GA arc is **real-customer validation**.
 
-## Current release — `1.0.0-beta.1`
+## Next release — post-GA (not yet defined)
 
-A shippable, 1.0-quality build put in front of early customers before we commit to GA. Not
-"half-built" — 1.0 on probation. Milestone: `1.0.0-beta.1`.
-
-**Shipped.** [#41 — release engineering](../../issues/41) landed 2026-09-18, building the
-**two-channel distribution** (dev directory-source vs. umbrella git-subdir tag-pinned release channel)
-+ a cross-repo `release.sh`, and — the real gate — **proving** the process-produced plugin installs
-cleanly from a clean environment (`release-verify.sh` 17/17: git-subdir GitHub install + Gate 0/Gate 1
-+ a `/plugin update` bump proven to pick up a version change). `RELEASING.md` §2/§4/§5 and the README/User
-Guide install commands are finalized against that verified path. Beta validation with early customers
-is now the open work toward GA.
-
-## Next release — `1.0.0-beta.3` or `1.0.0` GA (feedback-decided)
-
-The beta channel is live and being validated with early customers. Their feedback decides the next
-milestone: another **`1.0.0-beta.3`** if issues surface that warrant more probation, or straight to
-**`1.0.0` GA** if the beta holds. Either way the theme is **robustness and real-user UX hardening** —
-beta validation feedback plus the committed follow-ups from v1 acceptance (toolchain auto-install so a
-stranger can run it unaided; closing the test-quality and isolation-correctness gaps the acceptance
-runs surfaced: #19 / #37 / #38). Scope may grow or shrink during the release — that's expected; when
-it ships, this section resets to the next release.
+No milestone opened. Shape it from GA feedback plus the backlog; if beta validation surfaces enough to
+warrant more probation before GA, open a `1.0.0-beta.3` milestone and pull scope out of `1.0.0`.
 
 ## Backlog
 
