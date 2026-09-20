@@ -27,10 +27,10 @@ PRD.
 ```
 
 It sits **upstream** of `/plan-feature`: it produces the durable capability specs that
-`/plan-feature` selects (by stable id) and decomposes. It is the tier none of the earlier
-single-command analyses covered — the external `/plan-feature` review's points 1, 2, 3, 5, 7, 10,
-11 were, in aggregate, pressure to grow one command *upward* into system-level thinking; that
-pressure is the signal that a separate tier was needed, and this is it.
+`/plan-feature` selects (by stable id) and decomposes. Modelling a system into capabilities is a
+distinct concern from decomposing one capability into buildable work — different inputs, a different
+deliverable, and a different level of abstraction — which is why it is its own tier rather than a
+front-end bolted onto `/plan-feature`.
 
 **When NOT to use it (the downgrade).** Per the suite's progressive-rigor ratchet
 (`planning-suite-architecture.md` §6), a human may confirm *"this is one feature, not a system"*
@@ -52,7 +52,7 @@ defined by the spine (`planning-suite-architecture.md` §2):
 Plus the durable **lightweight architecture** (§3.4) and **system-intent** model (§3.1) as the
 reasoning that produced the map. Planner-private brainstorming stays gitignored (per spine); the
 durable artifacts are **synthesized aggressively, kept small** — "what humans need to understand
-and review," never a transcript of everything the agent thought (external review point 10).
+and review," never a transcript of everything the agent thought.
 
 The address every output carries is the **stable capability id** (kebab-case, chosen once, never
 renamed) — defined by the spine, §3; this tier is where ids are *born*.
@@ -78,8 +78,7 @@ the intended flow is — note the two gates that stand between a draft and the d
 
 ### 3.1 System intent (the shared mental model)
 
-A lightweight model — closer to a shared understanding than a contract (external review point 1).
-Sections:
+A lightweight model — closer to a shared understanding than a contract. Sections:
 
 ```
 System intent
@@ -99,7 +98,7 @@ capabilities; the capabilities can stay stable while the architecture changes.
 
 Capabilities answer *"what can this system actually do?"* — distinct from requirements (*what must
 happen?*) and architecture (*how might it support it?*). They are **first-class, not inferred from
-requirements** (external review point 2). Worked shape (loan-covenant example):
+requirements**. Worked shape (loan-covenant example):
 
 ```
 ingest loan documents · identify & normalize covenants · ingest financial reports ·
@@ -110,23 +109,21 @@ Each becomes a row in the **capability map** with a stable id, a one-to-two-sent
 responsibility, and its dependencies (one-way, **no cycles** — if two capabilities each need the
 other, they are one capability). Keep it a map, not a database/ontology/taxonomy.
 
-### 3.3 Interview convergence (borrowed, with credit)
+### 3.3 Interview convergence
 
-The interview must **converge, not exhaust questions** (external review point 7). It borrows the
-already-drafted interview rubric from the implement-feature interview-gate proposal
-(`docs/research/2026-09-20-interview-gate-proposal.md`), lifted to the system level:
+The interview must **converge, not exhaust questions**. It applies an interview rubric (credited in
+Sources), lifted to the system level:
 
-- **Intent hypothesis first** (its §2.1): before scoping, state one sentence of what the human
+- **Intent hypothesis first:** before scoping, state one sentence of what the human
   actually wants + an honest confidence; below ~70%, list what's missing. Guards against modelling
   a well-scoped *wrong* system.
-- **"Minimum coherent system" anchor** (external review point 7; the system-level analog of the
-  implement-feature smallest-viable anchor): establish the smallest coherent system first, then
+- **"Minimum coherent system" anchor** (the system-level analog of the implement-feature
+  smallest-viable anchor): establish the smallest coherent system first, then
   explore structure; actively name deferred capabilities and non-goals.
-- **Split detection** (its §2.4): a request that is genuinely several systems triggers a split
-  conversation and STOP; split along user-visible/capability lines, **never by technical layer**.
-- **Stop test** (its §2.5): done requires both an empty question-frontier *and* being able to
-  predict the human's answers to the next questions; otherwise STOP and say what's foundationally
-  missing.
+- **Split detection:** a request that is genuinely several systems triggers a split conversation
+  and STOP; split along user-visible/capability lines, **never by technical layer**.
+- **Stop test:** done requires both an empty question-frontier *and* being able to predict the
+  human's answers to the next questions; otherwise STOP and say what's foundationally missing.
 - **Reframe architecture-first / technology-first requests.** A common real input arrives
   *inverted* — it leads with the tech stack and deployment (e.g. "React UI, Python backend,
   Postgres, deploy to Cloud Run *and* EC2") and states the actual capabilities thinly or not at
@@ -139,7 +136,7 @@ already-drafted interview rubric from the implement-feature interview-gate propo
 ### 3.4 Lightweight architecture (a decision-support model, not a spec)
 
 The architecture captures only what is needed to explain the system's shape and enable sensible
-decomposition (external review point 3):
+decomposition:
 
 **Includes:** major components · responsibilities · important boundaries · key data/control flows ·
 externally visible interfaces · significant decisions · important trade-offs · unresolved
@@ -155,8 +152,8 @@ piece be implemented?"*
 ### 3.5 Behavior/implementation split at this tier
 
 Each capability `spec.md` states **observable behavior + scenarios** (Given/When/Then for stateful
-or sequenced behavior; a plain assertion for pure input→output — the conditional GWT rule from the
-interview-gate proposal §3.2). The *how* stays out — the same interface/internal wall
+or sequenced behavior; a plain assertion for pure input→output). The *how* stays out — the same
+interface/internal wall
 `/implement-feature` enforces internally, applied one tier up (spine §2, property 2).
 
 ### 3.6 Self-critique gate (non-interactive, isolated)
@@ -168,17 +165,16 @@ must *converge* (§3.3): the interview stops when the frontier is empty; the sel
 tests whether that "empty" was real. Its rubric:
 
 - **Capability coherence** — is each row a genuine **capability** (*what the system can do*), or a
-  technical layer / a requirement restated / an implementation detail in disguise? (external review
-  pt 2, and the §3.5 behavior/impl wall). A `database` or `API` "capability" **fails** here.
+  technical layer / a requirement restated / an implementation detail in disguise (the §3.5
+  behavior/impl wall)? A `database` or `API` "capability" **fails** here.
 - **Missing capabilities & boundaries** — is anything the intent (§3.1) implies absent from the
   map? Is the inside/outside boundary honest?
 - **Dependency sanity** — one-way only, **no cycles** (§3.2); no capability mis-directed against the
   intent.
 - **False certainty** — does any **assumption masquerade as an observed fact** (§4)? False
-  certainty is the tier's chief danger (external review pt 5); the gate demands each be labelled and
-  evidence-bearing (§5).
+  certainty is the tier's chief danger; the gate demands each be labelled and evidence-bearing (§5).
 - **Scope creep** — has completeness bias grown the system past the **minimum coherent system**
-  (§3.3, external review pt 7)? Capabilities beyond it must be named as deferred, not smuggled in.
+  (§3.3)? Capabilities beyond it must be named as deferred, not smuggled in.
 - **Leaked how** — does any `spec.md` state *how* instead of observable behavior (§3.5)?
 
 The gate is **falsifiable** (mirrors the suite bars, spine §9): it must catch a **seeded
@@ -218,7 +214,7 @@ honors the shared invariant "never commit before human approval" (spine §8):
 ## 4. Requirements vs. decisions vs. assumptions (visible labelling)
 
 Agentic systems tend to turn their own suggestions into apparent requirements. So every statement
-in the durable artifacts is **labelled** as one of (external review point 4):
+in the durable artifacts is **labelled** as one of:
 
 - **human requirement** — something the system must satisfy
 - **observed fact** — established by reading the repo/environment (cite the source)
@@ -232,10 +228,9 @@ Lightweight prefixes/headings suffice — no elaborate metadata.
 
 ## 5. Assumptions, open questions & risks (first-class output)
 
-False certainty is the major danger of AI-generated architecture (external review point 5). The
-tier must be able to say *"we don't know yet."* It writes an **evidence-bearing assumptions
-block** — the shape lifted from the interview-gate proposal §3.1 (GSD's `assumptions-analyzer`
-output shape, without a dedicated subagent):
+False certainty is the major danger of AI-generated architecture. The tier must be able to say
+*"we don't know yet."* It writes an **evidence-bearing assumptions block** (shape credited in
+Sources):
 
 | Assumption | Why (evidence — cite a path, or "asked the human") | If wrong | Confidence |
 |---|---|---|---|
@@ -255,8 +250,7 @@ This feeds the decision horizon (§6).
 ## 6. Decision horizon (don't over-optimize for complete architecture)
 
 The tier is allowed to say *"this is enough architecture to start building"* rather than *"resolve
-every architectural question first"* (external review point 11). Every architectural decision is
-tagged on a horizon:
+every architectural question first"*. Every architectural decision is tagged on a horizon:
 
 ```
 Must decide before decomposition   Should decide before implementation   Can defer until implementation

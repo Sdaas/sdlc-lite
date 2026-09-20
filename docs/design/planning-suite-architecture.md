@@ -6,10 +6,8 @@
 > capability-id address, the inter-tier handoff contracts, the progressive-rigor policy, the
 > "real seams" execution principle, and per-tier falsifiable acceptance. It does **not** own any
 > tier's internals; those live in the per-tier docs (`design-system.md`, `plan-feature.md`).
-> **Supersedes** the launch-pad synthesis `2026-09-20-planning-suite-architecture.md` (currently in
-> `docs/design/`; deleted once (3)/(4)/(5) absorb it) for the current view; where that doc (or the
-> research under `docs/research/`) goes deeper on evidence or prior-art comparison, it is cited
-> here, not repeated.
+> Where the research under `docs/research/` goes deeper on evidence or prior-art comparison, it is
+> cited in Sources, not repeated here.
 
 ---
 
@@ -43,12 +41,12 @@ the substrate (§2), the address (§3), the handoff contracts (§4), and the sha
 
 ## 2. The spine — a durable, capability-organized spec substrate
 
-**This is the foundational decision the rest of the suite hangs on.** Today nothing in sdlc-lite
-*accumulates*: `/implement-feature` handoff artifacts live in a gitignored per-run dir, and the
-earlier `/plan-feature` concept wrote a **per-feature** `docs/plans/<X>/` folder — so feature #2
-could not see feature #1's contract, and nothing compounded.
+**This is the foundational decision the rest of the suite hangs on.** The substrate must
+*accumulate*. A gitignored per-run handoff dir (as `/implement-feature` uses) or a **per-feature**
+`docs/plans/<X>/` folder would leave feature #2 unable to see feature #1's contract — nothing
+compounds, and every change starts cold.
 
-The suite adopts **OpenSpec's shape**: split the world into a durable source-of-truth organized
+So the suite adopts **OpenSpec's shape**: split the world into a durable source-of-truth organized
 **by capability**, and in-flight **changes** that merge back into it.
 
 ```
@@ -83,10 +81,9 @@ The delta lifecycle maps exactly onto the suite:
 | delta ADDED / MODIFIED / REMOVED | what change X changes about the capability |
 | **archive → merge deltas into `specs/`** | **Z-green `feat/X` merges to `main`** |
 
-> **Decision (supersedes the old `docs/plans/<X>/`):** the durable output is
-> **capability-organized `specs/`**, not per-feature folders. Per-run planner-private reasoning
-> stays gitignored (`.plan-feature/<run>/`). What changes is that the *product* of planning lands
-> in an accumulating, capability-indexed store.
+> **Decision:** the durable output is **capability-organized `specs/`**, not per-feature folders.
+> Per-run planner-private reasoning stays gitignored (`.plan-feature/<run>/`). The *product* of
+> planning lands in an accumulating, capability-indexed store.
 
 ---
 
@@ -276,8 +273,6 @@ from source):
 - **[gsd-core](https://github.com/open-gsd/gsd-core)** — `STATE.md` as the cheap orientation layer
   (§5) and Verify checking requirement/decision/goal coverage, not just "tests pass" (§8).
 
-In-repo material this doc distills: the launch-pad synthesis + full gap analysis
-`2026-09-20-planning-suite-architecture.md` (currently in `docs/design/`; deleted once absorbed),
-and, under `docs/research/`, `2026-09-20-agentic-sdlc-gap-analysis.md`,
-`2026-09-17-plan-feature-analysis-external.md`, and the two implement-feature gate proposals — the
-last three tracked for later action in epic **#46**.
+In-repo research this doc distills, under `docs/research/`: `2026-09-20-agentic-sdlc-gap-analysis.md`,
+`2026-09-17-plan-feature-analysis-external.md`, and the two implement-feature gate proposals —
+tracked for later action in epic **#46**.

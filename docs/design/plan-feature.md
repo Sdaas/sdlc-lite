@@ -35,20 +35,19 @@ that capability's `spec.md` — spine seam A) and **upstream** of `/implement-fe
 child issues, each a valid `/implement-feature` input — spine seam B). It emits the DAG and
 **exits**; it is never a resident supervisor.
 
-**The reframe (not just a "large-feature splitter").** The external review's core correction was
-that decomposition is only valuable if the thing being decomposed is understood correctly — the
-understanding now lives one tier up, in `/design-system`. So `/plan-feature`'s job is narrower and
-sharper than the old single-command concept: given a capability that is *already* modelled (a
-behavior contract + scenarios), find the **natural implementation seams** that collectively deliver
-it. The uncertainty being resolved here is *"what are the right pieces and how do they connect?"*,
-not *"what is this system?"*.
+**Not a "large-feature splitter."** Decomposition is only valuable if the thing being decomposed is
+*already understood* — and that understanding lives one tier up, in `/design-system`. So
+`/plan-feature`'s job is narrow and sharp: given a capability that is *already* modelled (a behavior
+contract + scenarios), find the **natural implementation seams** that collectively deliver it. The
+uncertainty it resolves is *"what are the right pieces and how do they connect?"*, not *"what is
+this system?"*.
 
 **When NOT to use it (the downgrade).** Per the suite's progressive-rigor ratchet
 (`planning-suite-architecture.md` §6) and §7 below, if a capability is genuinely **one buildable
 node** the human confirms *"this capability is one node"* and goes straight to
 `/implement-feature`. `/plan-feature` earns its cost only when a capability must be split — when we
 cannot yet confidently name the child work items *and* the work can be split into confidently-small
-pieces (the surviving core of old ADR **D1**; raw size is merely the usual cause, not the trigger).
+pieces — raw size is merely the usual cause, not the trigger.
 
 ---
 
@@ -69,9 +68,8 @@ emits:
 | **a `STATE.md`-style orientation file** | the capability map annotated with per-node status (spine §5) | the human, weeks later, in a fresh session |
 
 Planner-private reasoning (how the planner *thought about* the children's internals) stays
-gitignored in `.plan-feature/<run>/` and **never** ships into a child issue — see §4 and old ADR
-**D6**. Durable artifacts are synthesized aggressively and kept small (external review pt 10), the
-same posture `/design-system` takes.
+gitignored in `.plan-feature/<run>/` and **never** ships into a child issue (see §4). Durable
+artifacts are synthesized aggressively and kept small — the same posture `/design-system` takes.
 
 ---
 
@@ -89,7 +87,7 @@ interview the human.
    (seam A inbox)       (§3.2, P1)               (§3.4, P2 · PROV)        (§4)        (§3.1)
 ```
 
-### 3.1 The shape: a DAG with a sink node, not a running loop (D4, reframed)
+### 3.1 The shape: a DAG with a sink node, not a running loop
 
 Integration of a decomposed capability realistically happens *weeks* after its parts are built. A
 resident supervisor cannot wait that long, and a half-complete "living document" is exactly the
@@ -105,7 +103,7 @@ partial state the suite avoids. So the work is tracked **entirely as a DAG of Gi
 
 - Composition (`X` is made of `A,B,C,Z`) → GitHub **sub-issues**; ordering (`Z` blocked by
   `A,B,C`) → GitHub **issue dependencies**; **"X is done" ≡ "Z is closed."**
-- **Reframe of old D4:** the only addition to a purely stateless model is the durable
+- **The one addition** to a purely stateless model is the durable
   `STATE.md`-style orientation file (§2) — a *file plus the DAG*, refreshed on demand, never a
   running process. The spine (§5) owns this decision; this tier merely *emits* the file and exits. A
   future stateless `/plan-status` that regenerates it from the GitHub DAG holds no resident state,
@@ -115,7 +113,7 @@ partial state the suite avoids. So the work is tracked **entirely as a DAG of Gi
 
 > **Rule P1 (vertical-slice invariant).** Children are **capability-coherent vertical slices**,
 > never horizontal technical layers. A decomposition can have perfect requirement coverage and
-> still be architecturally wrong (external review pt 8).
+> still be architecturally wrong.
 
 Splitting a capability into `database / API / LLM / UI` is technically convenient but produces
 children that are not independently buildable or verifiable — every one is dead until the others
@@ -126,7 +124,7 @@ piece of the behavior end to end. This is the vertical tracer-bullet idea (credi
 applied inside a single capability, and it is exactly what the red-team gate (§4) exists to
 enforce.
 
-### 3.3 What each child carries — a contract, never an algorithm (D5)
+### 3.3 What each child carries — a contract, never an algorithm
 
 To decompose a capability, the planner reasons about the children's **internals and their
 interactions**. But `/implement-feature`'s central invariant is the interface/internal design split
@@ -138,12 +136,18 @@ So a child renders from a **structured contract template** — no free-form "des
 carrying *what*, never *how*:
 
 - **capability served** — the stable capability id + the acceptance criteria this child delivers
-  (external review pt 9: capability-aware contracts give the implementer a *reason* for the work
-  without leaking strategy);
+  (a capability-aware contract gives the implementer a *reason* for the work without leaking
+  strategy);
 - **interface** — inputs, outputs, and the **inter-sibling seam** it consumes/produces (§3.4);
 - **dependencies** — which siblings must exist first (the ordering edges);
 - **acceptance** — the child's slice of the requirement→test matrix;
 - **NFR slice** — its allocated share of the non-functional budget (§3.5).
+
+The contract is deliberately the **middle path**: shipping the *full* internal design (and letting
+`/implement-feature` skip its own design gate) would defeat algorithm-blindness and the double-model
+review; shipping only a one-liner would throw the planning work away and force a full re-interview.
+The structured contract carries exactly what the implementer needs — *what*, not *how* — and nothing
+more.
 
 **`PROVISIONAL — finalize against real /design-system output`:** the *exact field set and rendering*
 of this template consumes a capability `spec.md`'s real shape (what a scenario/behavior contract
@@ -174,7 +178,7 @@ genuinely global property like an end-to-end erasure SLA). An NFR that can be ne
 verified is a **decomposition smoke alarm** — a signal the seams are wrong, surfaced to the red-team
 gate (§4).
 
-### 3.6 The integrate-and-verify node `Z` (D7)
+### 3.6 The integrate-and-verify node `Z`
 
 `Z` is **just another `/implement-feature` run** — its "feature" is *"write the glue between A/B/C
 and make X's named end-to-end tests green."* Its inbox is the **public interfaces** of A/B/C (the
@@ -186,7 +190,7 @@ merge into `specs/` only when the capability they claim is proven. If `Z` *can't
 seams alone, that is itself a signal the decomposition was wrong (a smoke alarm, not a reason to
 break isolation).
 
-### 3.7 Branching: `feat/X` is the shippable unit, not the child (D8)
+### 3.7 Branching: `feat/X` is the shippable unit, not the child
 
 A child is usually **not independently shippable** — `A` may be dead code until `B` and `Z`
 integrate it. So children must not merge to `main` individually (that pollutes `main` with partial
@@ -206,29 +210,28 @@ periodic `main → feat/X` merges.
 ## 4. The red-team review gate (non-interactive, isolated)
 
 Before any issue is emitted, an **isolated pinned subagent** attacks the plan — the one bias-
-sensitive gate that *can* be a subagent (it does not talk to the human). Its rubric, borrowing the
-design-review red-team discipline from the implement-feature design-review-gate proposal
-(`docs/research/2026-09-20-design-review-gate-proposal.md`), with credit:
+sensitive gate that *can* be a subagent (it does not talk to the human). Its rubric applies the
+design-review red-team discipline (credited in Sources):
 
 - **Gaps / overlaps** — does every requirement map to some child, with no orphan requirement and no
   two children owning the same behavior? (traceability, §5)
-- **Semantic coherence of the decomposition** (external review pt 8) — are the children **natural
-  seams of the capability** (vertical slices, P1) or merely convenient technical layers/files? A
-  decomposition with perfect coverage but layer-shaped children **fails** this check.
+- **Semantic coherence of the decomposition** — are the children **natural seams of the
+  capability** (vertical slices, P1) or merely convenient technical layers/files? A decomposition
+  with perfect coverage but layer-shaped children **fails** this check.
 - **Seam compatibility** — do the locked inter-child seams (P2) actually compose? Can `Z` be
   written against seams alone (§3.6)?
 - **Internal-design leakage** — does any child contract smuggle in *how* (a leaked algorithm)
-  rather than *what*? (D5). This is a **semantic** judgment — a file-path guard hook genuinely
-  cannot decide "contract vs leaked algorithm," so the no-leak invariant is **construction-enforced
-  + review-gated, not hook-enforced** (old ADR **D6**, stated honestly). Planner-private reasoning
-  stays gitignored (`.plan-feature/<run>/`).
+  rather than *what*? This is a **semantic** judgment — a file-path guard hook genuinely cannot
+  decide "contract vs leaked algorithm," so the no-leak invariant is **construction-enforced +
+  review-gated, not hook-enforced**. Planner-private reasoning stays gitignored
+  (`.plan-feature/<run>/`).
 
 The gate is **falsifiable**: it must catch a **seeded horizontal decomposition** and a **seeded
 incompatible sibling seam** (spine §9). If it passes either seeded defect, the gate is theatre.
 
 ---
 
-## 5. Traceability: capability → requirement → child → test (D3, external review pt 6)
+## 5. Traceability: capability → requirement → child → test
 
 The requirement→test matrix survives, extended one semantic level so the DAG is more than a bag of
 tickets — it becomes a concrete implementation of the capability model:
@@ -241,15 +244,15 @@ This lets the planner (and the human, and the red-team) answer mechanically: *"w
 collectively deliver capability C?"* and *"which requirement is covered by no child?"* — the
 traceability-by-construction the spine promises via the shared capability id (spine §3).
 
-This matrix is also the tier's **falsifiable "done"** (old ADR **D3**): the plan is done when
-**each child is a valid `/implement-feature` input** *and* **the children cover the capability's
+This matrix is also the tier's **falsifiable "done"**: the plan is done when **each child is a
+valid `/implement-feature` input** *and* **the children cover the capability's
 enumerated requirements with no orphan** — proven by dry-running one representative child to green
 (§8). This repo's culture rejects "done = docs exist"; the matrix + one green child is the plan's
 green-dry-run analog.
 
 ---
 
-## 6. When reality contradicts the plan — the feedback loop (D9, external review pt 12)
+## 6. When reality contradicts the plan — the feedback loop
 
 The plan is a **hypothesis; implementation is the test.** A child run may reveal the decomposition
 was wrong — a smoke alarm fires (§3.5/§3.6), a child turns out infeasible, or building one exposes a
@@ -258,8 +261,8 @@ missing piece. This is a **first-class, explicit outcome**: the child run writes
 re-enter `/plan-feature` (or kick up to `/design-system`). Re-planning is **human-gated, never
 automatic** (honoring "surface to the human on no progress," spine §8).
 
-The feedback **vocabulary is broadened** (external review pt 12) so the note names *which layer* was
-wrong — because the fix differs:
+The feedback **vocabulary is broad** so the note names *which layer* was wrong — because the fix
+differs:
 
 - **requirements** wrong → the capability spec is wrong → re-enter `/design-system`;
 - **architecture / capability boundaries** wrong (a "capability" isn't actually isolable, or two
@@ -271,7 +274,7 @@ Naming the layer is what keeps re-planning cheap and honest instead of a vague "
 
 ---
 
-## 7. Progressive rigor & wrong-tier routing (D10, reframed)
+## 7. Progressive rigor & wrong-tier routing
 
 Per the spine's one-way ratchet (`planning-suite-architecture.md` §6), `/plan-feature` routes to the
 right tier rather than forcing every capability through decomposition:
@@ -280,10 +283,10 @@ right tier rather than forcing every capability through decomposition:
   to `/implement-feature` (no DAG). If the plan collapses to a single issue, no harm — it feeds
   `/implement-feature` as usual.
 - **Up (kick-up):** a "capability" that turns out to be **a whole system** (multiple capabilities
-  hiding inside one) → surface it and recommend `/design-system` — the reframe of old ADR **D10**
-  from "recurse into a sub-DAG" to "route to the correct tier." The three-tier split makes *up* the
-  natural move: what used to be unbounded self-recursion is now bounded by handing the too-big case
-  to the upstream tier.
+  hiding inside one) → surface it and recommend `/design-system`, routing the too-big case to the
+  correct tier rather than recursing into an ever-deeper sub-DAG. The three-tier split makes *up*
+  the natural move: it bounds what would otherwise be unbounded self-recursion by handing the
+  too-big case to the upstream tier.
 - **Bounded recursion within the tier:** a large *child* may itself re-enter `/plan-feature`
   (a sub-DAG), but depth is **capped** and the cap **surfaces to the human** (v1 fails safe at
   depth 1; deeper is a tracked follow-up), honoring "bound every automated loop."
@@ -336,31 +339,6 @@ P1 (§3.2); the DAG-with-sink + `STATE.md` model (§3.1); the contract-not-algor
 the locked-seam *requirement* P2 (§3.4); NFR allocation (§3.5); the `Z` model (§3.6); `feat/X`
 branching (§3.7); the red-team rubric (§4); traceability + falsifiable done (§5); the re-plan
 feedback loop (§6); progressive rigor + wrong-tier routing (§7); the acceptance bar (§8).
-
----
-
-## ADR provenance (from the old concept doc's D1–D12)
-
-The prior `plan-feature.md` recorded twelve ADRs. Their fate under the three-tier suite:
-
-| ADR | Fate |
-|---|---|
-| **D1** axis = uncertainty + decomposability | **core survives** as the down-route trigger (§1, §7) |
-| **D2** separate upstream command | **→ spine §1** (a suite-level decision) |
-| **D3** falsifiable "done," not "docs exist" | **kept here** (§5, §8) |
-| **D4** DAG with a sink node, not a supervisor | **reframed here** (§3.1) + steering owned by **spine §5** |
-| **D5** children carry a contract, never an algorithm | **kept here** (§3.3), template now `PROVISIONAL` (§9) |
-| **D6** no-leak is construction + review-gated, not hook-enforced | **kept here** (§4) |
-| **D7** `Z` is a normal run against seams | **kept here** (§3.6) |
-| **D8** per-change `feat/X`; `X` is the shippable unit | **kept here** (§3.7); merge-back = **spine seam C** |
-| **D9** re-planning is explicit, human-gated | **kept here** (§6), vocabulary broadened |
-| **D10** recursion, depth-capped | **reframed here** (§7) → wrong-tier kick-up + bounded recursion |
-| **D11** smell test in `/implement-feature` | **→ spine §6** (the ratchet's upgrade direction) |
-| **D12** mirror declarative arch; Opus high interactive | **→ spine §8** (shared invariant), applied in §3 |
-
-The old concept doc's **§6 non-goal "plans *one* feature X"** is **overruled** this session:
-`/plan-feature` decomposes **one capability** (a first-class object from `/design-system`), not a
-feature — the re-scope that made the three-tier suite coherent.
 
 ---
 

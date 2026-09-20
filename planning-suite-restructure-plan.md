@@ -33,17 +33,18 @@ convention locked: **durable design docs are un-dated** (like `plan-feature.md`)
   red-team on capability map + specs, falsifiable seeded defects) and **§3.7 human review & refine
   loop** (bounded revise-until-approved; map approved first; nothing commits until approved);
   wired into §3 pipeline + §8 acceptance.
-- 🔜 **NEXT — standalone-cleanup pass on (4)+(5)** (decided while reviewing (5); see "Standalone
-  cleanup" below): the *durable set of three* (spine + (4) + (5)) is the standalone unit —
-  **(Q1a)** scrub only dangling refs to soon-deleted docs, keep spine cross-refs; **(Q2)** keep
-  decision rationale, cut backward-facing history; **(Q3-iii)** strip inline "(external review pt N)"
-  citations, keep a short honest Sources & credit for *surviving* prior art only.
-- Then: GitHub reconcile (#32), delete absorbed sources, `git rm` this plan file. See sequence.
+- ✅ **Standalone-cleanup pass DONE** on all three durable docs (spine + (4) + (5)) — the durable
+  *set* is now the standalone build basis. Verified: zero refs to deleted docs, zero bare D-numbers,
+  zero inline "(external review pt N)" citations, zero history phrasing (Q6 grep checks all green).
+  Deleted (5)'s ADR-provenance table (pure archaeology) after folding the one orphaned why-not (the
+  contract "middle path") into §3.3; rewrote history→present-tense rationale in spine §2 + (4) §1.
+- 🔜 **NEXT — GitHub reconcile (#32)**, then delete absorbed sources (launch-pad
+  `2026-09-20-planning-suite-architecture.md`, Desktop original), then `git rm` this plan file.
 
-## Standalone cleanup (decided 2026-09-20, reviewing (5))
+## Standalone cleanup (DONE 2026-09-20)
 
-The two tier docs will be the **buildable basis for the skills**, so they must not depend on files
-about to be deleted. Decisions (grilled):
+The three durable docs are the **buildable basis for the skills**, so they must not depend on files
+about to be deleted. Decisions (grilled) — all applied:
 - **Q1 = (a):** standalone unit = the **three durable docs together** (spine + design-system +
   plan-feature). Keep cross-refs among them (spine owns shared content once — avoids drift). Remove
   only references to deleted docs (launch-pad `2026-09-20-planning-suite-architecture.md`, old
@@ -53,8 +54,13 @@ about to be deleted. Decisions (grilled):
 - **Q3 = (iii):** strip inline "(external review pt N)"-style citations from the body; keep a short
   "Sources & credit" for *surviving* prior art (the `~/dev/agentic-sdlc-prior-art/` repos + research
   docs kept under `docs/research/`, #46); drop refs to deleted docs.
-- Open (next grilling round): fate of (5)'s **ADR-provenance table** (pure archaeology?) and the
-  falsifiable **done-test** for the cleanup.
+- **Q4 = delete the ADR-provenance table** (archaeology) after folding orphaned why-not into body —
+  DONE (D5 middle-path rationale folded into §3.3).
+- **Q5 = spine included** in the scrub — DONE (dangling launch-pad refs + `docs/plans/<X>/` history
+  removed; §2 rewritten to present-tense why-not).
+- **Q6 = done-test:** (1) `grep` the 3 docs → zero refs to any to-be-deleted file, zero D-numbers,
+  zero inline "(external review pt N)"; (2) the 3 docs read alone carry every decision + rationale.
+  Both met. Surviving `docs/research/` + prior-art refs kept (Sources only).
 
 **Confirmed this session:** three-tier split is LOCKED — `/design-system` stops at capability
 depth; detailed per-capability requirements + inter-child seams + A/B/C/Z DAG belong to
