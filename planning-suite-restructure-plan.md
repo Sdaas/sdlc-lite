@@ -1,10 +1,12 @@
 # Planning-suite restructure — working plan (branch-scoped)
 
-> **Branch:** `docs/planning-suite-architecture`
-> **Status:** design + documentation-restructure in progress. No code. **No commits yet.**
-> **Resume with:** "read planning-suite-restructure-plan.md and continue." → **next action =
-> standalone-cleanup pass on docs (4)+(5)** then GitHub reconcile + source deletion (see Progress).
-> **Branch-scoped scratch:** `git rm` this file in the commit that finishes the restructure.
+> **Branch:** `docs/planning-suite-architecture` (committed, **not pushed, not merged**)
+> **Status:** restructure **essentially DONE** — durable docs (3)(4)(5) written, standalone-cleaned,
+> GitHub reconciled. Remaining: delete the `~/Desktop` original (user confirm), then merge.
+> **Resume with:** "read planning-suite-restructure-plan.md and continue." → **next action = confirm
+> `~/Desktop` deletion, then merge to main** (building the tiers happens on `feat/*` branches after).
+> **Branch-scoped scratch:** `git rm` this file in the **merge/close** commit (kept on-branch until
+> then, per CLAUDE.md convention — not deleted while unmerged).
 > Durable direction also in memory: `planning-suite-3tier.md`.
 
 ## Progress (as of 2026-09-20)
@@ -38,8 +40,15 @@ convention locked: **durable design docs are un-dated** (like `plan-feature.md`)
   zero inline "(external review pt N)" citations, zero history phrasing (Q6 grep checks all green).
   Deleted (5)'s ADR-provenance table (pure archaeology) after folding the one orphaned why-not (the
   contract "middle path") into §3.3; rewrote history→present-tense rationale in spine §2 + (4) §1.
-- 🔜 **NEXT — GitHub reconcile (#32)**, then delete absorbed sources (launch-pad
-  `2026-09-20-planning-suite-architecture.md`, Desktop original), then `git rm` this plan file.
+- ✅ **GitHub reconcile DONE** — **#32 re-scoped** to `feat(skill): /plan-feature — decompose one
+  capability into a buildable A/B/C/Z DAG` (points at durable docs; A/B split filed at build stage);
+  **#47 created** `feat(skill): /design-system — model a system into durable capability specs`. Both
+  `enhancement`, no milestone (backlog). Suite epic skipped (optional; #46 covers impl-feature).
+- ✅ **Launch-pad deleted** — `git rm docs/design/2026-09-20-planning-suite-architecture.md` (fully
+  absorbed by (3)(4)(5)).
+- 🔜 **NEXT — confirm `~/Desktop/plan-feature-analysis.md` deletion** (content preserved as
+  `docs/research/2026-09-17-plan-feature-analysis-external.md`), then **merge to main** (which is the
+  commit that `git rm`s this tracker). No push/merge until user says so.
 
 ## Standalone cleanup (DONE 2026-09-20)
 
@@ -124,11 +133,14 @@ incoherent docs cleaned up.
 3. [x] **DONE** — frozen `/implement-feature` material moved to `docs/research/`; tracked by a
        single backlog **epic #46** (no per-doc placeholder issues; each doc gets a review round
        later, then decomposes into template-conforming issues).
-4. [ ] GitHub reconcile for the suite: **do not close #32 until replacements exist** — open a
-       `/design-system` issue + a re-scoped `/plan-feature` issue (+ optional epic → doc (3)).
-5. [ ] Move the two research docs → `docs/research/`.
-6. [ ] Delete `plan-feature.md` + `~/Desktop/plan-feature-analysis.md` (now fully absorbed);
-       `git rm` this plan file.
+4. [x] **DONE** — GitHub reconcile: **#32 re-scoped in place** as the `/plan-feature` tracker (not
+       closed) + **#47 created** for `/design-system`. Suite epic skipped (optional).
+5. [x] **DONE** — research docs already under `docs/research/`.
+6. [~] **Absorbed sources:** launch-pad `docs/design/2026-09-20-planning-suite-architecture.md`
+       **DELETED** ✓. `~/Desktop/plan-feature-analysis.md` original **pending user confirm** (content
+       preserved as `docs/research/2026-09-17-plan-feature-analysis-external.md`). **Do NOT delete
+       `docs/design/plan-feature.md` — it *is* doc (5)** (old concept replaced in place). `git rm`
+       this tracker in the **merge/close** commit (not before — branch unmerged).
 
 ## Open decisions
 
@@ -182,7 +194,9 @@ Applied to `/plan-feature`:
 ### Locked sub-decisions
 
 - **(a)** (5): **draft stable-core now**, defer provisional cross-tier interface (principle above).
-  ⇒ `plan-feature.md` + desktop doc CAN be absorbed+deleted on this branch (cleanup completes).
+  ⇒ the old `plan-feature.md` concept content + desktop doc are absorbed on this branch —
+  `plan-feature.md` is **replaced in place** to become doc (5) (not deleted); the desktop original
+  is deletable (cleanup completes).
 - **(b)** (3) is **durable but a hypothesis** — not frozen; one revision pass expected after
   design-system is built.
 - **(c)** "build" = **skill-authoring** (SKILL.md / agents / templates / guard / toy fixture +
@@ -198,17 +212,18 @@ Applied to `/plan-feature`:
 |---|---|---|
 | `docs/design/planning-suite-architecture.md` | **doc (3) — durable spine** | ✅ **CREATED + approved** (un-dated = durable) |
 | `docs/design/design-system.md` | **doc (4) — durable, `/design-system` tier** | ✅ **CREATED + approved** (incl. §3.3 reframe move + §8.1 eval scenario) |
-| `docs/design/2026-09-20-planning-suite-architecture.md` | research/synthesis; **the launch pad** | absorbed by (3)(4); **delete once (5) also absorbs it** |
-| `docs/design/plan-feature.md` | concept doc (12 ADRs) — **still in design/, active** | 🔜 absorb into (5) stable-core (REPLACE this file), then it IS doc (5) |
+| `docs/design/2026-09-20-planning-suite-architecture.md` | research/synthesis; **the launch pad** | fully absorbed by (3)(4)(5); 🔜 **DELETE** (step 6) |
+| `docs/design/plan-feature.md` | **doc (5) — durable, `/plan-feature` tier** | ✅ **REPLACED in place + approved + standalone-cleaned** — this IS doc (5); **do NOT delete** |
 | `docs/research/2026-09-20-agentic-sdlc-gap-analysis.md` | research + impl-feature gap backlog | **MOVED** ✓ · tracked by epic #46 |
 | `docs/research/2026-09-20-design-review-gate-proposal.md` | impl-feature proposal (Gate 2.5) | **MOVED** ✓ · epic #46 |
 | `docs/research/2026-09-20-interview-gate-proposal.md` | impl-feature proposal (Gate 1) | **MOVED** ✓ (kept its `M` edit) · epic #46 |
-| `docs/research/2026-09-17-plan-feature-analysis-external.md` | external 12-point review | **COPIED from Desktop** ✓ · absorb into (5), delete `~/Desktop` original |
+| `docs/research/2026-09-17-plan-feature-analysis-external.md` | external 12-point review | **COPIED from Desktop** ✓ · absorbed into (4)+(5) ✓ · `~/Desktop` original deletion pending user confirm |
 
 ## Repo state facts (as of 2026-09-20)
 
-- Open issues: #45,#44,#43,#42,#40,#39,#37,#34,#32,#21,#20,#19,#9. #32 = "Add /plan-feature",
-  enhancement, **no milestone (backlog)**, only GitHub record of the suite.
+- Suite issues (both `enhancement`, backlog): **#32** re-scoped = `/plan-feature` (decompose one
+  capability → A/B/C/Z DAG); **#47** = `/design-system` (model a system → durable capability specs).
+  Other open issues: #45,#44,#43,#42,#40,#39,#37,#34,#21,#20,#19,#9.
 - Prior art cloned to `~/dev/agentic-sdlc-prior-art/` (OpenSpec, superpowers, agent-skills,
   skills, gsd-core) — read from source.
 - Gap-analysis items already tracked: #40/#44 (mutmut), #34 (regression harness / eval-ish),
