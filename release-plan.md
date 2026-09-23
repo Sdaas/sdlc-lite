@@ -10,7 +10,7 @@ Titles can drift — GitHub wins; re-check with `gh issue list --milestone "<tit
 Decision history lives in the issues and the ADRs (`docs/developer-guide.md` §6);
 release conventions live in `RELEASING.md`._
 
-_Last updated: 2026-09-20._
+_Last updated: 2026-09-23._
 
 ---
 
@@ -31,20 +31,44 @@ _Last updated: 2026-09-20._
 
 --- 
 
-## Current release — `1.0.0` (GA)
+## Current release — `1.0.0-beta.3` (process & tooling)
+
+Theme: **get the house in order before GA.** Two pieces of groundwork, neither of which changes the
+plugin's runtime behavior: a documentation restructure that gives the repo one discoverable shape,
+and the repo-local SDLC skills that give *this repo* the requirements → design → test discipline the
+`sdlc-lite` plugin gives a Python repo.
+
+**Why before GA, and why it is a beta and not GA.** The six `1.0.0` issues are real behavior changes
+to a product whose source is prose, and today they would be verified only by ad-hoc dry runs and
+judgment. #48 supplies the missing verification primitive (`claude plugin eval` over `SKILL.md`, plus
+the T1/T2/T3 ladder). Using new tooling for the first time on release-critical work is a risk, so the
+release it is first exercised on is labeled **beta.3**, not GA — the tooling gets proven on real work
+before `1.0.0` depends on it.
+
+## Execution order (current release)
+
+Current milestone: **`1.0.0-beta.3`**.
+
+1. **#49** — `docs(repo): restructure into README (user) + dev-docs/ (developer)`
+   *First: docs-only, so it cannot destabilize the plugin, and every later issue's doc edits then
+   land in the final structure instead of being moved twice. Time-sensitive — it changes two path
+   strings the shipped `SKILL.md` prints at runtime and touches inbound links in nearly every open
+   issue, which is far cheaper to do before GA publishes them more widely. Note this file moves to
+   `dev-docs/release-plan.md` as part of it.*
+2. **#48** — `feat(skill): add repo-local /issue, /feature, /fix SDLC skills`
+   *After #49 — its own documentation (SDLC skills, verification ladder, `claude plugin eval`
+   tutorial) is written directly into `dev-docs/` rather than written and then moved. Phased P1–P7;
+   the working plan is `48-plan.md` on the feature branch.*
+
+## Next release — `1.0.0` (GA)
 
 The GA build. Theme: **robustness and real-user UX hardening** — beta-validation feedback plus the
 committed follow-ups from v1 acceptance: toolchain auto-install so a stranger can run it unaided, and
 closing the test-quality and isolation-correctness gaps the acceptance runs surfaced. Milestone:
-`1.0.0`; committed issues and their order are in **Execution order** above. Scope may grow or shrink
-during the release — that's expected; when it ships, this section resets to the next release.
+`1.0.0`. Scope may grow or shrink during the release — that's expected; when beta.3 ships, this
+section becomes the current release.
 
-## Execution order (current release)
-
-The order to implement the current milestone's open issues. Titles are a convenience copy — regenerate
-the set from the milestone (step 2); GitHub owns the detail.
-
-Current milestone: **`1.0.0`** (GA).
+**Execution order** (unchanged; now verified with the ladder and eval corpus from #48):
 
 1. **#45** — `fix(toolchain): dev container never runs "claude plugin install"; live-workspace load path unverified`
    *First: every other issue's "Done" bar is a green dry run in the dev container — this is what
@@ -63,12 +87,6 @@ Current milestone: **`1.0.0`** (GA).
 6. **#21** — `feat(toolchain): add a clean-run harness that rebuilds the dev container per dry run`
    *Last: automates the exact clean-boot verification loop the other five issues rely on, so it
    should land once the boot path (#45) and the changes it will exercise (#43/#44/#37/#19) exist.*
-
-
-## Next release — post-GA (not yet defined)
-
-No milestone opened. Shape it from GA feedback plus the backlog; if beta validation surfaces enough to
-warrant more probation before GA, open a `1.0.0-beta.3` milestone and pull scope out of `1.0.0`.
 
 ## Backlog
 
