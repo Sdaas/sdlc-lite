@@ -3,9 +3,9 @@
 This guide is for someone improving `implement-feature`. It explains the architecture, the two pieces
 of real code (the guard hook and the analyzer), the design decisions and *why* they were made (ADRs),
 the design principles distilled from building it, and the testing methodology. If you only want to
-*run* the plugin, read the [User Guide](user-guide.md); for the underlying concepts start with the
+*run* the plugin, read the [README](../README.md); for the underlying concepts start with the
 [Tutorial](tutorial.md). For **versioning, issue triage, and how a release is cut and consumed**, see
-[`RELEASING.md`](../RELEASING.md).
+[`RELEASING.md`](RELEASING.md).
 
 ---
 
@@ -301,7 +301,7 @@ facts. Both
 are runtime-verifiable from the session transcript: the resolved `message.model` and a per-turn
 top-level `effort` field are ground truth (conductor and every subagent). The field-by-field proof
 model — which transcript / `.meta.json` field substantiates which claim — is recorded in
-[`design/audit-observability-findings.md`](../design/audit-observability-findings.md); the audit
+[`findings/audit-observability-findings.md`](findings/audit-observability-findings.md); the audit
 phase as a first-class feature is tracked in [issue #31](../../issues/31) (with #30 and #22 as its
 isolation and model/effort-integrity capabilities).
 
@@ -515,7 +515,7 @@ promised and what is verified cannot drift — the discipline ADR-11 gives the i
 
 *Why bare dispatch, not a dispatch-time enforcement hook:*
 - **A frontmatter model pin is honored on a bare dispatch** — verified across four real sessions in
-  [`model-pinning-findings.md`](../design/model-pinning-findings.md) §2 and re-probed 2026-09-14 (§7):
+  [`model-pinning-findings.md`](findings/model-pinning-findings.md) §2 and re-probed 2026-09-14 (§7):
   a `claude-opus-4-8`-pinned agent dispatched by `subagent_type` alone ran on exactly
   `claude-opus-4-8` while its parent ran `claude-sonnet-5`. The documented resolution order is inline
   (1) > **frontmatter (2)** > `CLAUDE_CODE_SUBAGENT_MODEL` (3) > session (4) > account (5); with 1
@@ -687,7 +687,7 @@ inside a **dev container** with its own isolated `~/.claude` (login persisted in
 `sdlc-lite-claude`) and the pinned Python toolchain. The container is both the blast-radius
 boundary (the product *writes and commits code*) and the environment where Gate 0's preflight passes.
 Full lifecycle — build, shell in, teardown levels, VS Code palette commands, the container's Claude UX
-provisioning — is in **[DEVCONTAINER.md](../DEVCONTAINER.md)**.
+provisioning — is in **[DEVCONTAINER.md](DEVCONTAINER.md)**.
 
 ### Fresh setup from zero (no container, image, or volume yet)
 

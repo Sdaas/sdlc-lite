@@ -20,7 +20,8 @@ AI-actionable without the transcript that spawned it.**
 
 `<type>(<area>): <imperative summary>` — mirrors our commit style.
 
-Area is one of: `gate-N` · `skill` · `guard-hook` · `analyzer` · `docs` · `release` · `toolchain`.
+Area is one of: `gate-N` · `skill` · `guard-hook` · `analyzer` · `docs` · `release` · `toolchain` ·
+`repo` (repo-local tooling — CI, scripts, dev-container config, not the shipped plugin itself).
 
 > `fix(guard-hook): test-writer can read the internal design`
 > `feat(gate-0): auto-install the pinned toolchain`
@@ -126,7 +127,7 @@ Suggestion only — not a spec. The implementer may deviate with a one-line rati
 - `hooks/scripts/guard.py` — add NotebookEdit to the tool set the test-integrity check covers
 
 ## Context
-Related: #12 · Docs: `docs/developer-guide.md`
+Related: #12 · Docs: `dev-docs/developer-guide.md`
 ```
 
 ## Example — enhancement
@@ -141,14 +142,14 @@ Gate 0 hard-fails when a pinned tool is missing and tells the user to install it
 first run of the plugin on a new repo fails at least once.
 
 ## Evidence
-- User Guide FAQ documents the manual install as a known friction point (`docs/user-guide.md`)
+- README FAQ documents the manual install as a known friction point (`README.md`)
 - Deferred from v1 as a v1.1 backlog item
 
 ## Acceptance Criteria
 - [ ] Gate 0 offers to install `toolchain/requirements-dev.txt` when a tool is missing
 - [ ] Install is opt-in — never runs without explicit user approval
 - [ ] Declining leaves today's hard-fail behavior unchanged
-- [ ] User Guide prerequisites updated
+- [ ] README prerequisites updated
 
 ## Verification
 - Green end-to-end dry run in the dev container, starting from an environment missing `mutmut`
@@ -157,5 +158,5 @@ first run of the plugin on a new repo fails at least once.
 - Managing virtualenvs or choosing a Python interpreter for the user
 
 ## Context
-Related: #19 · Docs: `docs/user-guide.md`
+Related: #19 · Docs: `README.md`
 ```

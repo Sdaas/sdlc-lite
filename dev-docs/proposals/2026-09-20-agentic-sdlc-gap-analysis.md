@@ -567,7 +567,7 @@ then close the new loopholes (REFACTOR). They ship pressure fixtures inside the 
 
 Our methodology is the manual green end-to-end dry run in the dev container. That is a good
 *acceptance* test, but it is one sample, it is manual, and it cannot tell you whether a wording
-change to `SKILL.md` made things better or worse. The `design/*-findings.md` files in this repo
+change to `SKILL.md` made things better or worse. The `dev-docs/findings/*-findings.md` files in this repo
 are precisely the artifacts an eval suite would produce automatically.
 
 **This is the compounding gap: every other item in this document gets cheaper to close once a

@@ -39,6 +39,7 @@
 #   ./release-verify.sh                 # verify the current umbrella pin end-to-end
 #   ./release-verify.sh --keep          # don't tear down the verify config/fixture at the end
 #   ./release-verify.sh --no-smoke      # install-verify only; skip the Gate 0/1 model calls
+#   ./release-verify.sh --links-only    # just the relative-link check; no Docker/container needed
 #
 set -euo pipefail
 
@@ -57,12 +58,14 @@ ENV_IN_CONTAINER="/workspaces/sdlc-lite/.env"
 # ── args ─────────────────────────────────────────────────────────────────────
 KEEP=0
 SMOKE=1
+LINKS_ONLY=0
 for arg in "$@"; do
   case "$arg" in
-    --keep)     KEEP=1 ;;
-    --no-smoke) SMOKE=0 ;;
-    -h|--help)  sed -n '2,40p' "$0"; exit 0 ;;
-    *)          echo "release-verify.sh: unknown arg: $arg" >&2; exit 2 ;;
+    --keep)       KEEP=1 ;;
+    --no-smoke)   SMOKE=0 ;;
+    --links-only) LINKS_ONLY=1 ;;
+    -h|--help)    sed -n '2,41p' "$0"; exit 0 ;;
+    *)            echo "release-verify.sh: unknown arg: $arg" >&2; exit 2 ;;
   esac
 done
 
@@ -73,6 +76,42 @@ no()   { echo "  ❌ $1"; fail=$((fail+1)); }
 step() { echo; echo "── $1 ─────────────────────────────────────────────"; }
 
 cd "$(git rev-parse --show-toplevel)"
+
+# ── L. relative-link check (host-only, no Docker) ─────────────────────────────
+# Scans every *.md file for markdown links whose target is a relative filesystem
+# path, and fails on any that doesn't resolve on disk. Skips http(s)/mailto
+# links, pure in-page anchors, and GitHub issue/PR links (../../issues/NN,
+# ../../pull/NN — relative on github.com, not on disk). A '#anchor' suffix on a
+# file link is stripped before the existence check (headings aren't validated).
+step "L. relative-link check"
+link_fail=0
+while IFS= read -r -d '' md; do
+  dir="$(dirname "$md")"
+  while IFS= read -r target; do
+    [[ -z "$target" ]] && continue
+    case "$target" in
+      http://*|https://*|mailto:*|\#*|*/issues/[0-9]*|*/pull/[0-9]*) continue ;;
+    esac
+    target="${target%%#*}"
+    [[ -z "$target" ]] && continue
+    if [[ ! -e "$dir/$target" ]]; then
+      echo "  ❌ $md → $target (missing: $dir/$target)"
+      link_fail=$((link_fail+1))
+    fi
+  done < <(grep -oE '\]\([^)]+\)' "$md" | sed -E 's/^\]\(//; s/\)$//')
+done < <(find . -name '*.md' -not -path './.git/*' -print0)
+
+if [[ "$link_fail" -eq 0 ]]; then
+  ok "all relative links in *.md files resolve"
+else
+  no "$link_fail broken relative link(s) — see above"
+fi
+
+if [[ "$LINKS_ONLY" -eq 1 ]]; then
+  echo
+  [[ "$fail" -eq 0 ]] && { echo "✅ link check passed"; exit 0; }
+  echo "❌ link check failed ($fail issue(s))"; exit 1
+fi
 
 # ── preflight ────────────────────────────────────────────────────────────────
 command -v devcontainer >/dev/null || die "devcontainer CLI not found"

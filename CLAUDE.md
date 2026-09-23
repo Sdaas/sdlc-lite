@@ -5,12 +5,17 @@ This file provides guidance to Claude Code when working in this repository.
 ## Repo Contents
 
 - Ships the `sdlc-lite` plugin (command `/implement-feature`) that turns a one-line feature request into a reviewed, tested, committed python change — through an interview-driven, test-first, human-in-the-loop workflow.
-- Top-level `README.md` routing to three audiences
-  - **User Guide** (`docs/user-guide.md`) — install from GitHub, Python-only setup + toolchain
-  prerequisite, how to run, FAQ. For a real user on their **own machine / own repo**.
-  - **Developer Guide** (`docs/developer-guide.md`) — architecture, ADRs, design principles, the guard
-  hook, the analyzer, and the testing / dry-run methodology. For someone improving the plugin.
-  - **Tutorial** (`docs/tutorial.md`) — concepts (plugin vs command vs skill vs workflow) + subagent isolation, with `toy-greet-plugin/` as the runnable example.
+- **`README.md`** is the single user-facing doc: install from GitHub, Python-only setup + toolchain
+  prerequisite, how to run, FAQ. For a real user on their **own machine / own repo**. It routes
+  developers to **`dev-docs/`** in one line.
+- **`dev-docs/`** — for someone improving the plugin itself:
+  - **Developer Guide** (`dev-docs/developer-guide.md`) — architecture, ADRs, design principles, the
+    guard hook, the analyzer, and the testing / dry-run methodology.
+  - **Tutorial** (`dev-docs/tutorial.md`) — concepts (plugin vs command vs skill vs workflow) +
+    subagent isolation, with `toy-greet-plugin/` as the runnable example.
+  - `RELEASING.md`, `DEVCONTAINER.md`, `issue-template.md`, `release-plan.md` also live here.
+  - `findings/` — dated, settled design-investigation records referenced by the ADRs; `proposals/` —
+    unwired design sketches, not yet built. See `dev-docs/README.md` for the split.
 - `toy-greet-plugin/` a minimal 2-gate example, kept for the Tutorial
 - **Two channels (ADR-13):** this repo's root `.claude-plugin/marketplace.json` is the **dev** catalog (`name: sdlc-lite-dev`, directory source, live) holding `sdlc-lite` + the tutorial-only `toy-greet`; the **release** channel is a separate umbrella repo `Sdaas/claude-plugins` (`name: sdaas`, github-tag-pinned) — customers `marketplace add Sdaas/claude-plugins` → `install sdlc-lite@sdaas`.
 
@@ -18,17 +23,17 @@ This file provides guidance to Claude Code when working in this repository.
 - **Process:** plan → approve → phased execution. Commit per **logical unit**. Keep git history.
 - **Before every commit:** give the user a concise list of the key files / changes to review, and
   wait for explicit approval. Never commit before the user has reviewed and approved.
-- **Bar:** *genuinely usable* — a stranger can install from GitHub and run it against their own Python repo. "Done" = a **green end-to-end dry run in the dev container** (see `DEVCONTAINER.md`), not "docs exist."
-- **Issue triage:** releases are GitHub **milestones** (`1.0.0-beta.1`, `1.0.0`, …); label issues by **type only** (`bug`/`enhancement`/`documentation`); **no milestone = backlog**. **Every issue you file must follow `docs/issue-template.md`** (required
-  structure, ~300-word cap, no transcripts). Full conventions + release procedure: `RELEASING.md`. Roadmap (current + next release only): `release-plan.md`.
+- **Bar:** *genuinely usable* — a stranger can install from GitHub and run it against their own Python repo. "Done" = a **green end-to-end dry run in the dev container** (see `dev-docs/DEVCONTAINER.md`), not "docs exist."
+- **Issue triage:** releases are GitHub **milestones** (`1.0.0-beta.1`, `1.0.0`, …); label issues by **type only** (`bug`/`enhancement`/`documentation`); **no milestone = backlog**. **Every issue you file must follow `dev-docs/issue-template.md`** (required
+  structure, ~300-word cap, no transcripts). Full conventions + release procedure: `dev-docs/RELEASING.md`. Roadmap (current + next release only): `dev-docs/release-plan.md`.
 - **Planning docs (two kinds):**
-  - **`release-plan.md`** — the roadmap for the current + next release: the **narrative** *plus* the **execution order** of the milestone's issues. **GitHub is the SSOT for *which* issues ship** (and which don't); `release-plan.md` only adds *what order to implement them in*, referencing each issue as **`#NN` + its title as a convenience copy** (so a reader knows what `#NN` is without a round trip) — never copy an issue's *spec* into it. Titles can drift; GitHub wins. Resumable with **"read release-plan.md and continue."**
+  - **`dev-docs/release-plan.md`** — the roadmap for the current + next release: the **narrative** *plus* the **execution order** of the milestone's issues. **GitHub is the SSOT for *which* issues ship** (and which don't); `release-plan.md` only adds *what order to implement them in*, referencing each issue as **`#NN` + its title as a convenience copy** (so a reader knows what `#NN` is without a round trip) — never copy an issue's *spec* into it. Titles can drift; GitHub wins. Resumable with **"read release-plan.md and continue."**
   - **`<NN>-plan.md`** — a per-issue working plan (e.g. `41-plan.md`), created **only when the work is plan-mode-worthy** (spans multiple sessions, has multiple phases, or is structurally complex; small issues need none — the GitHub issue is the plan). It carries the locked decisions, the phased plan with testing, and a progress tracker. **Checked in on the feature branch, `git rm`'d in the merge/close commit** — branch-scoped scratch that travels with the branch it plans.
 - Temp/scratch files go to `/tmp/` or end in `.tmp`, deleted when done.
 
 
 ## Architecture: the `/implement-feature` conductor + isolated gates
-The whole product is expressed **declaratively** — a skill (`SKILL.md`) is the "score", agent-definition files pin per-gate models, and a hook enforces isolation. There is no hand-written orchestration driver. (Full detail + the ADRs behind these choices are in `docs/developer-guide.md`.)
+The whole product is expressed **declaratively** — a skill (`SKILL.md`) is the "score", agent-definition files pin per-gate models, and a hook enforces isolation. There is no hand-written orchestration driver. (Full detail + the ADRs behind these choices are in `dev-docs/developer-guide.md`.)
 
 - **Conductor [C]** — the interactive session running the skill
   (`sdlc-lite-plugin/skills/implement-feature/SKILL.md`). It holds the through-line, talks to the human, and walks 12 gates (0–11) in order.
@@ -65,9 +70,9 @@ Gate 0 preflight hard-fails if any tool is missing. **A real user must install t
 For development, the plugin is **never** installed into the Mac's global `~/.claude`.** For 
 our testing it is installed and run inside a **dev container** with its own isolated `~/.claude` (login persisted in the named volume
 `sdlc-lite-claude`), which also has the pinned Python toolchain. Full lifecycle in
-`DEVCONTAINER.md`. 
+`dev-docs/DEVCONTAINER.md`. 
 
-A *real end user* installs on their own machine — that path is the User Guide's job.
+A *real end user* installs on their own machine — that path is `README.md`'s job.
 
 ```bash
 # On the Mac, from the repo root (Docker Desktop must be running):

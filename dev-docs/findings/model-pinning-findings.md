@@ -6,8 +6,8 @@
 **§7 close-out** for the settled conclusion; fix tracked in **#36**. (Earlier "not honored" claim in
 §5 was a transcript misattribution, unrelated to the #22 regression.)
 
-Feeds the Developer Guide's **model-pinning ADR** (Phase 3), alongside
-[`isolation-experiments.md`](./isolation-experiments.md).
+Feeds the Developer Guide's **model-pinning ADR** (Phase 3), alongside the since-removed
+`isolation-experiments.md` — see git history.
 
 ---
 

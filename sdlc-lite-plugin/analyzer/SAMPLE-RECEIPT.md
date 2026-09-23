@@ -57,7 +57,7 @@ Notes on reading the receipt:
   **dispatched bare** (#36): the dated frontmatter pin is honored, not overridden by an alias-only
   inline model. (#22 once forced an inline model via a deny-if-unnamed hook, which broke exactly these
   dated pins → `claude-opus-5`; that leg was reverted in
-  [#36](https://github.com/Sdaas/sdlc-lite/issues/36).) See `design/model-pinning-findings.md` §7.
+  [#36](https://github.com/Sdaas/sdlc-lite/issues/36).) See `dev-docs/findings/model-pinning-findings.md` §7.
 
 ---
 
