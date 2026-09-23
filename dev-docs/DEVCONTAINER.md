@@ -22,7 +22,10 @@ Run these **on the Mac**, from the repo root (`~/dev/sdlc-lite`).
 ```bash
 devcontainer up --workspace-folder .                    # build (if needed) + start; idempotent
 devcontainer exec --workspace-folder . bash             # open a shell inside
-devcontainer exec --workspace-folder . claude           # jump straight into Claude Code
+
+# Jump straight into Claude Code, authenticated from .env (see "Authentication" below).
+devcontainer exec --workspace-folder . bash -c \
+  "set -a; source /workspaces/sdlc-lite/.env; set +a; claude"
 ```
 `devcontainer up` is idempotent: existing-but-stopped → starts it; removed → recreates from the
 cached image (fast, no rebuild) **unless** `.devcontainer/*` changed, in which case it rebuilds.
@@ -62,8 +65,11 @@ Only removing the **volume** loses state you'd notice (you re-login). Code is ne
 
 ### Claude Code UX inside the container (status line, hooks, settings)
 
-The container's Claude gets a curated setup provisioned from **`.devcontainer/claude/`** by the
-`postStartCommand` (runs every start, idempotent):
+The container's Claude gets a curated setup provisioned from the templates in
+**`.devcontainer/claude/`** by **`.devcontainer/post-start.sh`**, which `devcontainer.json` runs as
+its `postStartCommand` on every start (create, restart, rebuild). The script is idempotent by two
+rules — **refresh** files we own outright, **seed** (only if absent) files Claude Code writes to —
+and it is the commented source of truth for what lands where:
 
 - **`statusline-command.sh`** + **`smart_rm_hook.sh`** are refreshed into `~/.claude/` on every
   start (static scripts — safe to overwrite). The status line shows dir · branch · `user@host` ·
@@ -78,6 +84,66 @@ The container's Claude gets a curated setup provisioned from **`.devcontainer/cl
 
 To re-apply the template after you've changed settings in-session: `rm ~/.claude/settings.json` and
 restart the container (or copy `.devcontainer/claude/settings.json` in by hand).
+
+---
+
+## Authentication — `.env` (both modes)
+
+The container's Claude is a **separate login store** from your Mac's. Both the headless and the
+interactive path authenticate from one file:
+
+| Where | Path |
+|---|---|
+| On the Mac | `~/dev/sdlc-lite/.env` (repo root, **git-ignored**) |
+| Inside the container | `/workspaces/sdlc-lite/.env` (same file, bind-mounted) |
+
+**Set it up once** — copy the template and mint a token **on the Mac**:
+```bash
+cp .env.example .env
+claude setup-token      # paste the output as CLAUDE_CODE_OAUTH_TOKEN=... in .env
+```
+`.env.example` documents the alternative (`ANTHROPIC_API_KEY`, API-billed — use one or the other).
+
+**Nothing sources `.env` automatically.** Every command that needs auth must source it *inside* the
+container — which also keeps the token out of host process arguments:
+
+```bash
+# Headless (what release-verify.sh does):
+devcontainer exec --workspace-folder . bash -c \
+  "set -a; source /workspaces/sdlc-lite/.env; set +a; claude -p 'reply with exactly: PONG'"
+
+# Interactive:
+devcontainer exec --workspace-folder . bash -c \
+  "set -a; source /workspaces/sdlc-lite/.env; set +a; claude"
+```
+
+**Don't want a token?** Run `claude` in the container once and complete `/login` interactively. That
+credential lands in `~/.claude/.credentials.json`, which **is** in the `sdlc-lite-claude` volume, so
+it survives rebuilds. `.env` is still required for `release-verify.sh`, which runs headlessly.
+
+### First-run state — why interactive used to look like an auth prompt (#54)
+
+Claude Code keeps its first-run state (`hasCompletedOnboarding`, theme, per-project trust) in
+**`~/.claude.json`** — at the **home root**, *outside* the mounted `~/.claude` volume. So it is
+recreated empty on every container rebuild, and a bare interactive `claude` stopped at the theme
+wizard and the folder-trust dialog. That is **not** an auth failure: the token authenticates both
+modes either way.
+
+`.devcontainer/post-start.sh` now seeds `~/.claude.json` from `.devcontainer/claude/claude.json`
+**only if absent** (same self-healing rule as `settings.json`), so interactive sessions start clean.
+
+- The seed pre-trusts **`/workspaces/sdlc-lite`** only. Starting Claude in a *different* directory
+  still shows the one-time trust dialog — that's a deliberate safety prompt, not an auth issue.
+- To re-run the onboarding wizard: `rm ~/.claude.json` and restart the container.
+
+### What persists where
+
+| State | Location | In the `sdlc-lite-claude` volume? |
+|---|---|---|
+| `/login` credential | `~/.claude/.credentials.json` | ✅ |
+| Settings, plugins, session history | `~/.claude/` | ✅ |
+| Onboarding / theme / folder trust | `~/.claude.json` | ❌ — re-seeded each start |
+| Token | `.env` on the Mac | n/a — bind-mounted, never copied in |
 
 ---
 
@@ -113,6 +179,8 @@ extension (`ms-vscode-remote.remote-containers`) must be installed.
 | **Terminal: Create New Terminal** (**⌃`**) | Open a shell *inside* the container. Run `claude`, `git`, `pytest` here. |
 | **Python: Select Interpreter** | Point VS Code at the container's Python if it doesn't auto-detect. |
 
-**First-time login:** open a container terminal → run `claude` → follow the interactive OAuth
-flow. The login is saved in the named volume, so most rebuilds won't ask again (occasional
-re-auth on token expiry is normal; container login and Mac login are separate stores).
+**Auth in a VS Code terminal:** the preferred path is the `.env` token — `set -a; source
+/workspaces/sdlc-lite/.env; set +a` before running `claude` (see **Authentication** above).
+Alternatively run `claude` and complete `/login` once; that credential is saved in the named
+volume, so most rebuilds won't ask again (occasional re-auth on token expiry is normal —
+container login and Mac login are separate stores).
