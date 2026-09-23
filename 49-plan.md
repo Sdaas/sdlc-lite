@@ -64,8 +64,11 @@ merge/close commit. Resumable with **"read 49-plan.md and continue."**
       --links-only`; `grep -rn "docs/\|REVIEW-PROMPT\|DEVCONTAINER.md\|RELEASING.md"
       sdlc-lite-plugin/ *.md *.sh` clean; `gh issue list --state open --search "design/
       in:body"` clean.
-- [ ] **P7** — Edit the 15 listed GitHub issues (separate approval — shared state, not just
-      repo files). Close #49.
+- [x] **P7** — Edited 14 of the 15 listed issues (path-only substitutions, verified diff before
+      push). #37 needed no edit — its only `design/` mention is the historical citation of a
+      deleted file, deliberately left per the judgment call above. Confirmed clean via direct
+      `gh issue view <n> --json body` greps on all 15 (not the `gh issue list --search`
+      shortcut, which false-positives on "docs/" as a substring of "dev-docs/"). Closing #49.
 
 ## Post-review fixes (independent Opus review, pre-commit)
 
@@ -88,6 +91,7 @@ commit. Findings and resolutions:
 
 ## Progress
 
-P1–P6 done and re-verified after the review fixes above (pytest 160 passed;
-`./release-verify.sh --links-only` passed). Nothing committed yet — P7 (GitHub issue edits) and
-the commit approvals are next.
+All phases P1–P7 done. Repo changes committed in 3 logical units on `49-docs-restructure`
+(040356c docs restructure, de7b666 plugin reference fixes, fa4cb0a link-checker). 14 GitHub
+issues edited for path-only fixes; #49 closed. `git rm 49-plan.md` still pending as part of the
+merge/close commit per its own stated convention.
