@@ -46,16 +46,23 @@ the set from the milestone (step 2); GitHub owns the detail.
 
 Current milestone: **`1.0.0`** (GA).
 
-1. **#43** — `fix(guard-hook): bash_write_targets misreads scratch writes as product-tree writes`
-   *First: self-contained, unit-testable on the host, and it removes the false denials that make the
-   other three harder to verify in a dry run.*
-2. **#44** — `feat(gate-7): pre-configure [tool.mutmut] in the python-starter fixtures`
+1. **#45** — `fix(toolchain): dev container never runs "claude plugin install"; live-workspace load path unverified`
+   *First: every other issue's "Done" bar is a green dry run in the dev container — this is what
+   makes a fresh container boot reliably testable at all, and it also settles whether workspace
+   edits load live or need a reinstall, which the remaining issues' verification depends on.*
+2. **#43** — `fix(guard-hook): bash_write_targets misreads scratch writes as product-tree writes`
+   *Self-contained, unit-testable on the host, and it removes the false denials that make the
+   other issues harder to verify in a dry run.*
+3. **#44** — `feat(gate-7): pre-configure [tool.mutmut] in the python-starter fixtures`
    *After #43 — its verification is a clean Gate 7 mutmut run, which #43 stops the guard from blocking.*
-3. **#37** — `feat(skill): add a mechanical pytest.raises match= check at gates 3 and 4`
+4. **#37** — `feat(skill): add a mechanical pytest.raises match= check at gates 3 and 4`
    *After #43/#44 — proving it needs a Gate 7 run that isn't drowning in mutmut-setup noise.*
-4. **#19** — `feat(toolchain): add a setup command that installs the pinned toolchain`
-   *Last, and largest: a new command with a **blocking Open Question** (the command's name) that must
-   be answered before work starts.*
+5. **#19** — `feat(toolchain): add a setup command that installs the pinned toolchain`
+   *A new command with a **blocking Open Question** (the command's name) that must be answered
+   before work starts.*
+6. **#21** — `feat(toolchain): add a clean-run harness that rebuilds the dev container per dry run`
+   *Last: automates the exact clean-boot verification loop the other five issues rely on, so it
+   should land once the boot path (#45) and the changes it will exercise (#43/#44/#37/#19) exist.*
 
 
 ## Next release — post-GA (not yet defined)
