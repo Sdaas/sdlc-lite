@@ -101,7 +101,7 @@ pinned toolchain from `toolchain/requirements-dev.txt` is installed.
 > plugin install dir, *outside* the session's working dir, so Claude Code's default
 > permissions prompt "read outside working directories" the first time the conductor or a
 > subagent opens one. The fix is a one-time `permissions.allow` rule granting reads under
-> the plugin dir — a real user adds it at install (see the User Guide), and our dry-run
+> the plugin dir — a real user adds it at install (see the sdlc-lite README), and our dry-run
 > fixture ships it in `.claude/settings.json`. Load-bearing content (the Gate 0 preflight
 > command) is kept **inline** here so the hot path needs no such read at all.
 
@@ -139,7 +139,7 @@ Two records, plus a hard guard, run alongside every gate:
 
 The deterministic analyzer reads the hook audit (stable source of reads) and cross-checks
 the session transcript for per-agent **model + token** figures. See the project's
-**Developer Guide** (`docs/developer-guide.md` → the guard hook, the analyzer, and the
+**Developer Guide** (`dev-docs/developer-guide.md` → the guard hook, the analyzer, and the
 isolation ADR) for the validation of all of the above.
 
 ---
@@ -182,7 +182,7 @@ Gate 0 below is the first application of this style; later STOP gates follow the
    source layout, so `mutmut --version` would false-fail the preflight. **If any tool is
    missing, STOP** and tell the human to install the pinned toolchain
    (`toolchain/requirements-dev.txt`) into this repo's active Python environment — see the
-   User Guide. Do not proceed.
+   sdlc-lite README. Do not proceed.
 2. Restate the feature in **one sentence**. Confirm the stack is **Python** (this
    workflow targets Python).
 3. **Detect the code layout, human confirms.** Inspect `pyproject.toml` / `setup.cfg`,
@@ -272,7 +272,7 @@ Gate 0 below is the first application of this style; later STOP gates follow the
    **(a) Preflight failed → terminal render (nothing else prints; the run STOPs):**
    > 🔴 **Preflight failed — `<tool>` not found.** Install the pinned toolchain
    > (`toolchain/requirements-dev.txt`) into this repo's active Python environment — see the
-   > User Guide (`docs/user-guide.md`) — then re-run. Stopping.
+   > sdlc-lite README (https://github.com/Sdaas/sdlc-lite) — then re-run. Stopping.
 
    **(b) Preflight passed → full Gate 0 summary:**
    > ✅ **Preflight passed** — ruff `<v>`, mypy `<v>`, pytest `<v>`, mutmut `<v>`. No

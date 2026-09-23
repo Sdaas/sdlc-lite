@@ -2,8 +2,8 @@
 #
 # release.sh — cut a versioned release of the sdlc-lite plugin (cross-repo).
 #
-# Automates RELEASING.md §4 steps 2–4 and hands off to the verify gate (step 5).
-# Background + rationale: docs/developer-guide.md → ADR-13 (two-channel distribution).
+# Automates dev-docs/RELEASING.md §4 steps 2–4 and hands off to the verify gate (step 5).
+# Background + rationale: dev-docs/developer-guide.md → ADR-13 (two-channel distribution).
 #
 # Two channels live in TWO repos (ADR-13):
 #   • dev      → this repo's root catalog (name: sdlc-lite-dev), directory source, live.
@@ -25,7 +25,7 @@
 #   --umbrella <dir> may also be supplied via the UMBRELLA_DIR environment variable.
 #
 # This script does NOT verify the release. Verification is a human-run gate in an
-# ISOLATED clean-room environment (no dev marketplace) — see RELEASING.md §4 step 5.
+# ISOLATED clean-room environment (no dev marketplace) — see dev-docs/RELEASING.md §4 step 5.
 #
 set -euo pipefail
 
@@ -184,14 +184,14 @@ if [[ "$PUSH" -eq 1 ]]; then
   fi
 fi
 
-# ── verify handoff (THE GATE — RELEASING.md §4 step 5) ───────────────────────
+# ── verify handoff (THE GATE — dev-docs/RELEASING.md §4 step 5) ───────────────────────
 PUSHED_MSG=""; [[ "$PUSH" -eq 1 ]] && PUSHED_MSG=" and pushed"
 cat <<EOF
 
 ────────────────────────────────────────────────────────────────────────────
 $TAG is prepared${PUSHED_MSG}. It is NOT a real release until VERIFIED.
 
-Clean-room verify (isolated env, NO dev marketplace — see ADR-13 / RELEASING.md §4):
+Clean-room verify (isolated env, NO dev marketplace — see ADR-13 / dev-docs/RELEASING.md §4):
   1. From a fresh Claude config (own CLAUDE_CONFIG_DIR/HOME, toolchain installed):
        claude plugin marketplace add $UMBRELLA_SLUG
        claude plugin install $UMBRELLA_ENTRY@$UMBRELLA_MARKETPLACE

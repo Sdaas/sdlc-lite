@@ -9,7 +9,7 @@ the analyzer depends on** for each thing it reports.
 > deliberately-quarantined satellite for exactly this reason: when these fields disappear, the parser
 > raises `TranscriptFormatError` (a loud "format changed" alarm) rather than guessing. The
 > *verified-against-a-real-run* proof model lives in
-> [`design/audit-observability-findings.md`](../../design/audit-observability-findings.md);
+> [`dev-docs/findings/audit-observability-findings.md`](../../dev-docs/findings/audit-observability-findings.md);
 > this file is the quick on-disk reference.
 
 ---
