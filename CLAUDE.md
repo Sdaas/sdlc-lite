@@ -78,7 +78,11 @@ A *real end user* installs on their own machine — that path is `README.md`'s j
 # On the Mac, from the repo root (Docker Desktop must be running):
 devcontainer up --workspace-folder .          # build if needed + start (idempotent)
 devcontainer exec --workspace-folder . bash   # shell inside
-devcontainer exec --workspace-folder . claude # jump into Claude Code inside
+
+# Jump into Claude Code inside, authed from the repo-root .env (see DEVCONTAINER.md
+# → Authentication). Nothing sources .env automatically, in either mode.
+devcontainer exec --workspace-folder . bash -c \
+  "set -a; source /workspaces/sdlc-lite/.env; set +a; claude"
 ```
 
 The container's directory-source marketplace loads the plugin **from the workspace**

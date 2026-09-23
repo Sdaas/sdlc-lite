@@ -69,13 +69,13 @@
   // outside a project with source to mutate. Metadata is a deterministic liveness check.
   "postCreateCommand": "sudo chown -R vscode:vscode /home/vscode/.claude && sudo env \"PATH=$PATH\" uv pip install --system -r sdlc-lite-plugin/toolchain/requirements-dev.txt && python --version && ruff --version && mypy --version && pytest --version && python -c \"import importlib.metadata as m; print('mutmut', m.version('mutmut'))\" && (claude --version || echo 'claude not on PATH yet (feature installs it)')",
 
-  // Runs on EVERY start (idempotent). Provisions our Claude Code UX into the
-  // persisted ~/.claude volume from `.devcontainer/claude/`:
-  //   - the status line + smart-rm hook scripts are refreshed every start (static, safe to overwrite);
-  //   - settings.json is written ONLY if absent, so a fresh volume self-heals but
-  //     in-session `/config` / plugin toggles are never clobbered.
-  // macOS-only alerting (Stop/Notification osascript hooks) is intentionally NOT ported.
-  // To re-apply the settings template after an in-session change, delete
-  // ~/.claude/settings.json and restart, or copy it by hand.
-  "postStartCommand": "mkdir -p /home/vscode/.claude && install -m 755 .devcontainer/claude/statusline-command.sh .devcontainer/claude/smart_rm_hook.sh /home/vscode/.claude/ && ([ -f /home/vscode/.claude/settings.json ] || install -m 644 .devcontainer/claude/settings.json /home/vscode/.claude/settings.json)"
+  // Runs on EVERY start (create, restart, rebuild). Provisions our Claude Code UX
+  // — status line, smart-rm hook, settings.json, and the ~/.claude.json first-run
+  // state (issue #54) — from the templates in `.devcontainer/claude/`.
+  //
+  // The logic lives in a commented script rather than inline here: it is idempotent
+  // by two different rules (refresh-always vs. seed-only-if-absent) and spans two
+  // stores (the persisted ~/.claude volume vs. ~/.claude.json outside it), which a
+  // JSON one-liner cannot explain. Read `.devcontainer/post-start.sh` for the why.
+  "postStartCommand": "bash .devcontainer/post-start.sh"
 }

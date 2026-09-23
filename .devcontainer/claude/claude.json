@@ -1,0 +1,9 @@
+{
+  "hasCompletedOnboarding": true,
+  "theme": "dark",
+  "projects": {
+    "/workspaces/sdlc-lite": {
+      "hasTrustDialogAccepted": true
+    }
+  }
+}
