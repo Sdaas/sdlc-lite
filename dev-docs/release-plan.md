@@ -55,10 +55,27 @@ Current milestone: **`1.0.0-beta.3`**.
    strings the shipped `SKILL.md` prints at runtime and touches inbound links in nearly every open
    issue, which is far cheaper to do before GA publishes them more widely. This file moved to
    `dev-docs/release-plan.md` as part of it.*
-2. **#48** — `feat(skill): add repo-local /issue, /feature, /fix SDLC skills`
-   *After #49 — its own documentation (SDLC skills, verification ladder, `claude plugin eval`
-   tutorial) is written directly into `dev-docs/` rather than written and then moved. Phased P1–P7;
-   the working plan is `48-plan.md` on the feature branch.*
+2. **#48** — `feat(repo): repo-local SDLC — verification ladder + /issue, /feature, /fix skills`
+   *Tracking issue, not a unit of work — it ships as the four children below and closes when the
+   last one closes. After #49 — its documentation is written directly into `dev-docs/` rather than
+   written and then moved. Each child gets its own branch (`<NN>-<slug>`) and merges to `main` when
+   green; nothing half-broken lands.*
+3. **#50** — `feat(repo): verification ladder + eval seed suite + release-verify hook`
+   *First of the four: the only one with standalone value — the ladder and the eval corpus are how
+   any prose change to the plugin gets verified, skills or no skills. It is also every later
+   child's quality signal, so writing a skill before it exists leaves nothing to measure the skill
+   against.*
+4. **#51** — `feat(repo): shared SDLC gate spine + /issue skill`
+   *After #50 — `.claude/sdlc/gates.md` links to the ladder rather than restating it, and
+   `/issue`'s two eval cases need the suite to live in. The spine must land before #52 or #53 so
+   neither invents its own gate prose.*
+5. **#52** — `feat(repo): /feature skill — 9 gates, 4 STOPs`
+   *After #51 — it executes the spine. Carries a **blocking Open Question** (whether `/feature`
+   also updates this file) that must be answered before work starts.*
+6. **#53** — `feat(repo): /fix skill — REPRODUCE + DEPOSIT gates`
+   *Last — reuses #52's spine and adds the two gates that close the regression-safety gap. Also
+   carries the close-out: the developer-guide rationale, README routing, this file's final update,
+   and removing `48-plan.md`.*
 
 ## Next release — `1.0.0` (GA)
 
