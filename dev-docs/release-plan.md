@@ -7,7 +7,7 @@ and the **execution order** (given the milestone's issues, which order to implem
 (milestones = releases); this file only adds the *ordering*, referencing each issue as
 **`#NN` + its title as a convenience copy** so a reader knows what `#NN` is without a round trip.
 Titles can drift — GitHub wins; re-check with `gh issue list --milestone "<title>" --state open`.
-Decision history lives in the issues and the ADRs (`docs/developer-guide.md` §6);
+Decision history lives in the issues and the ADRs (`developer-guide.md` §6);
 release conventions live in `RELEASING.md`._
 
 _Last updated: 2026-09-23._
@@ -53,7 +53,7 @@ Current milestone: **`1.0.0-beta.3`**.
    *First: docs-only, so it cannot destabilize the plugin, and every later issue's doc edits then
    land in the final structure instead of being moved twice. Time-sensitive — it changes two path
    strings the shipped `SKILL.md` prints at runtime and touches inbound links in nearly every open
-   issue, which is far cheaper to do before GA publishes them more widely. Note this file moves to
+   issue, which is far cheaper to do before GA publishes them more widely. This file moved to
    `dev-docs/release-plan.md` as part of it.*
 2. **#48** — `feat(skill): add repo-local /issue, /feature, /fix SDLC skills`
    *After #49 — its own documentation (SDLC skills, verification ladder, `claude plugin eval`

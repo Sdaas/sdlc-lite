@@ -5,7 +5,7 @@ blocks (plugin, command, skill, subagent), how a *workflow* is just a skill whos
 script of gates, and how to launch and **isolate** subagents safely. It uses a tiny runnable example,
 `toy-greet`, so you can see the pattern fire before reading the real product.
 
-If you want to *run* the product, read the [User Guide](user-guide.md); to work on it, the
+If you want to *run* the product, read the [README](../README.md); to work on it, the
 [Developer Guide](developer-guide.md).
 
 ---
@@ -138,7 +138,7 @@ is the runtime obeying the prose. Read it end-to-end; it's the whole pattern in 
 Testing a plugin against your global `~/.claude` pollutes the host (an install writes both a config
 entry *and* a cached copy under `~/.claude/plugins`). This repo instead runs Claude Code inside a
 **dev container** with its own isolated `~/.claude` — zero host footprint, disposable clean slate, and
-it exercises the real install path. (Full lifecycle: [DEVCONTAINER.md](../DEVCONTAINER.md).)
+it exercises the real install path. (Full lifecycle: [DEVCONTAINER.md](DEVCONTAINER.md).)
 
 ```bash
 # on the host, from the repo root (Docker Desktop running):

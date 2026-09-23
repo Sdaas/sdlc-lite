@@ -97,7 +97,7 @@ closed or explicitly punted before announcing the release.
 `CLAUDE_CODE_OAUTH_TOKEN`; see `.env.example`) → a `/plugin update` proof (installs the previous
 release from an old-pinned catalog, then `marketplace update` + `plugin update` must reach
 `<version>`). The full human-driven `/implement-feature` run to green+commit is the final
-belt-and-suspenders check (see the User Guide).
+belt-and-suspenders check (see the [README](../README.md)).
 
 ## 5. Consuming a release (customer)
 
@@ -107,7 +107,7 @@ claude plugin install sdlc-lite@sdaas                # version-pinned to the rel
 ```
 
 Then install the pinned toolchain and run `/implement-feature` — full walkthrough in the
-[User Guide](docs/user-guide.md). To update to a newer release: refresh the marketplace, then
+[README](../README.md). To update to a newer release: refresh the marketplace, then
 `claude plugin update sdlc-lite`.
 
 ## 6. Roadmap

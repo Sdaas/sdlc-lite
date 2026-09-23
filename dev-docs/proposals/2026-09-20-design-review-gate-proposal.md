@@ -33,8 +33,8 @@ files, but the breakdown is favourable:
   (`policy.py:134` — `return "design-internal" in target`), never the number. The numeric
   mentions in `policy.py` and `analyzer/auditor.py` are all in docstrings and comments.
 - **Mechanical prose edits:** `SKILL.md` (the read-order table + five gate sections), the five
-  `agents/*.md` inboxes, the five `references/*` templates, `docs/developer-guide.md`,
-  `docs/user-guide.md`, `analyzer/SAMPLE-RECEIPT.md`, `analyzer/TRANSCRIPT-FORMAT.md`.
+  `agents/*.md` inboxes, the five `references/*` templates, `dev-docs/developer-guide.md`,
+  `README.md`, `analyzer/SAMPLE-RECEIPT.md`, `analyzer/TRANSCRIPT-FORMAT.md`.
 - **Test fixtures:** `analyzer/tests/*` and `hooks/tests/test_guard.py` reference names in
   fixtures; these need updating but are not enforcement logic.
 
