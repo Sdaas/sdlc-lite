@@ -1,0 +1,9 @@
+schema_version: "1.1"
+name: gate-1-interview-entry
+context:
+  scaffold_script: scaffold.sh
+  # A real headless session, recorded in the dev container, that ran
+  # `/implement-feature add a to_roman(n) helper …` through the Gate 0 summary and STOP.
+  # Re-record it when Gate 0's shape changes — a stale history tests a workflow that no
+  # longer exists (eval-tutorial.md § 5).
+  history_file: history/through-gate-0.jsonl

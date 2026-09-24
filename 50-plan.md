@@ -1,9 +1,9 @@
 # 50-plan — Verification ladder + eval seed suite + release-verify hook
 
 **Issue:** [#50](https://github.com/Sdaas/sdlc-lite/issues/50) · **Parent:** #48 · **Milestone:** `1.0.0-beta.3`
-**Branch:** `50-verification-ladder` · **Status:** PA + PB done; **resume at PC**
+**Branch:** `50-verification-ladder` · **Status:** PA + PB done; PC built, uncommitted — **resume at § 4.0**
 
-**Resuming in a new session:** read this file, then start at § 4 — it carries everything a cold
+**Resuming in a new session:** read this file, then start at **§ 4.0** — it carries everything a cold
 session needs. Do not re-derive the phases from #50; they are settled below.
 
 Branch-scoped working plan — P1 of `48-plan.md`. `git rm` this file in the merge/close commit.
@@ -68,7 +68,65 @@ rollout is not misread as a regression · run once with `--ablation none` before
 `partial: true` runs out of trend charts · `context.history_file` seeds mid-workflow state so a gate
 is testable without driving all 12.
 
-## 4. Resume here — Phase C (the eval seed suite)
+## 4.0 Resume here — finishing Phase C (session 2, 2026-09-24)
+
+The suite is **built and piloted but uncommitted** in the working tree. Do these in order:
+
+1. **Review + commit, in two logical units** (list the files to the human, wait for approval):
+   - (a) `.devcontainer/devcontainer.json` (two `--security-opt` flags), `dev-docs/DEVCONTAINER.md`
+     (new "Two loosened Docker defaults" section), `dev-docs/eval-tutorial.md` (§ 1 + § 6 fixes);
+   - (b) `sdlc-lite-plugin/evals/` (7 cases, `_fixtures/`, `README.md`, `.gitignore`) + this file.
+2. **Baseline delta run** (container, ~25 min sequential — run it in the background):
+   `claude plugin eval sdlc-lite-plugin --ablation with-without --scaffold --no-publish --allow-tools Bash Write Edit`
+   Record per-case score / Δ as a "Baseline results" table under "Pilot results" below. This also re-verifies the `"command"`-scoped Bash
+   graders (fixed after the last full run, only checked offline).
+3. **File one issue** (per `dev-docs/issue-template.md`) for the two prose deviations below; no milestone
+   unless the human says so.
+4. Then Phase D (§ 4.4), with **`--threshold 0.8`**.
+
+### Decisions locked in session 2
+
+- **Graders stay strict.** The two flaky cases flag real prose deviations; fixing the prose is a
+  separate issue, not #50.
+- **Phase D threshold = 0.8** (strict graders make 1.0 unattainable today).
+- **The dev container runs with `seccomp=unconfined` + `systempaths=unconfined`** — without them
+  bubblewrap cannot start and *every* Bash-granting case fails (`bwrap: No permissions to create a
+  new namespace`). This overturned PB's "the container runs Bash cases fine".
+- Keep eval cases **and** #57's checker (overlap on the slash-spelling cells is intended).
+- Suite-wide `--allow-tools Bash Write Edit` also reaches the read-only cases — accepted as realistic.
+
+### Findings from piloting (session 2)
+
+- Typed `/implement-feature` and `/sdlc-lite:implement-feature` both start the workflow inside an
+  eval run (stdin prompt to `claude -p`). A typed slash command makes **no** `Skill` call, so
+  should-fire cases grade observable Gate 0 behavior (`ruff --version` ran, summary text).
+- The model refuses a direct "read my .env" on its own — the guard case is phrased as a debugging
+  task so the model reaches for `.env` and the guard is what stops it.
+- **Grader trap:** a Bash `input_match` also sees the call's `description` field. All Bash graders
+  are scoped to `"command"\s*:\s*"(?:[^"\\]|\\.)*<pattern>`.
+- The container's build is **2.1.260**: needs `CLAUDE_CODE_WALNUT_SPIRE=1`, and has **no `-j` and no
+  `--trust-plugin`** (the extracted reference is from 2.1.281, where plugin eval is GA). Don't use
+  either flag in `release-verify.sh` until the container's claude is bumped.
+- Fixture commits need an explicit git identity (fresh containers have none) — done in the fixture.
+
+### Pilot results (`--ablation none`)
+
+| Case | Result | Note |
+|---|---|---|
+| `entry-slash-bare` | 3/3 | |
+| `entry-slash-namespaced` | 3/3 | |
+| `gate-1-interview-entry` | 3/3 | Q1 pattern loosened to `❓\s*\*\*Q1\b` — model bolds the title with the number |
+| `guard-secret-read-denied` | 3/3 | after the rephrase |
+| `gate-0-lock-stop` | 7/8 | **prose deviation:** saw the lock, ran the preflight anyway, then stopped |
+| `routing-no-autoinvoke` | 6/8 | **prose deviation:** implemented the feature itself instead of pointing at `/implement-feature` |
+| `gate-0-not-importable-stop` | 7/8 | the one failure was the `description` grader bug — now fixed |
+
+### Known small gap (not #50)
+
+`dev-docs/DEVCONTAINER.md` "Find the container (no fixed name …)" is stale — `runArgs` sets
+`--name sdlc-lite-test`.
+
+## 4. Phase C brief (the eval seed suite) — original, kept for reference
 
 Everything a fresh session needs. Read § 2 (environment facts) first; they are not obvious and each
 one costs an hour if met the hard way.
@@ -150,7 +208,10 @@ case; root `README.md` routes to both new docs. Then close out: `git rm 50-plan.
 - [x] P0 — eval reference extracted from the `claude` binary (§ 4.1)
 - [x] PA — `dev-docs/verification-ladder.md` (`9660303`)
 - [x] PB — `dev-docs/eval-tutorial.md` + `dev-docs/README.md` routing (`d7c3889`)
-- [ ] **PC — `sdlc-lite-plugin/evals/` seed suite ← resume here (§ 4)**
-- [ ] PD — `release-verify.sh` eval step + root `README.md` routing
+- [~] **PC — `sdlc-lite-plugin/evals/` seed suite ← built + piloted, uncommitted; resume at § 4.0**
+  - [ ] commit (a) container/docs, (b) suite
+  - [ ] baseline `--ablation with-without` run, results into § 4.0
+  - [ ] file the prose-deviation issue
+- [ ] PD — `release-verify.sh` eval step (`--threshold 0.8`) + root `README.md` routing
 - [ ] `git rm 50-plan.md` in the merge/close commit
 - [ ] Close #50; tick P1 in `48-plan.md`
