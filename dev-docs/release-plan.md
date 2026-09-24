@@ -10,7 +10,7 @@ Titles can drift — GitHub wins; re-check with `gh issue list --milestone "<tit
 Decision history lives in the issues and the ADRs (`developer-guide.md` §6);
 release conventions live in `RELEASING.md`._
 
-_Last updated: 2026-09-24._
+_Last updated: 2026-09-25._
 
 ---
 
@@ -76,13 +76,12 @@ Current milestone: **`1.0.0-beta.3`**.
    skills. It is also every later child's quality signal. Follow-ups filed to the backlog: #58 (two
    prose deviations the suite caught) and #59 (container bump — the release-verify eval step pins
    `claude-opus-5-5`, which the container's claude cannot run yet).*
-6. **#59** — `chore(repo): bump the dev container claude so the eval gate can run on claude-opus-5-5`
-   *Next — a #50 follow-up. `release-verify.sh`'s eval step pins `claude-opus-5-5`, which the
-   container's claude 2.1.260 rejects, so cutting beta.3 would mean `--no-evals` and skipping the
-   very tooling this release exists to prove. Before #57, whose checker also runs in the container
-   and is better built on the final container than re-verified after a bump.*
+6. ~~**#59**~~ — `chore(repo): bump the dev container claude so the eval gate can run on claude-opus-5-5`
+   **Done 2026-09-25** (`35857b0`). *Container claude pinned to 2.1.281. First opus-5-5 baseline:
+   5/7 pass, $3.51 for one with-without run. The two failures are #58 render paraphrases.
+   Threshold/`--runs` tuning is deferred to the beta.3 release cut.*
 7. **#57** — `test(repo): automate the 8-cell entry-point contract`
-   *After #50 — the checker is a rung of that issue's verification ladder, so it lands inside the
+   *Next. After #50 — the checker is a rung of that issue's verification ladder, so it lands inside the
    ladder rather than beside it. It locks what #55 and #56 established: both slash spellings work in
    both session modes, and the model never starts the workflow on its own.*
 8. **#51** — `feat(repo): shared SDLC gate spine + /issue skill`
