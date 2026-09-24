@@ -63,8 +63,6 @@ ENV_IN_CONTAINER="/workspaces/sdlc-lite/.env"
 # Eval step (T1). Pinned so a model rollout is not misread as a plugin regression. The
 # threshold is below 1.0 on purpose: the graders are strict and gate-0-lock-stop /
 # routing-no-autoinvoke still catch intermittent prose deviations (#58).
-# claude-opus-5-5 needs claude >= 2.1.280; until the container is bumped (#59) this step
-# fails fast ($0) with "does not support this model" — use --no-evals meanwhile.
 EVAL_MODEL="claude-opus-5-5"
 EVAL_JUDGE_MODEL="claude-haiku-4-5-20251001"
 EVAL_THRESHOLD="0.8"
@@ -155,16 +153,15 @@ dx() { devcontainer exec --workspace-folder . bash -c "$1"; }
 # ── 5. milestone eval suite (T1) ─────────────────────────────────────────────
 # Runs as the container's own logged-in config (not VERIFY_CFG): the eval sandbox loads
 # no settings or plugins anyway, and the cases load the plugin from ../.. themselves.
-# plugin eval is early-access gated on the container's build — hence the env var.
+# --trust-plugin answers the first-run trust prompt, which would otherwise block headless.
 run_evals() {
   step "5. milestone eval suite (model $EVAL_MODEL, threshold $EVAL_THRESHOLD)"
   echo "  (~15 min; live log: /tmp/rv-evals.tmp)"
   if dx '
       set -a; source "'"$ENV_IN_CONTAINER"'" 2>/dev/null; set +a
-      export CLAUDE_CODE_WALNUT_SPIRE=1
       cd /workspaces/sdlc-lite
       claude plugin eval sdlc-lite-plugin \
-        --ablation with-without --scaffold --no-publish \
+        --ablation with-without --scaffold --no-publish --trust-plugin \
         --allow-tools Bash Write Edit \
         --model "'"$EVAL_MODEL"'" --judge-model "'"$EVAL_JUDGE_MODEL"'" \
         --threshold "'"$EVAL_THRESHOLD"'" --max-cost-usd "'"$EVAL_MAX_COST_USD"'" \
