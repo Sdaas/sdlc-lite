@@ -10,7 +10,7 @@ Titles can drift — GitHub wins; re-check with `gh issue list --milestone "<tit
 Decision history lives in the issues and the ADRs (`developer-guide.md` §6);
 release conventions live in `RELEASING.md`._
 
-_Last updated: 2026-09-23._
+_Last updated: 2026-09-24._
 
 ---
 
@@ -55,15 +55,15 @@ Current milestone: **`1.0.0-beta.3`**.
    the command suppressed the skill body — the conductor then improvised gate prose. That is the
    path `claude plugin eval` uses, so #50's whole premise (eval as the T1 verification primitive)
    rested on this being fixed first.*
-2. **#56** — `fix(guard-hook): a bare, un-namespaced skill id bypasses explicit-entry`
-   *Next, and small: #55's explicit-entry rule keys on the `sdlc-lite:` prefix, so one spelling of
-   the `Skill` call is still defended by the skill `description` alone. A one-surface policy change
-   plus tests — cheap enough that it should not wait behind the milestone's larger work.*
-3. **#49** — `docs(repo): restructure into README (user) + dev-docs/ (developer)`
-   *Docs-only, so it cannot destabilize the plugin, and every later issue's doc edits then
-   land in the final structure instead of being moved twice. Time-sensitive — it changes two path
-   strings the shipped `SKILL.md` prints at runtime and touches inbound links in nearly every open
-   issue, which is far cheaper to do before GA publishes them more widely. This file moved to
+2. ~~**#56**~~ — `fix(guard-hook): a bare, un-namespaced skill id bypasses explicit-entry`
+   **Done 2026-09-24** (`e7d8b6b`). *#55's explicit-entry rule keyed on the `sdlc-lite:` prefix, so
+   one spelling of the `Skill` call was defended by the skill `description` alone. A one-surface
+   policy change plus tests — cheap enough that it did not wait behind the milestone's larger work.*
+3. ~~**#49**~~ — `docs(repo): restructure into README (user) + dev-docs/ (developer)`
+   **Done 2026-09-23** (`13c4f7c`). *Docs-only, so it could not destabilize the plugin, and every
+   later issue's doc edits now land in the final structure instead of being moved twice. It changed
+   two path strings the shipped `SKILL.md` prints at runtime and inbound links in nearly every open
+   issue — far cheaper before GA publishes them more widely. This file moved to
    `dev-docs/release-plan.md` as part of it.*
 4. **#48** — `feat(repo): repo-local SDLC — verification ladder + /issue, /feature, /fix skills`
    *Tracking issue, not a unit of work — it ships as the four children below and closes when the
@@ -84,8 +84,8 @@ Current milestone: **`1.0.0-beta.3`**.
    `/issue`'s two eval cases need the suite to live in. The spine must land before #52 or #53 so
    neither invents its own gate prose.*
 8. **#52** — `feat(repo): /feature skill — 9 gates, 4 STOPs`
-   *After #51 — it executes the spine. Carries a **blocking Open Question** (whether `/feature`
-   also updates this file) that must be answered before work starts.*
+   *After #51 — it executes the spine. Its **Open Question** (whether `/feature` also updates
+   this file) is settled: **no** — roadmap ordering stays a human call. #52 is unblocked.*
 9. **#53** — `feat(repo): /fix skill — REPRODUCE + DEPOSIT gates`
    *Last — reuses #52's spine and adds the two gates that close the regression-safety gap. Also
    carries the close-out: the developer-guide rationale, README routing, this file's final update,
