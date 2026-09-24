@@ -70,23 +70,30 @@ Current milestone: **`1.0.0-beta.3`**.
    last one closes. After #49 — its documentation is written directly into `dev-docs/` rather than
    written and then moved. Each child gets its own branch (`<NN>-<slug>`) and merges to `main` when
    green; nothing half-broken lands.*
-5. **#50** — `feat(repo): verification ladder + eval seed suite + release-verify hook`
-   *First of the four: the only one with standalone value — the ladder and the eval corpus are how
-   any prose change to the plugin gets verified, skills or no skills. It is also every later
-   child's quality signal, so writing a skill before it exists leaves nothing to measure the skill
-   against.*
-6. **#57** — `test(repo): automate the 8-cell entry-point contract`
+5. ~~**#50**~~ — `feat(repo): verification ladder + eval seed suite + release-verify hook`
+   **Done 2026-09-24** (`6553a6a`). *First of the four: the only one with standalone value — the
+   ladder and the eval corpus are how any prose change to the plugin gets verified, skills or no
+   skills. It is also every later child's quality signal. Follow-ups filed to the backlog: #58 (two
+   prose deviations the suite caught) and #59 (container bump — the release-verify eval step pins
+   `claude-opus-5-5`, which the container's claude cannot run yet).*
+6. **#59** — `chore(repo): bump the dev container claude so the eval gate can run on claude-opus-5-5`
+   *Next — a #50 follow-up. `release-verify.sh`'s eval step pins `claude-opus-5-5`, which the
+   container's claude 2.1.260 rejects, so cutting beta.3 would mean `--no-evals` and skipping the
+   very tooling this release exists to prove. Before #57, whose checker also runs in the container
+   and is better built on the final container than re-verified after a bump.*
+7. **#57** — `test(repo): automate the 8-cell entry-point contract`
    *After #50 — the checker is a rung of that issue's verification ladder, so it lands inside the
    ladder rather than beside it. It locks what #55 and #56 established: both slash spellings work in
    both session modes, and the model never starts the workflow on its own.*
-7. **#51** — `feat(repo): shared SDLC gate spine + /issue skill`
+8. **#51** — `feat(repo): shared SDLC gate spine + /issue skill`
    *After #50 — `.claude/sdlc/gates.md` links to the ladder rather than restating it, and
    `/issue`'s two eval cases need the suite to live in. The spine must land before #52 or #53 so
-   neither invents its own gate prose.*
-8. **#52** — `feat(repo): /feature skill — 9 gates, 4 STOPs`
+   neither invents its own gate prose. Settle the eval target first — `/issue` is repo-local, not in
+   the plugin (see the comment on #51).*
+9. **#52** — `feat(repo): /feature skill — 9 gates, 4 STOPs`
    *After #51 — it executes the spine. Its **Open Question** (whether `/feature` also updates
    this file) is settled: **no** — roadmap ordering stays a human call. #52 is unblocked.*
-9. **#53** — `feat(repo): /fix skill — REPRODUCE + DEPOSIT gates`
+10. **#53** — `feat(repo): /fix skill — REPRODUCE + DEPOSIT gates`
    *Last — reuses #52's spine and adds the two gates that close the regression-safety gap. Also
    carries the close-out: the developer-guide rationale, README routing, this file's final update,
    and removing `48-plan.md`.*
@@ -99,12 +106,15 @@ closing the test-quality and isolation-correctness gaps the acceptance runs surf
 `1.0.0`. Scope may grow or shrink during the release — that's expected; when beta.3 ships, this
 section becomes the current release.
 
-**Execution order** (unchanged; now verified with the ladder and eval corpus from #48):
+**Execution order** (verified with the ladder and eval corpus from #48):
 
-2. **#45** — `fix(toolchain): dev container never runs "claude plugin install"; live-workspace load path unverified`
+1. **#45** — `fix(toolchain): dev container never runs "claude plugin install"; live-workspace load path unverified`
    *First: every other issue's "Done" bar is a green dry run in the dev container — this is what
    makes a fresh container boot reliably testable at all, and it also settles whether workspace
    edits load live or need a reinstall, which the remaining issues' verification depends on.*
+2. **#58** — `fix(skill): conductor sometimes skips the lock STOP and the explicit-entry redirect`
+   *After #45 — a prose fix whose proof is the eval suite (`--tag gate-0 --tag routing --runs 8`)
+   in the container. A runtime behavior change, so it waits for GA rather than beta.3.*
 3. **#43** — `fix(guard-hook): bash_write_targets misreads scratch writes as product-tree writes`
    *Self-contained, unit-testable on the host, and it removes the false denials that make the
    other issues harder to verify in a dry run.*
@@ -116,7 +126,7 @@ section becomes the current release.
    *A new command with a **blocking Open Question** (the command's name) that must be answered
    before work starts.*
 7. **#21** — `feat(toolchain): add a clean-run harness that rebuilds the dev container per dry run`
-   *Last: automates the exact clean-boot verification loop the other five issues rely on, so it
+   *Last: automates the exact clean-boot verification loop the other issues rely on, so it
    should land once the boot path (#45) and the changes it will exercise (#43/#44/#37/#19) exist.*
 
 ## Backlog
