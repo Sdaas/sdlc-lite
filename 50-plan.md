@@ -1,7 +1,7 @@
 # 50-plan — Verification ladder + eval seed suite + release-verify hook
 
 **Issue:** [#50](https://github.com/Sdaas/sdlc-lite/issues/50) · **Parent:** #48 · **Milestone:** `1.0.0-beta.3`
-**Branch:** `50-verification-ladder` · **Status:** PA + PB + PC done — **resume at Phase D (§ 4.4)**
+**Branch:** `50-verification-ladder` · **Status:** PA–PD done; green proof deferred to #59 — **remaining: close-out (§ 5)**
 
 **Resuming in a new session:** read this file, then start at **§ 4.0** (steps 1–3 done; step 4 = Phase D) — it carries everything a cold
 session needs. Do not re-derive the phases from #50; they are settled below.
@@ -121,7 +121,20 @@ The suite is **built and piloted but uncommitted** in the working tree. Do these
 | `routing-no-autoinvoke` | 6/8 | **prose deviation:** implemented the feature itself instead of pointing at `/implement-feature` |
 | `gate-0-not-importable-stop` | 7/8 | the one failure was the `description` grader bug — now fixed |
 
-### Baseline results (`--ablation with-without`, container 2.1.260, 2026-09-24)
+### Phase D decisions + proof (session 2)
+
+- **Pinned `--model claude-opus-5-5`** (human's call: 4.8 is going away). The container's claude
+  2.1.260 rejects it, so the eval step fails fast at $0 until **#59** bumps the container; use
+  `--no-evals` meanwhile. The green proof run moves to #59.
+- `--judge-model claude-haiku-4-5-20251001` (no `llm` graders yet), `--threshold 0.8`,
+  `--max-cost-usd 15`; new flags `--no-evals`, `--evals-only`.
+- **Red proven twice, at no deliberate breakage:** (1) the unsupported model → every case errored,
+  step ❌; (2) a `claude-opus-4-8` run ($11.96) → three cases < 0.8, step ❌. The baseline below
+  ran on **`claude-sonnet-5`** (the eval default, confirmed from a trace).
+- On opus-4-8 the #58 deviations went from occasional to constant, plus a third (gate-1 format
+  and an early draft write) — recorded on #58.
+
+### Baseline results (`--ablation with-without`, container 2.1.260, `claude-sonnet-5`, 2026-09-24)
 
 | Case | With | Without | Δ | Note |
 |---|---|---|---|---|
@@ -233,6 +246,6 @@ case; root `README.md` routes to both new docs. Then close out: `git rm 50-plan.
   - [x] commit (a) container/docs (`5a1f292`), (b) suite (`6e52b3f`)
   - [x] baseline `--ablation with-without` run, results into § 4.0
   - [x] file the prose-deviation issue (#58)
-- [ ] **PD — `release-verify.sh` eval step (`--threshold 0.8`) + root `README.md` routing ← next**
+- [x] PD — `release-verify.sh` eval step (`--threshold 0.8`, `claude-opus-5-5`) + root `README.md` routing; green proof → #59
 - [ ] `git rm 50-plan.md` in the merge/close commit
 - [ ] Close #50; tick P1 in `48-plan.md`

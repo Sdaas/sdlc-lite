@@ -262,7 +262,9 @@ transcript.
 
 Improving or extending the plugin itself, rather than just running it, is a different audience — see
 **[`dev-docs/`](dev-docs/README.md)** for the architecture, the guard hook, the analyzer, the design
-decisions (ADRs), and the container testing methodology.
+decisions (ADRs), and the container testing methodology. Before changing the plugin's prose, read
+**[`verification-ladder.md`](dev-docs/verification-ladder.md)** (how much proof a change needs) and
+**[`eval-tutorial.md`](dev-docs/eval-tutorial.md)** (the eval suite that provides the cheap tier).
 
 ---
 
@@ -277,6 +279,8 @@ dev-docs/
   tutorial.md                  # learn the underlying concepts
   RELEASING.md                 # versioning, issue triage, release procedure
   DEVCONTAINER.md              # the dev-container test harness
+  verification-ladder.md       # T1/T2/T3 — how much proof a change needs
+  eval-tutorial.md             # authoring + running the plugin eval suite (T1)
   issue-template.md            # required structure for GitHub issues
   release-plan.md              # current + next release roadmap
   findings/                    # dated design-investigation records referenced by the ADRs
