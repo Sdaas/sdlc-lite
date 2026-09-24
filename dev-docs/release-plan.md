@@ -49,37 +49,44 @@ before `1.0.0` depends on it.
 
 Current milestone: **`1.0.0-beta.3`**.
 
-1. **#55** — `fix(skill): a same-named command suppresses the implement-feature SKILL.md body`
-   *First, ahead of #50: the plugin ships `commands/implement-feature.md` and
-   `skills/implement-feature/SKILL.md` under the same name, and on at least the `--plugin-dir`
-   path the command suppresses the skill body — the conductor then improvises gate prose. That
-   path is exactly the one `claude plugin eval` uses, so #50's whole premise (eval as the T1
-   verification primitive) rests on this being fixed first; otherwise every eval scores a
-   hallucinated workflow. Pulled into this milestone on 2026-09-23.*
-2. **#49** — `docs(repo): restructure into README (user) + dev-docs/ (developer)`
+1. ~~**#55**~~ — `fix(skill): a same-named command suppresses the implement-feature SKILL.md body`
+   **Done 2026-09-24** (`2d4f1c6`). *Was first, ahead of #50: the plugin shipped
+   `commands/implement-feature.md` and `skills/implement-feature/SKILL.md` under the same name, and
+   the command suppressed the skill body — the conductor then improvised gate prose. That is the
+   path `claude plugin eval` uses, so #50's whole premise (eval as the T1 verification primitive)
+   rested on this being fixed first.*
+2. **#56** — `fix(guard-hook): a bare, un-namespaced skill id bypasses explicit-entry`
+   *Next, and small: #55's explicit-entry rule keys on the `sdlc-lite:` prefix, so one spelling of
+   the `Skill` call is still defended by the skill `description` alone. A one-surface policy change
+   plus tests — cheap enough that it should not wait behind the milestone's larger work.*
+3. **#49** — `docs(repo): restructure into README (user) + dev-docs/ (developer)`
    *Docs-only, so it cannot destabilize the plugin, and every later issue's doc edits then
    land in the final structure instead of being moved twice. Time-sensitive — it changes two path
    strings the shipped `SKILL.md` prints at runtime and touches inbound links in nearly every open
    issue, which is far cheaper to do before GA publishes them more widely. This file moved to
    `dev-docs/release-plan.md` as part of it.*
-3. **#48** — `feat(repo): repo-local SDLC — verification ladder + /issue, /feature, /fix skills`
+4. **#48** — `feat(repo): repo-local SDLC — verification ladder + /issue, /feature, /fix skills`
    *Tracking issue, not a unit of work — it ships as the four children below and closes when the
    last one closes. After #49 — its documentation is written directly into `dev-docs/` rather than
    written and then moved. Each child gets its own branch (`<NN>-<slug>`) and merges to `main` when
    green; nothing half-broken lands.*
-4. **#50** — `feat(repo): verification ladder + eval seed suite + release-verify hook`
+5. **#50** — `feat(repo): verification ladder + eval seed suite + release-verify hook`
    *First of the four: the only one with standalone value — the ladder and the eval corpus are how
    any prose change to the plugin gets verified, skills or no skills. It is also every later
    child's quality signal, so writing a skill before it exists leaves nothing to measure the skill
    against.*
-5. **#51** — `feat(repo): shared SDLC gate spine + /issue skill`
+6. **#57** — `test(repo): automate the 8-cell entry-point contract`
+   *After #50 — the checker is a rung of that issue's verification ladder, so it lands inside the
+   ladder rather than beside it. It locks what #55 and #56 established: both slash spellings work in
+   both session modes, and the model never starts the workflow on its own.*
+7. **#51** — `feat(repo): shared SDLC gate spine + /issue skill`
    *After #50 — `.claude/sdlc/gates.md` links to the ladder rather than restating it, and
    `/issue`'s two eval cases need the suite to live in. The spine must land before #52 or #53 so
    neither invents its own gate prose.*
-6. **#52** — `feat(repo): /feature skill — 9 gates, 4 STOPs`
+8. **#52** — `feat(repo): /feature skill — 9 gates, 4 STOPs`
    *After #51 — it executes the spine. Carries a **blocking Open Question** (whether `/feature`
    also updates this file) that must be answered before work starts.*
-7. **#53** — `feat(repo): /fix skill — REPRODUCE + DEPOSIT gates`
+9. **#53** — `feat(repo): /fix skill — REPRODUCE + DEPOSIT gates`
    *Last — reuses #52's spine and adds the two gates that close the regression-safety gap. Also
    carries the close-out: the developer-guide rationale, README routing, this file's final update,
    and removing `48-plan.md`.*
@@ -94,21 +101,21 @@ section becomes the current release.
 
 **Execution order** (unchanged; now verified with the ladder and eval corpus from #48):
 
-1. **#45** — `fix(toolchain): dev container never runs "claude plugin install"; live-workspace load path unverified`
+2. **#45** — `fix(toolchain): dev container never runs "claude plugin install"; live-workspace load path unverified`
    *First: every other issue's "Done" bar is a green dry run in the dev container — this is what
    makes a fresh container boot reliably testable at all, and it also settles whether workspace
    edits load live or need a reinstall, which the remaining issues' verification depends on.*
-2. **#43** — `fix(guard-hook): bash_write_targets misreads scratch writes as product-tree writes`
+3. **#43** — `fix(guard-hook): bash_write_targets misreads scratch writes as product-tree writes`
    *Self-contained, unit-testable on the host, and it removes the false denials that make the
    other issues harder to verify in a dry run.*
-3. **#44** — `feat(gate-7): pre-configure [tool.mutmut] in the python-starter fixtures`
+4. **#44** — `feat(gate-7): pre-configure [tool.mutmut] in the python-starter fixtures`
    *After #43 — its verification is a clean Gate 7 mutmut run, which #43 stops the guard from blocking.*
-4. **#37** — `feat(skill): add a mechanical pytest.raises match= check at gates 3 and 4`
+5. **#37** — `feat(skill): add a mechanical pytest.raises match= check at gates 3 and 4`
    *After #43/#44 — proving it needs a Gate 7 run that isn't drowning in mutmut-setup noise.*
-5. **#19** — `feat(toolchain): add a setup command that installs the pinned toolchain`
+6. **#19** — `feat(toolchain): add a setup command that installs the pinned toolchain`
    *A new command with a **blocking Open Question** (the command's name) that must be answered
    before work starts.*
-6. **#21** — `feat(toolchain): add a clean-run harness that rebuilds the dev container per dry run`
+7. **#21** — `feat(toolchain): add a clean-run harness that rebuilds the dev container per dry run`
    *Last: automates the exact clean-boot verification loop the other five issues rely on, so it
    should land once the boot path (#45) and the changes it will exercise (#43/#44/#37/#19) exist.*
 
