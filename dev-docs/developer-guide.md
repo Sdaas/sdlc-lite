@@ -49,10 +49,12 @@ observability). Editing the workflow means editing Markdown, not writing code.
 sdlc-lite-plugin/
 ├── .claude-plugin/plugin.json          # identity metadata
 ├── commands/
-│   ├── implement-feature.md            # thin entry point → loads the skill
 │   └── analyze-run.md                  # standalone re-analysis command
+│                                       # (NO implement-feature.md — it would shadow the
+│                                       #  skill below; see ADR-14)
 ├── skills/implement-feature/
-│   ├── SKILL.md                        # the conductor's score (all gates)
+│   ├── SKILL.md                        # the conductor's score (all gates) AND the
+│   │                                   # /implement-feature entry point itself
 │   └── references/
 │       ├── quality-standards.md        # single source of truth for "green" + thresholds
 │       ├── requirements-template.md
@@ -628,6 +630,77 @@ required (see below). Verification is the gate — see the last bullet.
 
 ---
 
+### ADR-14 — One name, one surface; and a workflow is entered explicitly
+
+> **Status (2026-09-23):** **measured, then fixed** (#55). Evidence:
+> [`findings/2026-09-23-skill-suppression-findings.md`](findings/2026-09-23-skill-suppression-findings.md)
+> — 3 load paths x 2 arms x 2 runs, 12/12 unambiguous.
+
+*Decision — a command and a skill may never share a name.* `sdlc-lite-plugin/commands/<x>.md`
+alongside `sdlc-lite-plugin/skills/<x>/` **shadows the skill**. Measured on **all three** load paths
+(directory marketplace, `--plugin-dir`, installed-from-umbrella): `Skill(sdlc-lite:implement-feature)`
+injects the *command's* markdown in place of `SKILL.md` and then reports *"the skill instructions were
+previously loaded"*, so a re-invocation cannot recover. The conductor — holding a 12-line file that says
+"load the skill" — improvises gate prose that resembles the real workflow. In one run it dispatched a
+subagent to go find `SKILL.md` on disk.
+
+*Decision — the shim was deleted, not renamed.* A skill registers **its own** slash command from its
+`name:` frontmatter: with `commands/implement-feature.md` gone, `sdlc-lite:implement-feature` still
+appears in the session's `slash_commands`, and typing the bare `/implement-feature` interactively
+resolves and injects the score (verified in a pty-driven container session). The command file added
+**no reachability** — only shadowing. That also retires the old *"thin command, heavy skill"* principle
+(7 below): its premise was that a command buys lazy loading, and here it cost the body entirely.
+
+*Decision — this plugin's skills are **explicit-entry only**, and that is enforced.* The two ways into a
+skill are mechanically distinct:
+
+| | the human types `/implement-feature` | the model auto-invokes from a phrasing match |
+|---|---|---|
+| interactive | CLI expands the slash command, injects `SKILL.md` directly — **no `Skill` tool call** | goes through the **`Skill` tool** |
+| headless `-p` | identical — also expands, no `Skill` tool call | goes through the **`Skill` tool** |
+
+The two call sequences, which is the whole mechanism:
+
+```
+you type /implement-feature   ──►  CLI expands the slash command
+                                   ──►  <command-name> + SKILL.md injected as a user message
+                                   ──►  conductor starts at Gate 0
+                                   (no tool call  ──►  no PreToolUse  ──►  the guard never runs)
+
+model decides from phrasing    ──►  Skill tool call {"skill": "sdlc-lite:implement-feature"}
+                                   ──►  PreToolUse fires  ──►  guard DENIES
+                                   ──►  model tells the user to type /implement-feature
+```
+
+The guard does **not** distinguish intent — it cannot see any. It denies *every* `Skill` call in the
+`sdlc-lite:` namespace, unconditionally. The human's command survives only because it never makes
+such a call. Because the human's path never touches the `Skill` tool, denying that tool yields
+explicit-only entry **exactly**, with no need to infer intent. `hooks.json` therefore matches `Skill`, and
+`policy.skill_invoke_decision()` denies any `sdlc-lite:`-namespaced skill, naming the slash command in
+the denial so the model can tell the user what to type. The rule is **plugin-wide, not per-skill**: every
+skill this plugin ships is a gated, repo-mutating workflow a human starts deliberately, so a future skill
+inherits the policy instead of having to remember it. The skill `description` says the same thing in
+prose — the usual defense-in-depth pair, role instruction *and* hook.
+
+*Known fragility (accepted).* This brake rests on an assumption about **Claude Code's**
+implementation, not on an invariant we control: that a typed slash command keeps expanding without
+being routed through the `Skill` tool. If a future version routed it through that tool, the guard
+would deny the human's own command too. It would fail **loudly** — a visible denial naming the slash
+command — and `release-verify.sh`'s body canary catches it at the next release cut, so the failure
+mode is a blocked workflow with a clear message, never a silent improvisation. Re-measure this
+whenever Claude Code's skill/command resolution changes.
+
+*Why it matters beyond tidiness.* Auto-invocation is not hypothetical: the prompt *"I want to add a
+`to_roman(n)` helper to this python repo, built test-first with staged approvals"* loaded the entire
+score, unasked. And a shadowed body fails **silently**: with the shim present, the typed slash
+expands to the shim, the follow-up skill load answers *"already loaded"*, and the conductor recovers
+by **searching the filesystem and `Read`ing `SKILL.md` itself** — still printing `Preflight passed`
+and still announcing gates, so every downstream signal looks healthy. Two regression
+checks exist because of that: `tests/test_entry_points.py` (structural — the name collision, host-only,
+no model call) and a behavioral canary asserting `SKILL.md`-only text, since gate markers prove nothing.
+
+---
+
 ## 7. Design principles (distilled)
 
 The full running catalog lived in the retired `PATTERNS.md`; these are the load-bearing principles for
@@ -636,8 +709,14 @@ anyone changing the plugin.
 **Skills & workflow**
 - **Trigger-oriented descriptions.** A skill's `description` decides *when* it activates — write it
   about situations/phrasings, not just what it is.
-- **Thin command, heavy skill.** A command file is *always* resident in context; a skill body loads
-  on demand. Keep commands near-empty (just load the skill); put the heavy prose in `SKILL.md`.
+- **One name, one surface (ADR-14).** A command and a skill must never share a name — the command
+  shadows the skill and the `SKILL.md` body never loads, on every load path. A skill registers its own
+  slash command, so a "thin command that just loads the skill" buys no reachability; it only shadows.
+  *(This replaces the former "thin command, heavy skill" principle, whose premise #55 disproved.)*
+- **A workflow is entered explicitly (ADR-14).** This plugin's skills run when the human types the
+  slash command, never from a phrasing match. Enforced by the guard hook denying `Skill` calls in the
+  `sdlc-lite:` namespace — the typed slash command bypasses that tool entirely — and stated in prose in
+  the skill `description`.
 - **Driverless workflow.** The skill body is an ordered English script; numbered gates + machine
   conditions + "repeat until" loops replace orchestration code.
 - **Gate = approval checkpoint.** The approver is a human (STOP-until-APPROVED, worded imperatively) or

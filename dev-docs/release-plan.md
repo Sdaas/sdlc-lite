@@ -49,30 +49,37 @@ before `1.0.0` depends on it.
 
 Current milestone: **`1.0.0-beta.3`**.
 
-1. **#49** — `docs(repo): restructure into README (user) + dev-docs/ (developer)`
-   *First: docs-only, so it cannot destabilize the plugin, and every later issue's doc edits then
+1. **#55** — `fix(skill): a same-named command suppresses the implement-feature SKILL.md body`
+   *First, ahead of #50: the plugin ships `commands/implement-feature.md` and
+   `skills/implement-feature/SKILL.md` under the same name, and on at least the `--plugin-dir`
+   path the command suppresses the skill body — the conductor then improvises gate prose. That
+   path is exactly the one `claude plugin eval` uses, so #50's whole premise (eval as the T1
+   verification primitive) rests on this being fixed first; otherwise every eval scores a
+   hallucinated workflow. Pulled into this milestone on 2026-09-23.*
+2. **#49** — `docs(repo): restructure into README (user) + dev-docs/ (developer)`
+   *Docs-only, so it cannot destabilize the plugin, and every later issue's doc edits then
    land in the final structure instead of being moved twice. Time-sensitive — it changes two path
    strings the shipped `SKILL.md` prints at runtime and touches inbound links in nearly every open
    issue, which is far cheaper to do before GA publishes them more widely. This file moved to
    `dev-docs/release-plan.md` as part of it.*
-2. **#48** — `feat(repo): repo-local SDLC — verification ladder + /issue, /feature, /fix skills`
+3. **#48** — `feat(repo): repo-local SDLC — verification ladder + /issue, /feature, /fix skills`
    *Tracking issue, not a unit of work — it ships as the four children below and closes when the
    last one closes. After #49 — its documentation is written directly into `dev-docs/` rather than
    written and then moved. Each child gets its own branch (`<NN>-<slug>`) and merges to `main` when
    green; nothing half-broken lands.*
-3. **#50** — `feat(repo): verification ladder + eval seed suite + release-verify hook`
+4. **#50** — `feat(repo): verification ladder + eval seed suite + release-verify hook`
    *First of the four: the only one with standalone value — the ladder and the eval corpus are how
    any prose change to the plugin gets verified, skills or no skills. It is also every later
    child's quality signal, so writing a skill before it exists leaves nothing to measure the skill
    against.*
-4. **#51** — `feat(repo): shared SDLC gate spine + /issue skill`
+5. **#51** — `feat(repo): shared SDLC gate spine + /issue skill`
    *After #50 — `.claude/sdlc/gates.md` links to the ladder rather than restating it, and
    `/issue`'s two eval cases need the suite to live in. The spine must land before #52 or #53 so
    neither invents its own gate prose.*
-5. **#52** — `feat(repo): /feature skill — 9 gates, 4 STOPs`
+6. **#52** — `feat(repo): /feature skill — 9 gates, 4 STOPs`
    *After #51 — it executes the spine. Carries a **blocking Open Question** (whether `/feature`
    also updates this file) that must be answered before work starts.*
-6. **#53** — `feat(repo): /fix skill — REPRODUCE + DEPOSIT gates`
+7. **#53** — `feat(repo): /fix skill — REPRODUCE + DEPOSIT gates`
    *Last — reuses #52's spine and adds the two gates that close the regression-safety gap. Also
    carries the close-out: the developer-guide rationale, README routing, this file's final update,
    and removing `48-plan.md`.*

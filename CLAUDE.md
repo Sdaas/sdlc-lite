@@ -4,7 +4,7 @@ This file provides guidance to Claude Code when working in this repository.
 
 ## Repo Contents
 
-- Ships the `sdlc-lite` plugin (command `/implement-feature`) that turns a one-line feature request into a reviewed, tested, committed python change — through an interview-driven, test-first, human-in-the-loop workflow.
+- Ships the `sdlc-lite` plugin (slash command `/implement-feature`, registered by the skill itself — there is deliberately no same-named command file; see ADR-14) that turns a one-line feature request into a reviewed, tested, committed python change — through an interview-driven, test-first, human-in-the-loop workflow.
 - **`README.md`** is the single user-facing doc: install from GitHub, Python-only setup + toolchain
   prerequisite, how to run, FAQ. For a real user on their **own machine / own repo**. It routes
   developers to **`dev-docs/`** in one line.
@@ -95,6 +95,12 @@ sdlc-lite-plugin -q`. The full pinned toolchain (ruff/mypy/mutmut) runs only in-
 - The **behavior lives in Markdown** (`SKILL.md`, `agents/*.md`, `references/*`, `hooks.json`). Editing
   the workflow means editing these files, not writing code. The only real code is `guard.py` (the hook)
   and `analyzer/` (deterministic measurement, not orchestration — both allowed).
+- **Never add a `commands/<x>.md` whose name matches a `skills/<x>/` directory** — the command
+  shadows the skill and `SKILL.md` never loads, silently, on every load path (ADR-14, #55). A skill
+  registers its own slash command, so the command file buys nothing.
+- **This plugin's skills are explicit-entry only** — a human types the slash command; the model never
+  auto-invokes them. Enforced by `guard.py` denying `Skill` calls in the `sdlc-lite:` namespace
+  (the typed slash command bypasses that tool), and stated in prose in the skill `description`.
 - Changing a gate's model/effort/tools → edit the matching `agents/*.md` frontmatter.
 - Changing what an agent may read/write → update both the agent's prose inbox **and** `guard.py`
   (defense-in-depth: role instruction + hook enforcement).
