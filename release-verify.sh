@@ -23,7 +23,11 @@
 #      from an old-pinned catalog, advance the catalog to the current pin, then
 #      `marketplace update` + `plugin update` → assert the installed version moved.
 #      Skipped automatically on the very first release (no previous tag).
-#   5. Prints the human handoff for the full gated run.
+#   5. Milestone eval suite (T1 of dev-docs/verification-ladder.md): `claude plugin eval`
+#      over sdlc-lite-plugin/evals/ — both arms, pinned models, --threshold 0.8. Unlike
+#      steps 1–4 it grades the plugin SOURCE at this checkout (the tag, at release time),
+#      not the installed copy: eval cases load the plugin from their own directory.
+#   6. Prints the human handoff for the full gated run.
 #
 # WHAT IT DOES NOT DO (by design)
 #   The full /implement-feature run is human-in-the-loop (approval gates; never commits
@@ -40,6 +44,8 @@
 #   ./release-verify.sh --keep          # don't tear down the verify config/fixture at the end
 #   ./release-verify.sh --no-smoke      # install-verify only; skip the Gate 0/1 model calls
 #   ./release-verify.sh --links-only    # just the relative-link check; no Docker/container needed
+#   ./release-verify.sh --no-evals      # skip the eval suite (~15 min, ~$5)
+#   ./release-verify.sh --evals-only    # link check + the eval suite only; no install/smoke
 #
 set -euo pipefail
 
@@ -54,17 +60,30 @@ FEATURE_REQUEST="add a to_roman(n) function that converts an integer 1..3999 to 
 VERIFY_CFG="/home/vscode/.claude-verify"
 VERIFY_RUN="/workspaces/${FIXTURE_SLUG}-verify-run"
 ENV_IN_CONTAINER="/workspaces/sdlc-lite/.env"
+# Eval step (T1). Pinned so a model rollout is not misread as a plugin regression. The
+# threshold is below 1.0 on purpose: the graders are strict and gate-0-lock-stop /
+# routing-no-autoinvoke still catch intermittent prose deviations (#58).
+# claude-opus-5-5 needs claude >= 2.1.280; until the container is bumped (#59) this step
+# fails fast ($0) with "does not support this model" — use --no-evals meanwhile.
+EVAL_MODEL="claude-opus-5-5"
+EVAL_JUDGE_MODEL="claude-haiku-4-5-20251001"
+EVAL_THRESHOLD="0.8"
+EVAL_MAX_COST_USD="15"
 
 # ── args ─────────────────────────────────────────────────────────────────────
 KEEP=0
 SMOKE=1
 LINKS_ONLY=0
+EVALS=1
+EVALS_ONLY=0
 for arg in "$@"; do
   case "$arg" in
     --keep)       KEEP=1 ;;
     --no-smoke)   SMOKE=0 ;;
     --links-only) LINKS_ONLY=1 ;;
-    -h|--help)    sed -n '2,41p' "$0"; exit 0 ;;
+    --no-evals)   EVALS=0 ;;
+    --evals-only) EVALS_ONLY=1 ;;
+    -h|--help)    sed -n '2,48p' "$0"; exit 0 ;;
     *)            echo "release-verify.sh: unknown arg: $arg" >&2; exit 2 ;;
   esac
 done
@@ -132,6 +151,37 @@ cc() {
 }
 # A plain container bash command (no auth needed) — for fs inspection/setup.
 dx() { devcontainer exec --workspace-folder . bash -c "$1"; }
+
+# ── 5. milestone eval suite (T1) ─────────────────────────────────────────────
+# Runs as the container's own logged-in config (not VERIFY_CFG): the eval sandbox loads
+# no settings or plugins anyway, and the cases load the plugin from ../.. themselves.
+# plugin eval is early-access gated on the container's build — hence the env var.
+run_evals() {
+  step "5. milestone eval suite (model $EVAL_MODEL, threshold $EVAL_THRESHOLD)"
+  echo "  (~15 min; live log: /tmp/rv-evals.tmp)"
+  if dx '
+      set -a; source "'"$ENV_IN_CONTAINER"'" 2>/dev/null; set +a
+      export CLAUDE_CODE_WALNUT_SPIRE=1
+      cd /workspaces/sdlc-lite
+      claude plugin eval sdlc-lite-plugin \
+        --ablation with-without --scaffold --no-publish \
+        --allow-tools Bash Write Edit \
+        --model "'"$EVAL_MODEL"'" --judge-model "'"$EVAL_JUDGE_MODEL"'" \
+        --threshold "'"$EVAL_THRESHOLD"'" --max-cost-usd "'"$EVAL_MAX_COST_USD"'" \
+        2>&1' >/tmp/rv-evals.tmp; then
+    ok "eval suite: every case at or above $EVAL_THRESHOLD"
+  else
+    no "eval suite below $EVAL_THRESHOLD (or cost ceiling hit) — full log: /tmp/rv-evals.tmp"
+  fi
+  sed -n '/^CASE /,/case(s) ·/p' /tmp/rv-evals.tmp | sed 's/^/    /'
+}
+
+if [[ "$EVALS_ONLY" -eq 1 ]]; then
+  run_evals
+  echo
+  [[ "$fail" -eq 0 ]] && { echo "✅ link check + eval suite passed"; exit 0; }
+  echo "❌ link check / eval suite failed ($fail issue(s))"; exit 1
+fi
 
 # ── 0. fresh, isolated verify config (no dev marketplace) ────────────────────
 step "0. fresh isolated config ($VERIFY_CFG)"
@@ -281,6 +331,12 @@ PY
     && ok "plugin update $PREV_VER → $EXPECT_VER" || no "plugin update did not reach $EXPECT_VER"
 fi
 
+if [[ "$EVALS" -eq 1 ]]; then
+  run_evals
+else
+  step "5. eval suite skipped (--no-evals)"
+fi
+
 # ── teardown ─────────────────────────────────────────────────────────────────
 if [[ "$KEEP" -eq 0 ]]; then
   dx "rm -rf '$VERIFY_CFG' '$VERIFY_RUN'" && echo && echo "→ cleaned up verify config + fixture (--keep to retain)"
@@ -295,7 +351,8 @@ if [[ "$fail" -eq 0 ]]; then
 
 ✅ AUTOMATED clean-room verification PASSED: the released $PLUGIN@$MARKETPLACE installs from
    GitHub (git-subdir), loads its commands, reaches Gate 0 preflight-pass + Gate 1, and
-   \`/plugin update\` advances a prior release to this one.
+   \`/plugin update\` advances a prior release to this one; the eval suite (unless
+   --no-evals) holds every case at or above $EVAL_THRESHOLD.
 
 The remaining step is HUMAN (approval-gated, by design). To drive the full run:
    devcontainer exec --workspace-folder . bash -c \\

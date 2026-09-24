@@ -877,8 +877,13 @@ Finally it proves **`/plugin update`** (git/fs only, no model calls): it reconst
 catalog **as of the previous tag** (rewriting the entry's `ref`/`sha` to `v<prev>` in a throwaway
 clone), installs that older release, then advances the catalog to the current pin and runs
 `marketplace update` + `plugin update <plugin>` — asserting the installed version moves `<prev>` →
-`<current>`. Skipped automatically on the first release (no previous tag). The whole run is **17/17**
-when a previous tag exists.
+`<current>`. Skipped automatically on the first release (no previous tag).
+
+Last, it runs the **milestone eval suite** — T1 of the
+[verification ladder](verification-ladder.md): `claude plugin eval` over `sdlc-lite-plugin/evals/`
+with both arms, a pinned `--model`, and `--threshold 0.8`. This step grades the plugin **source at
+the checkout** (the tag, at release time), not the installed copy. The whole run is **18/18** when a
+previous tag exists.
 
 The full gated run past Gate 1 stays a **human** step (approval gates; never commits before a human
 approves), which the script prints as a handoff.
@@ -896,7 +901,8 @@ CLAUDE_CODE_OAUTH_TOKEN=<token>
 Mint the token **once on the Mac** with **`claude setup-token`** (a long-lived, Claude-subscription
 token — it doesn't expire like a session login) and paste its output. An `ANTHROPIC_API_KEY=…`
 (Console key, API-billed) works instead. Copy `.env.example` → `.env` to start. Run:
-`./release-verify.sh` (add `--keep` to retain the config/fixture, `--no-smoke` for install-verify only).
+`./release-verify.sh` (add `--keep` to retain the config/fixture, `--no-smoke` for install-verify only,
+`--no-evals` to skip the ~15-minute eval suite, `--evals-only` to run just that suite).
 
 ### The plugin loads from the workspace
 

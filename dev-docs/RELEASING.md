@@ -96,7 +96,8 @@ closed or explicitly punted before announcing the release.
 `<version>` → headless Gate 0 preflight-pass + Gate 1 interview (authed from `.env`'s
 `CLAUDE_CODE_OAUTH_TOKEN`; see `.env.example`) → a `/plugin update` proof (installs the previous
 release from an old-pinned catalog, then `marketplace update` + `plugin update` must reach
-`<version>`). The full human-driven `/implement-feature` run to green+commit is the final
+`<version>`) → the milestone eval suite, every case ≥ 0.8 (T1 of
+[`verification-ladder.md`](verification-ladder.md)). The full human-driven `/implement-feature` run to green+commit is the final
 belt-and-suspenders check (see the [README](../README.md)).
 
 ## 5. Consuming a release (customer)
