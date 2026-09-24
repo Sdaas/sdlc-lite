@@ -126,15 +126,22 @@ Docker Desktop, which recreates them anyway.
 #### What follows
 
 - **Run evals in the dev container.** It has `bwrap` + `socat`, no Docker Desktop and no
-  `~/.docker`, so Bash-granting cases run there normally. It is also already this repo's test
-  harness, so nothing new is being introduced.
-- **The host is for fast iteration on read-only cases.** Most cases here — routing, gate wording,
-  the entry-point contract — never need Bash, and running them on the Mac while you get the graders
-  right is quicker than a container round trip. Just don't mistake a green host run for a suite run.
-- **Reach for `Bash` rarely, and notice what it means when you do.** A case that wants a real
-  `pytest` or `mutmut` to execute is asking to watch the plugin *actually run something* — which is
-  close to what the ladder calls **T3**, where the container and a human already are. Prefer
-  grading the trace (`tool_used`) and produced files over shell output.
+  `~/.docker`. It is also already this repo's test harness, so nothing new is being introduced.
+  **One prerequisite, easy to miss:** the container must run with
+  `--security-opt seccomp=unconfined` and `--security-opt systempaths=unconfined` (set in
+  `devcontainer.json`). Docker's defaults stop `bwrap` from creating a user namespace and mounting
+  `/proc`, and then *every* sandboxed Bash call fails with
+  `bwrap: No permissions to create a new namespace` — the agent reports "Bash is non-functional"
+  and the case scores low for a reason that has nothing to do with the plugin. Why the flags are
+  safe enough: [`DEVCONTAINER.md`](DEVCONTAINER.md) → *Two loosened Docker defaults*.
+- **The host is for fast iteration on read-only cases.** The routing and guard cases never need
+  Bash, and running them on the Mac while you get the graders right is quicker than a container
+  round trip. Just don't mistake a green host run for a suite run.
+- **Grant `Bash` when the workflow itself needs it, and grade the trace rather than shell output.**
+  Every case that types `/implement-feature` is Bash-granting, because Gate 0's preflight, lock
+  check and branch detection are shell commands. A case that wants a real `pytest` or `mutmut` to
+  *finish* is a different thing — close to what the ladder calls **T3**, where the container and a
+  human already are. Prefer `tool_used` on the trace and produced files over shell output.
 
 ### The sandbox is emptier than you expect
 
@@ -330,19 +337,21 @@ file tests a workflow that no longer exists.
 **In the dev container** — the suite's home (§ 1):
 
 ```bash
-# the every-change loop: free graders, no baseline arm, filtered to what you touched
-claude plugin eval sdlc-lite-plugin --ablation none --tag gate-0
+# the every-change loop: no baseline arm, filtered to what you touched
+claude plugin eval sdlc-lite-plugin --ablation none --tag gate-0 \
+  --scaffold --no-publish --allow-tools Bash Write Edit
 
 # the milestone gate — both arms, pinned models, a threshold
 claude plugin eval sdlc-lite-plugin \
   --ablation with-without --model <pinned> --judge-model <pinned> \
-  --threshold <t> --json results.json --no-publish
+  --threshold <t> --json results.json --no-publish \
+  --scaffold --allow-tools Bash Write Edit
 ```
 
 **On the Mac host** — fast iteration while you are still getting a read-only case's graders right:
 
 ```bash
-claude plugin eval sdlc-lite-plugin --case 'routing-*' --runs 1 --verbose
+claude plugin eval sdlc-lite-plugin --case 'routing-*' --runs 1 --scaffold
 ```
 
 A green host run is not a suite run: re-run in the container before calling the change verified, and

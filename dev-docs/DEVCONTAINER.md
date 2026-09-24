@@ -85,6 +85,21 @@ and it is the commented source of truth for what lands where:
 To re-apply the template after you've changed settings in-session: `rm ~/.claude/settings.json` and
 restart the container (or copy `.devcontainer/claude/settings.json` in by hand).
 
+### Two loosened Docker defaults — so Claude's Bash sandbox runs inside
+
+`devcontainer.json` starts the container with `--security-opt seccomp=unconfined` and
+`--security-opt systempaths=unconfined`. Claude Code wraps a sandboxed Bash command in
+**bubblewrap**, which needs to create a user namespace (Docker's default seccomp profile blocks
+`unshare(CLONE_NEWUSER)`) and mount a fresh `/proc` (the kernel refuses while Docker masks paths
+in `/proc`). Without both, every sandboxed Bash call fails with
+`bwrap: No permissions to create a new namespace` — which is what `claude plugin eval` runs for any
+case that grants Bash ([`eval-tutorial.md`](eval-tutorial.md) § 1).
+
+The trade-off: the container ↔ VM-kernel boundary is looser (more syscalls allowed, `/proc`
+unmasked). No capabilities are added, you are still not root, and the Docker Desktop VM still
+separates it from macOS — far narrower than `--privileged`. Changing `runArgs` needs
+`devcontainer up --workspace-folder . --remove-existing-container`.
+
 ---
 
 ## Authentication — `.env` (both modes)
