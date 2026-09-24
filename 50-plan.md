@@ -1,7 +1,10 @@
 # 50-plan — Verification ladder + eval seed suite + release-verify hook
 
 **Issue:** [#50](https://github.com/Sdaas/sdlc-lite/issues/50) · **Parent:** #48 · **Milestone:** `1.0.0-beta.3`
-**Branch:** `50-verification-ladder` · **Status:** in progress
+**Branch:** `50-verification-ladder` · **Status:** PA + PB done; **resume at PC**
+
+**Resuming in a new session:** read this file, then start at § 4 — it carries everything a cold
+session needs. Do not re-derive the phases from #50; they are settled below.
 
 Branch-scoped working plan — P1 of `48-plan.md`. `git rm` this file in the merge/close commit.
 `48-plan.md` itself stays (it spans all five children; it is `git rm`'d in P5/#53).
@@ -65,12 +68,89 @@ rollout is not misread as a regression · run once with `--ablation none` before
 `partial: true` runs out of trend charts · `context.history_file` seeds mid-workflow state so a gate
 is testable without driving all 12.
 
-## 4. Progress tracker
+## 4. Resume here — Phase C (the eval seed suite)
 
-- [x] P0 — quickref extracted (`plugin-eval-quickref.md` + the full `plugin-eval.md`, frames 41 and 137 of the 2.1.267 binary)
-- [ ] PA — `dev-docs/verification-ladder.md`
-- [ ] PB — `dev-docs/eval-tutorial.md`
-- [ ] PC — `sdlc-lite-plugin/evals/` seed suite
-- [ ] PD — `release-verify.sh` eval step + README routing
+Everything a fresh session needs. Read § 2 (environment facts) first; they are not obvious and each
+one costs an hour if met the hard way.
+
+### What is already done
+
+| Phase | Commit | What landed |
+|---|---|---|
+| P0 | — | The `plugin eval` reference, extracted from the `claude` binary (see § 4.1) |
+| PA | `9660303` | `dev-docs/verification-ladder.md` — problem statement, T1/T2/T3, change→tier table, budgets, T1 limits, why `sdlc-lite` does not transfer, the working contract |
+| PB | `d7c3889` | `dev-docs/eval-tutorial.md` + `dev-docs/README.md` routing |
+
+Also on this branch: `4f6545c` (checks in `48-plan.md` + this file). On `main` ahead of the branch:
+`d419040` (release-plan housekeeping).
+
+**A decision made during PB that PC must honor:** **evals run in the dev container**, full stop.
+The Mac host is a fast-iteration convenience for read-only cases, not a sanctioned suite run. There
+is therefore **no `container` tag** and no host/container filtering convention — do not reintroduce
+one. The reasoning is in `eval-tutorial.md` § 1.
+
+### 4.1 Re-obtaining the eval reference
+
+`claude plugin eval` has **no public docs page**. The full reference ships zstd-compressed inside
+the `claude` binary. To recover it in a new session:
+
+```bash
+# scan the binary for zstd frames (magic 28 b5 2f fd) and decompress each one
+B="$(readlink -f "$(which claude)")"     # e.g. /opt/homebrew/Caskroom/claude-code/<ver>/claude
+```
+
+Frames worth keeping (offsets shift per build — match on the first line, not the number):
+`# Plugin eval and ... quick reference` (~9 KB) and
+`# Plugin eval (\`claude plugin eval\`) and \`/skill-doctor\`` (~76 KB, the full reference:
+case format, grader tables, sandbox internals, CI, troubleshooting). On build 2.1.267 these were
+frames 41 and 137. The `claude-code-guide` agent also carries the quickref embedded.
+
+**Do not author cases from memory** — the frontmatter key set is exact and unknown keys are errors.
+
+### 4.2 What Phase C must deliver
+
+Per #50's acceptance criteria and `48-plan.md` P1:
+
+- `sdlc-lite-plugin/evals/` with **≥ 6 cases**, each with **two graders** — one on the result
+  (`last_message` or `{source: file}`), one on the mechanism (`tool_used` / `tool_order`).
+- **≥ 1 should-not-fire case**: `type: tool_used`, `tool: Skill`, `min: 0`, `max: 0`, **`arm: both`**
+  (without `arm: both` it is silently unscored under `--ablation with-without`).
+- Cases phrased **as a user would type them**, never naming the skill.
+- Tag vocabulary already documented in `eval-tutorial.md` § 6: `gate-0`…`gate-11`, `routing`,
+  `entry-point`, `guard`. (No `container` tag — see above.)
+- Each case sets `plugins: ["../.."]` explicitly.
+
+**Suggested coverage** (judgment call, not a spec): the entry-point contract from #55/#56 (both
+slash spellings fire; the model never auto-invokes — this is the should-not-fire case), Gate 0
+preflight passing and stopping, Gate 1 interview entry, a guard-hook denial, and one
+`context.history_file` case proving a mid-workflow gate is reachable without driving all 12.
+
+### 4.3 Verification for Phase C
+
+```bash
+# in the dev container, with CLAUDE_CODE_WALNUT_SPIRE=1 exported in the shell
+claude plugin eval sdlc-lite-plugin --ablation none          # validates the graders
+claude plugin eval sdlc-lite-plugin --ablation with-without  # baseline delta
+```
+
+Pilot new cases with `--runs 1 --verbose`; raise runs once the graders are right. Default
+`--threshold` is 1.0 — everything must pass — so set it deliberately.
+
+### 4.4 Then Phase D
+
+`release-verify.sh` gains the milestone-tier eval step (pinned `--model`/`--judge-model`,
+`--threshold`, `--ablation with-without`, `--no-publish`), proven by deliberately breaking a seeded
+case; root `README.md` routes to both new docs. Then close out: `git rm 50-plan.md`, tick P1 in
+`48-plan.md`, close #50.
+
+---
+
+## 5. Progress tracker
+
+- [x] P0 — eval reference extracted from the `claude` binary (§ 4.1)
+- [x] PA — `dev-docs/verification-ladder.md` (`9660303`)
+- [x] PB — `dev-docs/eval-tutorial.md` + `dev-docs/README.md` routing (`d7c3889`)
+- [ ] **PC — `sdlc-lite-plugin/evals/` seed suite ← resume here (§ 4)**
+- [ ] PD — `release-verify.sh` eval step + root `README.md` routing
 - [ ] `git rm 50-plan.md` in the merge/close commit
 - [ ] Close #50; tick P1 in `48-plan.md`
