@@ -24,6 +24,12 @@ ENV PATH="/home/vscode/.local/bin:${PATH}"
 # /workspaces/<repo>; setting this keeps sessions sensible.
 WORKDIR /workspaces
 
-# NOTE: Node.js + the Claude Code CLI are installed via devcontainer *features*
-# (see devcontainer.json), NOT hand-installed here — features survive rebuilds
-# and avoid the "node present but npm missing" build failure.
+# Claude Code CLI, PINNED to an exact version (#59). The official devcontainer
+# feature has no version option — it installs whatever npm has at build time — so
+# the version lived only in the image cache. The native installer takes an exact
+# version and needs no Node. Bump = edit CLAUDE_VERSION + rebuild. Auto-update
+# stays off (DISABLE_AUTOUPDATER in devcontainer.json) so the pin holds.
+# Installs to ~/.local/bin (already on PATH above), outside the ~/.claude volume.
+ARG CLAUDE_VERSION=2.1.281
+RUN curl -fsSL https://claude.ai/install.sh | bash -s "${CLAUDE_VERSION}" \
+    && claude --version
