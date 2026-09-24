@@ -1,6 +1,6 @@
 ---
 name: implement-feature
-description: Interview-driven, test-first, human-in-the-loop workflow to build a Python feature. Use when the user wants to implement a new feature/capability with TDD, staged human approvals, isolated model-pinned review gates, and a committed result. Triggered by /implement-feature or a confirmed natural-language feature request.
+description: EXPLICIT ENTRY ONLY — run this workflow when, and only when, the user types the /implement-feature slash command. Never invoke it yourself from a natural-language request, however closely the request matches; if a request sounds like this workflow, tell the user to type /implement-feature instead. (What it is, for that reply: an interview-driven, test-first, human-in-the-loop workflow that builds a Python feature through staged human approvals and isolated model-pinned review gates, ending in a committed result.)
 ---
 
 # implement-feature — the conductor's score

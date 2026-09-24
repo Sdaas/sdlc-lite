@@ -324,6 +324,44 @@ class Decision:
 _ALLOW = Decision(allowed=True)
 
 
+# --- explicit entry: this plugin's skills are never auto-invoked (#55) -------
+#
+# A skill is reachable two mechanically distinct ways, and only ONE of them is the
+# product's entry point (both verified empirically — see the #55 finding):
+#
+#   1. the user TYPES `/implement-feature` — the CLI expands the slash command and injects
+#      SKILL.md directly. **No `Skill` tool call happens**, so this path never reaches the
+#      hook and is unaffected by the rule below.
+#   2. the model decides on its own, from a phrasing match against the skill `description` —
+#      this goes through the `Skill` TOOL, which PreToolUse sees.
+#
+# So denying (2) yields explicit-only entry exactly, with no need to guess at intent. The
+# rule is plugin-wide rather than per-skill: every skill this plugin ships is a gated,
+# repo-mutating workflow that a human starts deliberately, and a future skill inherits the
+# policy instead of having to remember it.
+PLUGIN_SKILL_PREFIX = "sdlc-lite:"
+
+
+def is_plugin_skill(skill: str) -> bool:
+    """True for a skill shipped by THIS plugin (namespaced `sdlc-lite:<name>`)."""
+    return skill.strip().startswith(PLUGIN_SKILL_PREFIX)
+
+
+def skill_invoke_decision(skill: str) -> Decision:
+    """Adjudicate a `Skill` tool call. Denies this plugin's own skills; allows all others.
+
+    Deny-by-default within our namespace: the workflow starts when a human types the slash
+    command, never because a request happened to sound like it.
+    """
+    if not is_plugin_skill(skill):
+        return _ALLOW
+    name = skill.strip()[len(PLUGIN_SKILL_PREFIX):] or skill.strip()
+    return Decision(False, "explicit-entry",
+                    f"the {name} workflow is explicit-entry only: it starts when the user "
+                    f"types /{name}, not from a phrasing match. Tell the user to type "
+                    f"/{name} if they want to run it.")
+
+
 def decide(agent_type: str, access: str, target: str,
            handoff_dir: str | None = None) -> Decision:
     """The single allow/deny authority for one (agent, access, path) tuple.

@@ -135,6 +135,14 @@ def _deny_reason(tool: str, ti: dict, agent_type: str, target: str) -> str | Non
     if tool in ("Task", "Agent"):
         return None
 
+    # A `Skill` call is the AUTO-INVOCATION path — the model choosing the workflow from a
+    # phrasing match. The human's own `/implement-feature` expands in the CLI without any
+    # tool call, so it never lands here (#55). Deny our own skills; leave everyone else's
+    # alone.
+    if tool == "Skill":
+        d = policy.skill_invoke_decision(str(ti.get("skill") or ""))
+        return None if d.allowed else _DENY_PREFIX + d.reason
+
     handoff = _handoff_dir()
 
     if tool == "Bash":
@@ -209,7 +217,7 @@ def main():
     agent_type = str(data.get("agent_type") or "")
     agent_id = str(data.get("agent_id") or "")
     target = str(ti.get("file_path") or ti.get("path") or ti.get("command")
-                 or ti.get("pattern") or ti.get("subagent_type") or "")
+                 or ti.get("pattern") or ti.get("subagent_type") or ti.get("skill") or "")
 
     # Decide FIRST (job #2), so the audit line can record the guard's own decision.
     reason = _deny_reason(tool, ti, agent_type, target)

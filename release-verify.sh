@@ -160,9 +160,14 @@ VER_DIR="$(dx "ls '$CACHE_BASE' 2>/dev/null | head -1" | tr -d '\r')"
 # git-subdir puts the PLUGIN ROOT (subdir contents) at the cache root — plugin.json + commands.
 dx "test -f '$CACHE_BASE/$VER_DIR/.claude-plugin/plugin.json'" \
   && ok "plugin.json at cache root (subdir resolved)" || no "no plugin.json at cache root"
-for f in commands/implement-feature.md commands/analyze-run.md agents/test-writer.md hooks/hooks.json; do
+# NOTE (#55): there is deliberately NO commands/implement-feature.md — a same-named command
+# shadows the skill. `/implement-feature` is registered by skills/implement-feature/SKILL.md.
+for f in skills/implement-feature/SKILL.md commands/analyze-run.md agents/test-writer.md hooks/hooks.json; do
   dx "test -f '$CACHE_BASE/$VER_DIR/$f'" && ok "present: $f" || no "missing: $f"
 done
+dx "test -f '$CACHE_BASE/$VER_DIR/commands/implement-feature.md'" \
+  && no "shipped a command that shadows the implement-feature skill (#55)" \
+  || ok "absent (correctly): commands/implement-feature.md"
 
 # ── 3. Gate 0 / Gate 1 smoke on a fresh fixture ──────────────────────────────
 if [[ "$SMOKE" -eq 1 ]]; then
@@ -192,6 +197,24 @@ if [[ "$SMOKE" -eq 1 ]]; then
   grep -q "Preflight passed" /tmp/rv-gate0.tmp && ok "Gate 0: 'Preflight passed'" || no "Gate 0: no 'Preflight passed' (see /tmp/rv-gate0.tmp)"
   grep -qiE "Preflight failed" /tmp/rv-gate0.tmp && no "Gate 0 HARD-FAILED (fixture not importable?)" || ok "Gate 0: no hard-fail"
   grep -qE "STOP.*(layout|model plan|branch)" /tmp/rv-gate0.tmp && ok "Gate 0: reached the confirm-STOP" || no "Gate 0: no confirm-STOP marker"
+  # BODY CANARY (#55). The gate markers above are NOT evidence the score loaded: with a
+  # same-named command shadowing the skill, the conductor reaches them anyway — it hunts
+  # SKILL.md down on disk and Reads it. So a plain grep for SKILL.md text false-passes;
+  # assert instead that the body arrived THROUGH THE ENTRY POINT, by its two signatures:
+  #   "Base directory for this skill:"  — the slash expansion injected the skill (healthy)
+  #   "already loaded above; ..."       — a command shadowed it and the load was a no-op (bug)
+  # Read the session TRANSCRIPT: -p's stdout carries only the final text, and
+  # --output-format stream-json omits the expanded command and the injected body entirely.
+  RV_TX=$(dx "ls -t '$VERIFY_CFG'/projects/*$(basename "$VERIFY_RUN")*/*.jsonl 2>/dev/null | head -1" | tr -d '\r')
+  if [[ -z "$RV_TX" ]]; then
+    no "Gate 0: no session transcript found — cannot verify the skill body loaded"
+  elif dx "grep -q 'already loaded above; instructions unchanged' '$RV_TX'"; then
+    no "Gate 0: SKILL.md SHADOWED — a same-named command suppressed the skill body (#55)"
+  elif dx "grep -q 'Base directory for this skill' '$RV_TX'"; then
+    ok "Gate 0: the skill body loaded through /implement-feature (entry point intact)"
+  else
+    no "Gate 0: the skill body never reached the conductor via the entry point (#55)"
+  fi
   dx "test -f '$VERIFY_RUN/.implement-feature/.active-run'" && ok "Gate 0: .active-run written" || no "Gate 0: no .active-run"
 
   step "3b. call 2 — approve → Gate 1 interview begins"
