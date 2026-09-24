@@ -19,27 +19,16 @@ tests this plugin. The Mac host can run *some* cases and is useful for fast iter
 convenience, not the harness. This section explains why — the reason is specific and worth
 understanding, because it also tells you something about what a T1 case should be.
 
-### First: `plugin eval` is early access, and gated **off** by default
+### First: `plugin eval` needs claude ≥ 2.1.281
 
-It prints `` `plugin eval` is currently in early access `` and exits 1. The command exists — it is
-not missing, and `claude update` alone does not turn it on.
+`plugin eval` is GA from **2.1.281** — the version the dev container pins (`CLAUDE_VERSION` in
+`.devcontainer/Dockerfile`, #59). Two things to know:
 
-```bash
-export CLAUDE_CODE_WALNUT_SPIRE=1
-```
-
-It must be set in the **shell / CI environment**, in `~/.claude/settings.json` under `env`, or in
-managed settings. **A value in this repo's `.claude/settings.json` does not work** — project
-settings only apply pre-trusted, allowlisted variables, and this one is not allowlisted. Never
-commit it there.
-
-**Self-test**, in an empty directory:
-
-```bash
-cd "$(mktemp -d)" && claude plugin eval
-#  "... early access"      -> still gated off
-#  "No eval cases found"   -> enabled
-```
+- **Headless runs need `--trust-plugin`.** The first run in a plugin directory otherwise stops on a
+  trust prompt. `release-verify.sh` passes it.
+- **Older builds gate it off.** Before 2.1.281 it prints `` `plugin eval` is currently in early
+  access `` and exits 1 — upgrade. Such a build also rejects `claude-opus-5-5` and lacks `-j` /
+  `--trust-plugin`.
 
 ### Why the container: a "Bash-granting" case cannot run on the Mac host
 
@@ -415,7 +404,7 @@ Also: **pin `--model`** so a model rollout is not misread as a plugin regression
 
 | Symptom | Cause → fix |
 |---|---|
-| `` `plugin eval` is currently in early access `` | Gated off — `export CLAUDE_CODE_WALNUT_SPIRE=1` in the shell, not in repo settings (§ 1) |
+| `` `plugin eval` is currently in early access `` | claude older than 2.1.281 — upgrade (§ 1) |
 | `a Bash-granting evaluation cannot run here` | You are on the Mac host; Bash cases only run in the dev container (§ 1) |
 | `No eval cases found` | No `<case>/prompt.md` under `sdlc-lite-plugin/evals/`, or `--case` / `--tag` filtered everything out |
 | A grader over `trace` never matches | The trace is JSON per line — escape your quotes: match `\"`, not `"` |

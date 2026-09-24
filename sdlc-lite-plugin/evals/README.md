@@ -8,10 +8,9 @@ result: [`eval-tutorial.md`](../../dev-docs/eval-tutorial.md).
 
 ```bash
 set -a; source .env; set +a
-export CLAUDE_CODE_WALNUT_SPIRE=1          # plugin eval is early-access on the container's build
 
 claude plugin eval sdlc-lite-plugin --ablation none \
-  --scaffold --no-publish --allow-tools Bash Write Edit
+  --scaffold --no-publish --trust-plugin --allow-tools Bash Write Edit
 ```
 
 - `--scaffold` — each case builds its tiny Python repo from `_fixtures/python-starter.sh`.

@@ -27,12 +27,11 @@
   // Run as the non-root user provided by the base image.
   "remoteUser": "vscode",
 
-  // Reusable add-ons. The Node feature FIRST (provides node + npm), then the
-  // official Claude Code feature (its auto-install needs npm). Declaring the
-  // dependency explicitly avoids the "npm missing" build failure.
+  // Reusable add-ons. Claude Code itself is installed (version-pinned) in the
+  // Dockerfile, not via the claude-code feature, which cannot pin a version (#59).
+  // Node stays for the devcontainer tooling and any npx use inside the container.
   "features": {
-    "ghcr.io/devcontainers/features/node:1": {},
-    "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {}
+    "ghcr.io/devcontainers/features/node:1": {}
   },
 
   // Persist Claude Code's config + login across rebuilds by mounting
@@ -42,8 +41,8 @@
     "source=sdlc-lite-claude,target=/home/vscode/.claude,type=volume"
   ],
 
-  // In a Dev Container the toolchain should be pinned + reproducible (bump the
-  // claude-code feature version + rebuild), not silently self-updating.
+  // In a Dev Container the toolchain should be pinned + reproducible (bump
+  // CLAUDE_VERSION in the Dockerfile + rebuild), not silently self-updating.
   "remoteEnv": {
     "DISABLE_AUTOUPDATER": "1"
   },
@@ -54,7 +53,9 @@
       "extensions": [
         "ms-python.python",
         "ms-python.vscode-pylance",
-        "charliermarsh.ruff"
+        "charliermarsh.ruff",
+        // Previously contributed by the claude-code feature.
+        "anthropic.claude-code"
       ],
       "settings": {
         "python.defaultInterpreterPath": "/usr/local/bin/python",
@@ -79,7 +80,7 @@
   // mutmut is version-checked via package metadata, NOT `mutmut --version`:
   // mutmut 3.x eagerly loads its config on ANY invocation and hard-fails when run
   // outside a project with source to mutate. Metadata is a deterministic liveness check.
-  "postCreateCommand": "sudo chown -R vscode:vscode /home/vscode/.claude && sudo env \"PATH=$PATH\" uv pip install --system -r sdlc-lite-plugin/toolchain/requirements-dev.txt && python --version && ruff --version && mypy --version && pytest --version && python -c \"import importlib.metadata as m; print('mutmut', m.version('mutmut'))\" && (claude --version || echo 'claude not on PATH yet (feature installs it)')",
+  "postCreateCommand": "sudo chown -R vscode:vscode /home/vscode/.claude && sudo env \"PATH=$PATH\" uv pip install --system -r sdlc-lite-plugin/toolchain/requirements-dev.txt && python --version && ruff --version && mypy --version && pytest --version && python -c \"import importlib.metadata as m; print('mutmut', m.version('mutmut'))\" && claude --version",
 
   // Runs on EVERY start (create, restart, rebuild). Provisions our Claude Code UX
   // — status line, smart-rm hook, settings.json, and the ~/.claude.json first-run

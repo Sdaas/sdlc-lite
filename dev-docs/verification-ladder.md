@@ -154,8 +154,8 @@ These limits are structural. Read them before authoring cases, not after.
   symlinks, and path-based exclusions cannot cover a link graph — so the harness fails closed.
   The host still runs read-only cases, which is handy while writing graders, but it is a
   convenience and not the harness. Full explanation: `eval-tutorial.md` § 1.
-- **`claude plugin eval` is early access** and gated off by default. Enablement variable and
-  self-test: `eval-tutorial.md` § Environment.
+- **`claude plugin eval` needs claude ≥ 2.1.281** (GA; the container's pin). Older builds gate it
+  off and reject the pinned `claude-opus-5-5`: `eval-tutorial.md` § 1.
 - **Network is not blocked, and the plugin's own hooks run unconfined as you.** Evaluating a plugin
   is the same trust decision as `--plugin-dir`.
 
