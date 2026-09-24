@@ -10,6 +10,11 @@ here — the root [`README.md`](../README.md) is the complete user-facing doc. E
   guard hook, the analyzer, the design decisions (ADRs), and the container testing methodology.
 - **[`tutorial.md`](tutorial.md)** — the underlying concepts (plugin vs command vs skill vs
   workflow) and subagent isolation, built up from a minimal runnable example (`toy-greet-plugin/`).
+- **[`verification-ladder.md`](verification-ladder.md)** — how much proof a change owes before it
+  counts as done: the T1/T2/T3 tiers, which tier each kind of change needs, and the budget. Start
+  here before changing any of the plugin's prose.
+- **[`eval-tutorial.md`](eval-tutorial.md)** — how to author and run a `claude plugin eval` case
+  (T1 on that ladder): case format, graders, the ablation delta, and the environment gotchas.
 - **[`DEVCONTAINER.md`](DEVCONTAINER.md)** — the dev-container test harness lifecycle.
 - **[`RELEASING.md`](RELEASING.md)** — versioning, issue triage, and how a release is cut and
   consumed.

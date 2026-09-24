@@ -149,9 +149,11 @@ These limits are structural. Read them before authoring cases, not after.
   from settings the sandbox never loads.
 - **The Artifact tool is unavailable inside a run.** Grade what a skill *produces*, up to any
   publish step.
-- **`Bash`-granting cases cannot run on this Mac.** The OS sandbox refuses to start, because Docker
-  Desktop's symlinks under `~/.docker` defeat its credential-store exclusion. They run fine in the
-  dev container — tag them so host runs filter them out.
+- **T1 runs in the dev container, not on the Mac host.** Any case granting `Bash` is refused on the
+  host: the OS sandbox must exclude `~/.docker` (a credential store), Docker Desktop fills it with
+  symlinks, and path-based exclusions cannot cover a link graph — so the harness fails closed.
+  The host still runs read-only cases, which is handy while writing graders, but it is a
+  convenience and not the harness. Full explanation: `eval-tutorial.md` § 1.
 - **`claude plugin eval` is early access** and gated off by default. Enablement variable and
   self-test: `eval-tutorial.md` § Environment.
 - **Network is not blocked, and the plugin's own hooks run unconfined as you.** Evaluating a plugin
