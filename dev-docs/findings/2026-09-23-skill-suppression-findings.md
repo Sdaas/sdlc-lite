@@ -160,3 +160,73 @@ The probe was a throwaway `.tmp.sh`, deleted after the measurement (the durable 
    above), and drive an interactive session through a pty — a fresh `CLAUDE_CONFIG_DIR` needs a
    seeded `.claude.json` (`hasCompletedOnboarding`, per-project `hasTrustDialogAccepted`) or the
    session stops at the theme/trust wizards.
+
+---
+
+## Addendum — 2026-09-24: the typed-slash half no longer reproduces
+
+Re-measured on Claude Code **2.1.260** while closing out #55 (the `release-verify.sh` canary's
+true-positive run). The **`Skill` tool** half of this finding still holds exactly as written above:
+with the shim present, the tool resolves to the **command file** and injects the shim's markdown.
+
+The **typed `/implement-feature`** half does **not** reproduce any more. With the shim present, the
+slash now expands `SKILL.md` (`Base directory for this skill: …`) and the shim text never appears:
+
+| Arm | Load path | Runs | Result |
+|---|---|---|---|
+| beta.2 as installed | installed from umbrella | 3/3 | body loaded |
+| beta.2 cache, verbatim | `--plugin-dir` | 2/2 | body loaded |
+| current plugin + shim restored | `--plugin-dir` | 1/1 | body loaded |
+
+Copying beta.2's as-shipped bytes rules out the fix's `SKILL.md` frontmatter changes as the cause;
+the resolution behaviour of the typed slash itself is what differs. The cause was not investigated
+further — the fix (delete the shim) is correct either way, and the `Skill`-tool shadowing it was
+filed for is still live.
+
+**Consequence:** `release-verify.sh`'s body canary cannot true-positive against a shim-shipping
+release on this CLI. The #55 regression coverage on the release path is the **install assertion**
+(`absent (correctly): commands/implement-feature.md`, verified red against beta.2) plus the host
+test `sdlc-lite-plugin/tests/test_entry_points.py`.
+
+## The entry-point contract, measured post-fix (2026-09-24)
+
+Eight cells: the human's slash command must work on both spellings in both session modes, and the
+model must never start the workflow on its own. All measured in the dev container, Claude Code
+2.1.260. Discriminators are transcript signatures, never a model-judged answer.
+
+**A. Explicit entry — must work**
+
+| # | Typed | Session | Result | Signature |
+|---|---|---|---|---|
+| 1 | `/implement-feature` | headless `-p` | ✅ body loads | `Base directory for this skill` x1, shim text 0 |
+| 2 | `/sdlc-lite:implement-feature` | headless `-p` | ✅ body loads | same x1 |
+| 3 | `/implement-feature` | interactive | ✅ body loads, Gate 0 entered | same x1, `Gate 0` x2 |
+| 4 | `/sdlc-lite:implement-feature` | interactive | ✅ body loads, Gate 0 entered | same x1, `Gate 0` x3 |
+
+**B. Auto-trigger — must never fire**
+
+| # | Prompt | Session | Result | What stopped it |
+|---|---|---|---|---|
+| 5 | natural phrasing matching the workflow | headless | ✅ not invoked | **no `Skill` call** — declined on the `description` |
+| 6 | same | interactive | ✅ not invoked | no `Skill` call |
+| 7 | explicit "call the `Skill` tool for `sdlc-lite:implement-feature`" | headless | ✅ blocked | `Skill` call made -> **guard denied** |
+| 8 | same | interactive | ✅ blocked | `Skill` call made -> **guard denied** |
+
+Verbatim denial (cells 7-8):
+
+```
+Blocked by implement-feature guard: the implement-feature workflow is explicit-entry only: it
+starts when the user types /implement-feature, not from a phrasing match. Tell the user to type
+/implement-feature if they want to run it.
+```
+
+Both defense layers are therefore live and independently proven: the `description` (5-6) and the
+PreToolUse guard (7-8, headless *and* interactive).
+
+**Known gap:** `policy.skill_invoke_decision()` keys on the `sdlc-lite:` prefix, so a bare
+`Skill{skill: "implement-feature"}` is **allowed** by the guard — in cell 5's probe the model
+declined on its own, so that cell rests on prose alone. The harness namespaces plugin skills and no
+bare id was observed in practice.
+
+**Load paths used:** cells 1, 2, 5, 7 via `--plugin-dir`; cells 3, 4, 6, 8 via the directory
+marketplace. Assuming paths behave alike is what let this bug hide — a checker must sweep both.
