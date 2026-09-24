@@ -123,7 +123,9 @@ Run `./release-verify.sh` end-to-end at the **next release cut**, once the fix i
 **Branch:** `55-skill-suppression` · **Issue:** #55 · **Milestone:** `1.0.0-beta.3` (first in the
 execution order, ahead of #50).
 
-## Status: the fix is COMPLETE, COMMITTED, and NOT merged.
+## Status: the fix is COMPLETE and COMMITTED (`989e6ad`), NOT merged, issue NOT closed.
+
+**One gap is open and must be closed first — step 1 below.** Do not merge or close #55 until it is.
 
 Phases 0-3 are done and verified. What remains is close-out only.
 
@@ -152,22 +154,73 @@ Phases 0-3 are done and verified. What remains is close-out only.
 | Auto-trigger from natural phrasing | denied by the guard |
 | Shim restored → structural test | fails, as intended |
 
-### Remaining work
+### Remaining work — do these in order
 
-1. **Merge to `main`** — `git checkout main && git merge 55-skill-suppression`, with
-   `git rm 55-plan.md` in the merge/close commit (branch-scoped scratch travels with the branch).
-2. **Close #55** — all four acceptance criteria are met; note in the close comment that
-   `./release-verify.sh` end-to-end is deferred (below).
-3. **Then start #50** — the next item in `dev-docs/release-plan.md`'s execution order. #55 existed
-   to make #50's premise true: `claude plugin eval` uses the `--plugin-dir` path, where the body was
-   being suppressed, so every eval was scoring a hallucinated workflow.
+**1. FIRST: prove the new body canary actually fires (the open gap — do not skip).**
 
-### Known gap, deliberately left open
+The canary added to `release-verify.sh` has never executed **inside the script**. Its discriminator
+was validated by hand against five real transcripts, and the glob pattern was checked against a
+different directory — but this line has never run with the real `$VERIFY_CFG` and fixture cwd:
 
-`./release-verify.sh` was **not** run end-to-end. It verifies the *released* plugin from the umbrella
-marketplace — currently `1.0.0-beta.2`, which still ships the shim — so its new canary would
-correctly report `SHADOWED` against that tag. Run it at the **next release cut**. The canary logic
-itself was validated directly against five real transcripts.
+```bash
+RV_TX=$(dx "ls -t '$VERIFY_CFG'/projects/*$(basename "$VERIFY_RUN")*/*.jsonl 2>/dev/null | head -1" | tr -d '\r')
+```
+
+That is untested code sitting on the release path. Close it by running the gate against the
+**currently released** `1.0.0-beta.2`, which genuinely still ships the shim:
+
+```bash
+devcontainer up --workspace-folder .    # Docker Desktop must be running
+./release-verify.sh
+```
+
+**Expected: a RED**, specifically
+
+```
+Gate 0: SKILL.md SHADOWED — a same-named command suppressed the skill body (#55)
+```
+
+That red is the canary's **true-positive test**, not a failure to wait out — beta.2 *is* shadowed, so
+a canary that stays green there is broken. Interpret the outcomes:
+
+| Outcome | Meaning | Action |
+|---|---|---|
+| `SKILL.md SHADOWED` | glob resolved, signature fired, message reads correctly | gap closed — proceed to step 2 |
+| `no session transcript found` | the glob is wrong (harness bug) | fix the `RV_TX` lookup in `release-verify.sh`, re-run |
+| `the skill body loaded ... (entry point intact)` | canary is broken — it cannot see a genuinely shadowed release | **stop**; the check is worthless as written, rethink the discriminator |
+
+Everything else in that run is expected to pass as it did before, EXCEPT the install assertion added
+for #55 (`absent (correctly): commands/implement-feature.md`), which will also red against beta.2 —
+that tag still ships the file. Both reds are expected and vanish once this fix is released.
+
+Record the result in this file before moving on.
+
+**2. Merge to `main`** — `git checkout main && git merge 55-skill-suppression`, with
+`git rm 55-plan.md` in the merge/close commit (branch-scoped scratch travels with the branch).
+
+**3. Close #55** — all four acceptance criteria met. In the close comment, state that
+`release-verify.sh` end-to-end against the *released* plugin happens at the beta.3 cut, and that its
+gate is already mandated by `RELEASING.md` §4 (no separate issue — see the note below).
+
+**4. Then start #50** — next in `dev-docs/release-plan.md`'s execution order. #55 existed to make
+#50's premise true: `claude plugin eval` uses the `--plugin-dir` path, where the body was being
+suppressed, so every eval was scoring a hallucinated workflow.
+
+### Why no separate issue for the release-cut run (decided 2026-09-24)
+
+`RELEASING.md` §4 already makes `release-verify.sh` **"the gate"** — mandatory at every cut, before
+announcing, alongside confirming the milestone's issues are closed. An issue saying "remember to run
+the release gate at the release" would duplicate an existing checklist step, and duplicated process
+drifts.
+
+It is also the wrong shape structurally: `release-plan.md`'s rule is *"if the current milestone has
+no open issues, the release is ready to cut."* An issue whose work can only happen **after** the tag
+exists can never be closed before the cut — it would either block the cut permanently or get punted,
+teaching the habit of punting milestone issues to ship.
+
+The **real** gap was never "will we remember to run it" but "the new assertion has never executed",
+and step 1 above closes that directly. File an issue only if step 1 surfaces something that cannot be
+fixed cheaply in that session.
 
 ### Two traps for whoever picks this up
 
