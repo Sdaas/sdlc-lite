@@ -676,10 +676,16 @@ The guard does **not** distinguish intent — it cannot see any. It denies *ever
 `sdlc-lite:` namespace, unconditionally. The human's command survives only because it never makes
 such a call. Because the human's path never touches the `Skill` tool, denying that tool yields
 explicit-only entry **exactly**, with no need to infer intent. `hooks.json` therefore matches `Skill`, and
-`policy.skill_invoke_decision()` denies any `sdlc-lite:`-namespaced skill, naming the slash command in
-the denial so the model can tell the user what to type. The rule is **plugin-wide, not per-skill**: every
-skill this plugin ships is a gated, repo-mutating workflow a human starts deliberately, so a future skill
-inherits the policy instead of having to remember it. The skill `description` says the same thing in
+`policy.skill_invoke_decision()` denies the call, naming the slash command in the denial so the model
+can tell the user what to type. The rule is **plugin-wide, not per-skill**: every skill this plugin ships
+is a gated, repo-mutating workflow a human starts deliberately, so a future skill inherits the policy
+instead of having to remember it.
+
+The denial has **two legs** (#56), because the namespace is a harness convention and not a guarantee:
+any `sdlc-lite:`-prefixed id (covering skills not yet written), **plus** any *bare* id naming a skill this
+plugin actually ships — `policy.PLUGIN_SKILL_NAMES`, hand-maintained because `policy.py` is pure and
+does no I/O, with `tests/test_entry_points.py` asserting it still matches `skills/`. A bare id we do
+*not* ship stays allowed: it belongs to someone else. The skill `description` says the same thing in
 prose — the usual defense-in-depth pair, role instruction *and* hook.
 
 *Known fragility (accepted).* This brake rests on an assumption about **Claude Code's**

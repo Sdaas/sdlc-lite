@@ -228,5 +228,8 @@ PreToolUse guard (7-8, headless *and* interactive).
 declined on its own, so that cell rests on prose alone. The harness namespaces plugin skills and no
 bare id was observed in practice.
 
+> **Closed 2026-09-24 (#56).** The rule now also denies a *bare* id naming a skill this plugin ships
+> (`policy.PLUGIN_SKILL_NAMES`), so cell 5 rests on the hook in both spellings rather than on prose.
+
 **Load paths used:** cells 1, 2, 5, 7 via `--plugin-dir`; cells 3, 4, 6, 8 via the directory
 marketplace. Assuming paths behave alike is what let this bug hide — a checker must sweep both.

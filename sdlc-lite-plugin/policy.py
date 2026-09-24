@@ -341,21 +341,34 @@ _ALLOW = Decision(allowed=True)
 # policy instead of having to remember it.
 PLUGIN_SKILL_PREFIX = "sdlc-lite:"
 
+# The harness namespaces a plugin skill, so `sdlc-lite:<name>` is the spelling seen in
+# practice — but nothing *guarantees* it, and a bare `implement-feature` would otherwise
+# slip past a prefix-only rule (#56). So the rule has two legs:
+#   - ANY skill in our namespace, shipped today or added later (the plugin-wide rule above);
+#   - any BARE id naming a skill we actually ship — listed here rather than globbed off disk,
+#     because this module is pure (no I/O). `test_entry_points.py` asserts the list matches
+#     `skills/`, so adding a skill without updating this constant fails the suite.
+PLUGIN_SKILL_NAMES = frozenset({"implement-feature"})
+
 
 def is_plugin_skill(skill: str) -> bool:
-    """True for a skill shipped by THIS plugin (namespaced `sdlc-lite:<name>`)."""
-    return skill.strip().startswith(PLUGIN_SKILL_PREFIX)
+    """True for a skill shipped by THIS plugin, namespaced (`sdlc-lite:<name>`) or bare."""
+    s = skill.strip()
+    return s.startswith(PLUGIN_SKILL_PREFIX) or s in PLUGIN_SKILL_NAMES
 
 
 def skill_invoke_decision(skill: str) -> Decision:
     """Adjudicate a `Skill` tool call. Denies this plugin's own skills; allows all others.
 
     Deny-by-default within our namespace: the workflow starts when a human types the slash
-    command, never because a request happened to sound like it.
+    command, never because a request happened to sound like it. A skill another plugin
+    ships — namespaced or bare — is none of our business and stays allowed.
     """
     if not is_plugin_skill(skill):
         return _ALLOW
-    name = skill.strip()[len(PLUGIN_SKILL_PREFIX):] or skill.strip()
+    s = skill.strip()
+    name = s[len(PLUGIN_SKILL_PREFIX):] if s.startswith(PLUGIN_SKILL_PREFIX) else s
+    name = name or s
     return Decision(False, "explicit-entry",
                     f"the {name} workflow is explicit-entry only: it starts when the user "
                     f"types /{name}, not from a phrasing match. Tell the user to type "
