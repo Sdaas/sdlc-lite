@@ -1,9 +1,9 @@
 # 50-plan — Verification ladder + eval seed suite + release-verify hook
 
 **Issue:** [#50](https://github.com/Sdaas/sdlc-lite/issues/50) · **Parent:** #48 · **Milestone:** `1.0.0-beta.3`
-**Branch:** `50-verification-ladder` · **Status:** PA + PB done; PC built, uncommitted — **resume at § 4.0**
+**Branch:** `50-verification-ladder` · **Status:** PA + PB + PC done — **resume at Phase D (§ 4.4)**
 
-**Resuming in a new session:** read this file, then start at **§ 4.0** — it carries everything a cold
+**Resuming in a new session:** read this file, then start at **§ 4.0** (steps 1–3 done; step 4 = Phase D) — it carries everything a cold
 session needs. Do not re-derive the phases from #50; they are settled below.
 
 Branch-scoped working plan — P1 of `48-plan.md`. `git rm` this file in the merge/close commit.
@@ -121,6 +121,27 @@ The suite is **built and piloted but uncommitted** in the working tree. Do these
 | `routing-no-autoinvoke` | 6/8 | **prose deviation:** implemented the feature itself instead of pointing at `/implement-feature` |
 | `gate-0-not-importable-stop` | 7/8 | the one failure was the `description` grader bug — now fixed |
 
+### Baseline results (`--ablation with-without`, container 2.1.260, 2026-09-24)
+
+| Case | With | Without | Δ | Note |
+|---|---|---|---|---|
+| `entry-slash-bare` | 1.00 | 0.33 | +0.67 | |
+| `entry-slash-namespaced` | 1.00 | 0.33 | +0.67 | |
+| `gate-0-lock-stop` | 0.83 | 0.50 | +0.33 | preflight ran despite the lock — #58 |
+| `gate-0-not-importable-stop` | 1.00 | 0.33 | +0.67 | `"command"`-scoped Bash graders confirmed live |
+| `gate-1-interview-entry` | 1.00 | 1.00 | 0.00 | expected — see below |
+| `guard-secret-read-denied` | 1.00 | 0.17 | +0.83 | |
+| `routing-no-autoinvoke` | 1.00 | 0.50 | +0.50 | |
+
+7 cases · mean Δ +0.52 · 932 s · $5.41 · exit 1 (threshold 1.0, lock case).
+
+**Δ 0.00 on `gate-1-interview-entry` is structural, not a grader bug:** the recorded
+`history_file` carries the expanded `SKILL.md` body (the slash command's injected text), so the
+*without* arm still has the skill in context. A history-seeded case proves a mid-workflow gate is
+reachable and behaves; its Δ carries no signal. Judge such cases on the *with* score only.
+
+Prose-deviation issue filed: **#58** (backlog).
+
 ### Known small gap (not #50)
 
 `dev-docs/DEVCONTAINER.md` "Find the container (no fixed name …)" is stale — `runArgs` sets
@@ -208,10 +229,10 @@ case; root `README.md` routes to both new docs. Then close out: `git rm 50-plan.
 - [x] P0 — eval reference extracted from the `claude` binary (§ 4.1)
 - [x] PA — `dev-docs/verification-ladder.md` (`9660303`)
 - [x] PB — `dev-docs/eval-tutorial.md` + `dev-docs/README.md` routing (`d7c3889`)
-- [~] **PC — `sdlc-lite-plugin/evals/` seed suite ← built + piloted, uncommitted; resume at § 4.0**
-  - [ ] commit (a) container/docs, (b) suite
-  - [ ] baseline `--ablation with-without` run, results into § 4.0
-  - [ ] file the prose-deviation issue
-- [ ] PD — `release-verify.sh` eval step (`--threshold 0.8`) + root `README.md` routing
+- [x] PC — `sdlc-lite-plugin/evals/` seed suite (`5a1f292`, `6e52b3f`, baseline recorded)
+  - [x] commit (a) container/docs (`5a1f292`), (b) suite (`6e52b3f`)
+  - [x] baseline `--ablation with-without` run, results into § 4.0
+  - [x] file the prose-deviation issue (#58)
+- [ ] **PD — `release-verify.sh` eval step (`--threshold 0.8`) + root `README.md` routing ← next**
 - [ ] `git rm 50-plan.md` in the merge/close commit
 - [ ] Close #50; tick P1 in `48-plan.md`

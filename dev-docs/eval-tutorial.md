@@ -330,6 +330,15 @@ Record the transcript once from a real session, trim it to the turn before the g
 and commit it beside the case. Re-record it when the gates before it change shape — a stale history
 file tests a workflow that no longer exists.
 
+Two consequences to expect:
+
+- **Δ is ~0 by construction.** The recorded transcript carries the expanded skill text, so the
+  *without* arm still has the skill in context. Judge a history-seeded case on its *with* score;
+  its Δ carries no signal.
+- **Each run writes a transcript beside the history file.** Replay resumes the session, which
+  saves itself as `history/<session-uuid>.jsonl`. `evals/.gitignore` excludes that pattern — never
+  commit one.
+
 ---
 
 ## 6. Running the suite
