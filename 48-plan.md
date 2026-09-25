@@ -1,7 +1,7 @@
 # 48-plan — Repo-local SDLC skills (`/issue`, `/feature`, `/fix`)
 
 **Issue:** [#48](https://github.com/Sdaas/sdlc-lite/issues/48) · **Milestone:** `1.0.0-beta.3`
-**Branches:** one per child issue, `<NN>-<slug>` (#48 itself has no branch) · **Status:** P1 (#50) and P2 (#57) done; P3 (#51) next, after #60
+**Branches:** one per child issue, `<NN>-<slug>` (#48 itself has no branch) · **Status:** P1–P3 (#50, #57, #51) done; P4 (#52) next
 
 Branch-scoped working plan. `git rm` this file in the merge/close commit.
 
@@ -170,7 +170,7 @@ order and the per-phase verification. Each phase is its own branch (`<NN>-<slug>
 |---|---|---|---|
 | **P1** | **#50** | `dev-docs/verification-ladder.md` (SSOT for T1/T2/T3) · `dev-docs/eval-tutorial.md` · `sdlc-lite-plugin/evals/` seeded with ≥6 cases incl. one should-not-fire · `release-verify.sh` milestone-tier hook · README routing to both docs | `claude plugin eval sdlc-lite-plugin --ablation none` (validate graders), then a baseline Δ run; `./release-verify.sh` fails when a seeded case is deliberately broken |
 | **P2** | **#57** | `verify-entry-points.py` — the 8-cell entry-point matrix, deterministic transcript signatures, both load paths; ADR-14 conformance table; `dev-docs/DEVCONTAINER.md` says when to run it | Green run in the dev container; reverting the #55 fix turns the matrix red |
-| **P3** | **#51** | `.claude/sdlc/gates.md` — shared spine, 4 STOPs, six review dimensions · `.claude/skills/issue/SKILL.md` · two `/issue` eval cases | File one real backlog issue with it; output conforms to `dev-docs/issue-template.md`; `claude plugin eval sdlc-lite-plugin --ablation none` |
+| **P3** | **#51** | `.claude/sdlc/gates.md` — shared spine, 4 STOPs, six review dimensions, eval budget · `.claude/skills/issue/SKILL.md` · developer-guide §10 (repo-local skills) | File one real backlog issue with it (#64); output conforms to `dev-docs/issue-template.md`. No `/issue` eval cases (D13) |
 | **P4** | **#52** | `.claude/skills/feature/SKILL.md` — 9 gates, 4 STOPs | Drive a small real enhancement through all 9 gates; `python3 -m pytest sdlc-lite-plugin -q` |
 | **P5** | **#53** | `.claude/skills/fix/SKILL.md` + REPRODUCE + DEPOSIT · Developer Guide rationale for all three skills · README routing · `dev-docs/release-plan.md` updated · `git rm 48-plan.md` | Fix a real prose bug end-to-end; the deposited case red before, green after |
 
@@ -186,7 +186,7 @@ list presented before each commit; nothing commits without approval.
 
 - [x] P1 #50 — verification ladder · eval tutorial · eval seed suite · release-verify hook (green run on claude-opus-5-5 → #59)
 - [x] P2 #57 — 8-cell entry-point checker (`verify-entry-points.py`; 16/16 green, shim restored → red)
-- [ ] P3 #51 — shared spine + `/issue`
+- [x] P3 #51 — shared spine + `/issue` (filed #64 with it)
 - [ ] P4 #52 — `/feature`
 - [ ] P5 #53 — `/fix` + docs close-out
 - [ ] `git rm 48-plan.md` in the close commit (P5)

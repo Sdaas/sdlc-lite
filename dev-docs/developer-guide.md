@@ -10,8 +10,9 @@ start with the [Tutorial](tutorial.md). For versioning, issue triage, and releas
 
 ## 0. Recommended reading order
 
-Read §1 and §2 first. Read §6 (ADRs) before you propose a structural change. Read §8 and §9 when
-you are ready to make a change. The other sections are reference.
+Read §1 and §2 first. Read §6 (ADRs) before you propose a structural change. Read §8, §9 and §10
+(this repo's own slash commands) when you are ready to make a change. The other sections are
+reference.
 
 ---
 
@@ -701,3 +702,20 @@ to read a gate's file at a STOP:
   of truth), not individual briefs.
 - **Verify before you rely on runtime behavior** — do a container dry run; the transcript and the
   guard's audit log are your ground truth.
+
+---
+
+## 10. Repo-local skills (for working on this repo)
+
+This repo carries its own slash commands in `.claude/skills/`. They are **not** part of the shipped
+plugin — they load only when you run Claude Code from this repo's root, and only a human can start
+them (type the command; the model never invokes them). All share one process,
+[`.claude/sdlc/gates.md`](../.claude/sdlc/gates.md); why this repo needs its own rather than using
+`sdlc-lite` on itself: [`verification-ladder.md`](verification-ladder.md) §6.
+
+| Command | What it does | Status |
+|---|---|---|
+| `/issue` | Files one GitHub issue per [`issue-template.md`](issue-template.md), after you approve the draft | available |
+| `/feature` | Implements an issue through gates 0–8 with 4 approval STOPs | planned — #52 |
+| `/fix` | `/feature` plus REPRODUCE and DEPOSIT gates for bugs | planned — #53 |
+| `/regression` | Runs the whole eval suite, 3 runs per case | planned — #64 |

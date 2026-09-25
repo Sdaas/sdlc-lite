@@ -20,6 +20,8 @@ This file provides guidance to Claude Code when working in this repository.
   `marketplace add Sdaas/claude-plugins` → `install sdlc-lite@sdaas`.
 
 ## Working conventions
+- **Repo-local skills** (`.claude/skills/`, human-typed only): filing an issue → `/issue`. Shared
+  process: `.claude/sdlc/gates.md`. List + status: `dev-docs/developer-guide.md` §10.
 - **Process:** plan → approve → phased execution. Commit per **logical unit**. Keep git history.
 - **Before every commit:** give the user a concise list of the key files / changes to review, and
   wait for explicit approval. Never commit before the user has reviewed and approved.
