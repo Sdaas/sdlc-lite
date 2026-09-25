@@ -38,7 +38,7 @@ plugin's runtime behavior: a documentation restructure that gives the repo one d
 and the repo-local SDLC skills that give *this repo* the requirements → design → test discipline the
 `sdlc-lite` plugin gives a Python repo.
 
-**Why before GA, and why it is a beta and not GA.** The six `1.0.0` issues are real behavior changes
+**Why before GA, and why it is a beta and not GA.** The `1.0.0` issues are real behavior changes
 to a product whose source is prose, and today they would be verified only by ad-hoc dry runs and
 judgment. #48 supplies the missing verification primitive (`claude plugin eval` over `SKILL.md`, plus
 the T1/T2/T3 ladder). Using new tooling for the first time on release-critical work is a risk, so the
@@ -47,64 +47,40 @@ before `1.0.0` depends on it.
 
 ## Execution order (current release)
 
-Current milestone: **`1.0.0-beta.3`**.
+Current milestone: **`1.0.0-beta.3`**. **#48** is a tracking issue, not a unit of work: it ships as
+its children (#50, #57, #51, #52, #53) and closes when #53 closes.
 
-1. ~~**#55**~~ — `fix(skill): a same-named command suppresses the implement-feature SKILL.md body`
-   **Done 2026-09-24** (`2d4f1c6`). *Was first, ahead of #50: the plugin shipped
-   `commands/implement-feature.md` and `skills/implement-feature/SKILL.md` under the same name, and
-   the command suppressed the skill body — the conductor then improvised gate prose. That is the
-   path `claude plugin eval` uses, so #50's whole premise (eval as the T1 verification primitive)
-   rested on this being fixed first.*
-2. ~~**#56**~~ — `fix(guard-hook): a bare, un-namespaced skill id bypasses explicit-entry`
-   **Done 2026-09-24** (`e7d8b6b`). *#55's explicit-entry rule keyed on the `sdlc-lite:` prefix, so
-   one spelling of the `Skill` call was defended by the skill `description` alone. A one-surface
-   policy change plus tests — cheap enough that it did not wait behind the milestone's larger work.*
-3. ~~**#49**~~ — `docs(repo): restructure into README (user) + dev-docs/ (developer)`
-   **Done 2026-09-23** (`13c4f7c`). *Docs-only, so it could not destabilize the plugin, and every
-   later issue's doc edits now land in the final structure instead of being moved twice. It changed
-   two path strings the shipped `SKILL.md` prints at runtime and inbound links in nearly every open
-   issue — far cheaper before GA publishes them more widely. This file moved to
-   `dev-docs/release-plan.md` as part of it.*
-4. **#48** — `feat(repo): repo-local SDLC — verification ladder + /issue, /feature, /fix skills`
-   *Tracking issue, not a unit of work — it ships as the four children below and closes when the
-   last one closes. After #49 — its documentation is written directly into `dev-docs/` rather than
-   written and then moved. Each child gets its own branch (`<NN>-<slug>`) and merges to `main` when
-   green; nothing half-broken lands.*
-5. ~~**#50**~~ — `feat(repo): verification ladder + eval seed suite + release-verify hook`
-   **Done 2026-09-24** (`6553a6a`). *First of the four: the only one with standalone value — the
-   ladder and the eval corpus are how any prose change to the plugin gets verified, skills or no
-   skills. It is also every later child's quality signal. Follow-ups filed to the backlog: #58 (two
-   prose deviations the suite caught) and #59 (container bump — the release-verify eval step pins
-   `claude-opus-5-5`, which the container's claude cannot run yet).*
-6. ~~**#59**~~ — `chore(repo): bump the dev container claude so the eval gate can run on claude-opus-5-5`
-   **Done 2026-09-25** (`35857b0`). *Container claude pinned to 2.1.281. First opus-5-5 baseline:
-   5/7 pass, $3.51 for one with-without run. The two failures are #58 render paraphrases.
-   Threshold/`--runs` tuning is deferred to the beta.3 release cut.*
-7. ~~**#57**~~ — `test(repo): automate the 8-cell entry-point contract`
-   **Done 2026-09-25** (`9f0bed7`). *`verify-entry-points.py` — 8 cells x 2 load paths, 16/16 green on 2.1.281.
-   Restoring the #55 shim still reds `/sdlc-lite:implement-feature`, so the bug class is live in
-   current Claude Code and the check earns its keep. Cells 7-8 test the hook alone (neutral-description
-   copy): the real description makes the model refuse the call.*
-8. **#60** — `docs(repo): audit repo + open issues for staleness; simplify developer-guide`
-   *Next — in progress on `60-repo-review`; resume with **"read 60-plan.md and continue"**. Lands
-   before #51 so the repo-local skills are written against current docs and issues.*
-9. **#51** — `feat(repo): shared SDLC gate spine + /issue skill`
-   *After #60 and #50 — `.claude/sdlc/gates.md` links to the ladder rather than restating it, and
-   `/issue`'s two eval cases need the suite to live in. The spine must land before #52 or #53 so
-   neither invents its own gate prose. Settle the eval target first — `/issue` is repo-local, not in
-   the plugin (see the comment on #51).*
-10. **#52** — `feat(repo): /feature skill — 9 gates, 4 STOPs`
-   *After #51 — it executes the spine. Its **Open Question** (whether `/feature` also updates
-   this file) is settled: **no** — roadmap ordering stays a human call. #52 is unblocked.*
-11. **#53** — `feat(repo): /fix skill — REPRODUCE + DEPOSIT gates`
-   *Last — reuses #52's spine and adds the two gates that close the regression-safety gap. Also
-   carries the close-out: the developer-guide rationale, README routing, this file's final update,
-   and removing `48-plan.md`.*
-12. **#58** — `fix(skill): conductor sometimes skips the lock STOP and the explicit-entry redirect`
-   *Moved in from `1.0.0` by #60: `release-verify.sh` gates the cut on the eval suite at 0.8, and the
-   opus-5-5 baseline is 5/7 because of this bug — beta.3 cannot pass its own gate without it.*
-13. **#61** — `fix(skill): agent inboxes and quality-standards disagree with SKILL.md`
+### Open — in execution order
+
+1. **#51** — `feat(repo): shared SDLC gate spine + /issue skill`
+   *Next. `.claude/sdlc/gates.md` links to the verification ladder rather than restating it. The
+   spine must land before #52 or #53 so neither invents its own gate prose. No eval cases for the
+   repo-local skills (48-plan D13).*
+2. **#52** — `feat(repo): /feature skill — 9 gates, 4 STOPs`
+   *After #51 — it executes the spine. Its Open Question (does `/feature` also update this file) is
+   settled: **no** — roadmap ordering stays a human call.*
+3. **#53** — `feat(repo): /fix skill — REPRODUCE + DEPOSIT gates`
+   *Reuses #52's spine and adds the two gates that close the regression-safety gap. Also carries
+   #48's close-out: repo-local SDLC docs in `dev-docs/`, this file's update, removing `48-plan.md`,
+   and deciding whether the root scripts move (#60, Q14).*
+4. **#58** — `fix(skill): conductor sometimes skips the lock STOP and the explicit-entry redirect`
+   *Must land before the cut: `release-verify.sh` gates it on the eval suite at 0.8, and the
+   opus-5-5 baseline is 5/7 because of this bug. Still live: `gate-0-lock-stop` failed 1 of 3 runs
+   in #60's close-out eval.*
+5. **#61** — `fix(skill): agent inboxes and quality-standards disagree with SKILL.md`
    *Found by #60. Share #58's container session; proof is a `roman-numeral` dry run to Gate 7.*
+
+### Closed
+
+| Issue | Done | What it settled for the open work |
+|---|---|---|
+| **#49** `docs(repo): restructure into README (user) + dev-docs/ (developer)` | 2026-09-23 (`13c4f7c`) | Every later doc edit lands in the final structure. |
+| **#55** `fix(skill): a same-named command suppresses the implement-feature SKILL.md body` | 2026-09-24 (`2d4f1c6`) | The eval load path runs the real `SKILL.md` — #50's premise. |
+| **#56** `fix(guard-hook): a bare, un-namespaced skill id bypasses explicit-entry` | 2026-09-24 (`e7d8b6b`) | Explicit-entry is enforced for both skill-id spellings. |
+| **#50** `feat(repo): verification ladder + eval seed suite + release-verify hook` | 2026-09-24 (`6553a6a`) | T1/T2/T3 ladder + eval corpus: the quality signal for every later issue. |
+| **#59** `chore(repo): bump the dev container claude so the eval gate can run on claude-opus-5-5` | 2026-09-25 (`35857b0`) | Container claude 2.1.281; first opus-5-5 baseline 5/7 (the gap is #58). |
+| **#57** `test(repo): automate the 8-cell entry-point contract` | 2026-09-25 (`9f0bed7`) | `verify-entry-points.py`, 16/16 green; the #55 bug class is still live, so the check stays. |
+| **#60** `docs(repo): audit repo + open issues for staleness; simplify developer-guide` | 2026-09-25 (`ab24d4c`) | Docs and open issues current; filed #61, #62, #63; moved #58 into beta.3. |
 
 ## Next release — `1.0.0` (GA)
 
@@ -122,17 +98,20 @@ section becomes the current release.
    edits load live or need a reinstall, which the remaining issues' verification depends on.*
 2. **#62** — `feat(skill): simplify SKILL.md prose for a cold reader, verified by the eval suite`
    *After #58 (beta.3) — same prose, same eval proof; land the behavior fix before the rewrite.*
-3. **#43** — `fix(guard-hook): bash_write_targets misreads scratch writes as product-tree writes`
+3. **#63** — `chore(skill): re-evaluate the dated reviewer pin claude-opus-4-8`
+   *After #62 — both touch SKILL.md's model table. GA should not ship a reviewer pin that was never
+   re-checked against the current Opus; the decision is recorded in ADR-2.*
+4. **#43** — `fix(guard-hook): bash_write_targets misreads scratch writes as product-tree writes`
    *Self-contained, unit-testable on the host, and it removes the false denials that make the
    other issues harder to verify in a dry run.*
-4. **#44** — `feat(gate-7): pre-configure [tool.mutmut] in the python-starter fixtures`
+5. **#44** — `feat(gate-7): pre-configure [tool.mutmut] in the python-starter fixtures`
    *After #43 — its verification is a clean Gate 7 mutmut run, which #43 stops the guard from blocking.*
-5. **#37** — `feat(skill): add a mechanical pytest.raises match= check at gates 3 and 4`
+6. **#37** — `feat(skill): add a mechanical pytest.raises match= check at gates 3 and 4`
    *After #43/#44 — proving it needs a Gate 7 run that isn't drowning in mutmut-setup noise.*
-6. **#19** — `feat(toolchain): add a setup command that installs the pinned toolchain`
+7. **#19** — `feat(toolchain): add a setup command that installs the pinned toolchain`
    *A new command with a **blocking Open Question** (the command's name) that must be answered
    before work starts.*
-7. **#21** — `feat(toolchain): add a clean-run harness that rebuilds the dev container per dry run`
+8. **#21** — `feat(toolchain): add a clean-run harness that rebuilds the dev container per dry run`
    *Last: automates the exact clean-boot verification loop the other issues rely on, so it
    should land once the boot path (#45) and the changes it will exercise (#43/#44/#37/#19) exist.*
 
@@ -153,9 +132,9 @@ Work happens **one issue per fresh session**.
    Goal / Constraints / Instructions and get confirmation before writing anything.
 3. Plan → get approval → phased execution. **Commit per logical unit; keep git history.**
 4. Behavior lives in **Markdown** (`SKILL.md`, `agents/*.md`, `references/*`, `hooks.json`); the only
-   real code is `guard.py` and `analyzer/`. Changing a gate's model/effort/tools = edit the matching
-   `agents/*.md` frontmatter. Changing what an agent may read/write = update **both** the agent's prose
-   inbox **and** `guard.py` (defense-in-depth).
+   real code is `guard.py` + `policy.py` and `analyzer/` + `agentdefs.py`. Changing a gate's
+   model/effort/tools = edit the matching `agents/*.md` frontmatter. Changing what an agent may
+   read/write = update **both** the agent's prose inbox **and** `policy.py`.
 5. **"Done" ≠ "the change exists."** Done = a **green end-to-end dry run in the dev container**
    (`DEVCONTAINER.md`). Host unit tests: `python3 -m pytest sdlc-lite-plugin -q`.
 6. **Never commit before human approval.**
