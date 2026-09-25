@@ -214,6 +214,25 @@ devcontainer exec --workspace-folder . python3 /workspaces/sdlc-lite/verify-entr
 Run it after editing a skill's frontmatter/`description`, adding or renaming a command or skill,
 changing the guard's `Skill` rule, or bumping the container's Claude Code version. Exit non-zero = a red cell.
 
+Verdicts are transcript signatures, never a model judgment:
+
+| # | Typed | Session | Green when the transcript shows |
+|---|---|---|---|
+| 1 | `/implement-feature` | headless | `Base directory for this skill`, no shim text |
+| 2 | `/sdlc-lite:implement-feature` | headless | same |
+| 3 | `/implement-feature` | `--interactive` | same |
+| 4 | `/sdlc-lite:implement-feature` | `--interactive` | same |
+| 5 | natural phrasing | headless | skill body never injected |
+| 6 | natural phrasing | `--interactive` | skill body never injected |
+| 7 | "invoke the Skill tool" | headless | a `Skill` call **and** the guard's explicit-entry denial |
+| 8 | "invoke the Skill tool" | `--interactive` | same |
+
+- Cells 5–6 test the as-shipped stack.
+- Cells 7–8 test the guard alone: they use a copy with a neutral skill `description` (the real one
+  makes the model refuse the call, so the guard goes unexercised).
+- Proven red (claude 2.1.281): restoring the #55 shim reds cells 2 and 4; dropping `Skill` from the
+  guard matcher reds 7–8.
+
 ---
 
 ## VS Code — Command Palette (⇧⌘P / Cmd-Shift-P)
