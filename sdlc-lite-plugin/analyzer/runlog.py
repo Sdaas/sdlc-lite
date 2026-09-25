@@ -261,7 +261,7 @@ def _denied_writes(act: AgentActivity, handoff_dir: str, rule: str) -> list[str]
 
 def _run_isolation_checks(agents: dict[str, AgentActivity],
                           handoff_dir: str) -> list[IsolationCheck]:
-    """The four detective verdicts, derived purely from per-agent activity + the policy
+    """The five detective verdicts, derived purely from per-agent activity + the policy
     SSOT. Each verdict asks policy.decide() (or, for secrets, the tool-split predicate) the
     SAME question the guard asked at runtime — so the report can never pass a run the guard
     would have blocked, nor fail one it correctly allowed."""

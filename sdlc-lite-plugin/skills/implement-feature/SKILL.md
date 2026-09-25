@@ -120,7 +120,8 @@ Two records, plus a hard guard, run alongside every gate:
 2. **Guard hook audit (automatic).** The plugin ships a **PreToolUse hook**
    (`hooks/hooks.json` → `hooks/scripts/guard.py`) that fires for the conductor **and
    every subagent**, appending `{ts, agent_type, agent_id, tool, target}` for every
-   Read/Bash/Grep/Glob — a tamper-evident record of exactly what each agent read. The
+   Read/Bash/Grep/Glob/Edit/Write/NotebookEdit/Task/Agent/Skill call — a tamper-evident
+   record of exactly what each agent read and wrote. The
    hook finds the run-log via the `.active-run` pointer the conductor writes at Gate 0.
 3. **Guard hook enforcement (automatic, verified).** The same hook **denies**:
    - reading `.env` / keys / credentials / ssh keys — for **any** agent (security
@@ -130,9 +131,12 @@ Two records, plus a hard guard, run alongside every gate:
    - reading anything under `handoff/draft/` — for **any subagent** (unapproved drafts
      never reach an isolated gate);
    - Edit/Write to any **test file** — for the **implementer** only (test-integrity: it
-     must pass the tests, not change them); and
-   - any write outside its `handoff/` outbox + a scratch dir — for the **test-reviewer**
-     (it must not mutate the product tree / build a reference implementation).
+     must pass the tests, not change them);
+   - any write outside its `handoff/` outbox + a scratch dir — for the **test-reviewer**,
+     **verifier** and **code-reviewer** (read-only critics must not mutate the product tree /
+     build a reference implementation); and
+   - a `Skill` tool call to this plugin's own skills — for **any** agent (explicit-entry:
+     `/implement-feature` runs only when a human types it).
    Each is defense-in-depth with the agents' own role instructions. (The guard does **not**
    model-enforce a dispatch: pinned gates dispatch bare and the honored frontmatter pin governs;
    the receipt verifies the actual model after the fact — #22/#36.)

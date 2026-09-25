@@ -12,15 +12,18 @@ whole workflow is expressed in Markdown, and the agent is the runtime.
 
 What that buys you:
 
-- Tests are written by an *algorithm-blind* subagent, reviewed by an independent critic *before* any code exists, and the implementer is *barred from editing them*.
-- Design and every review gate run on a higher model than implementation
-- A separate verifier drives the *real* feature against every
-  acceptance criterion and exercises every external boundary un-mocked.
+- Tests are written by an *algorithm-blind* subagent and reviewed by an independent critic *before*
+  any code exists. The implementer is *barred from editing them*.
+- Design and every review gate run on a higher model than implementation.
+- A separate verifier drives the *real* feature against every acceptance criterion and exercises
+  every external boundary un-mocked.
 - Nothing is committed until you review the real artifacts and approve.
-- Every gate is *isolated* (it reads only the files
-  curated for its role) and runs at a *pinned model/effort*. 
-- After each run a deterministic audit produces a **receipt** that verifies both from the ground-truth session transcript — turning "we
-  isolate and we bound the reasoning budget" from a claim into a per-run, checkable fact. The model, effort, and isolation are all **verified** by the receipt from the transcript, with **best-effort real-time prevention** by the guard (isolation).
+- Every gate is *isolated* (it reads only the files curated for its role) and runs at a *pinned
+  model/effort*. A guard hook blocks isolation breaches as they happen (best-effort for shell
+  commands).
+- After each run, a deterministic audit reads the session transcript and produces a **receipt**
+  showing which model and effort each gate actually used and what each one saw. A violation marks
+  the run untrusted.
 
 ---
 
@@ -114,18 +117,20 @@ commands in** (use a virtualenv for your project):
 
 The plugin ships the pinned list at
 `sdlc-lite-plugin/toolchain/requirements-dev.txt`. Install it into your project's environment,
-either from the file (after `claude plugin install`, it lives under your Claude Code plugins cache) or
-by name:
+either from the file (after `claude plugin install`, it lives under your Claude Code plugins cache,
+in a directory named for the installed version) or by name:
 
 ```bash
-# from the pinned file (path is under your plugins cache after install):
-pip install -r ~/.claude/plugins/**/sdlc-lite-plugin/toolchain/requirements-dev.txt
+# from the pinned file (<version> = the installed version, e.g. 1.0.0-beta.2;
+# `ls ~/.claude/plugins/cache/sdaas/sdlc-lite/` shows it):
+pip install -r ~/.claude/plugins/cache/sdaas/sdlc-lite/<version>/toolchain/requirements-dev.txt
 
 # or simply, by name (the pinned floors):
 pip install ruff mypy pytest pytest-cov mutmut hypothesis pytest-asyncio
 ```
 
-> **Auto-installing the toolchain is a v1.1 backlog item.** For v1, this manual step is expected.
+> **Auto-installing the toolchain is planned for `1.0.0`**
+> ([#19](https://github.com/Sdaas/sdlc-lite/issues/19)). Until then, this manual step is expected.
 
 ### 3. Grant the plugin directory a one-time read permission
 
@@ -197,9 +202,7 @@ of the commit. Browse `handoff/` top-to-bottom (files are numbered in read order
 
 **"Preflight failed — `<tool>` not found."**
 A required tool isn't importable in the active environment. Install the toolchain (above) into the same
-Python environment Claude Code runs commands in, then re-run. *(The message mentions rebuilding a dev
-container — that's how the plugin's authors run it; on your own machine the equivalent is just having
-the toolchain installed on PATH.)*
+Python environment Claude Code runs commands in, then re-run.
 
 **"`<pkg>` is not importable — a src-layout package that isn't installed."**
 Your source package isn't on `sys.path`, so the test suite would go *falsely* red and could never reach
@@ -240,7 +243,7 @@ No. The implementer subagent is blocked (by a guard hook, by its role instructio
 code review) from editing any test file. The tests are the approved, independently-reviewed contract.
 
 **What languages does it support?**
-Python only, in v1.
+Python only.
 
 **Does it need the dev container?**
 No — the container is how the plugin's authors test it (see the Developer Guide, linked below).
@@ -301,19 +304,11 @@ This repo's root `.claude-plugin/marketplace.json` is the **dev** catalog
 
 ---
 
-## Requirements at a glance
-
-- **Claude Code** (the CLI, desktop, or IDE extension).
-- **Python 3.12+** on the target repo.
-- The pinned dev toolchain (`ruff`, `mypy`, `pytest`, `pytest-cov`, `mutmut`, `hypothesis`,
-  `pytest-asyncio`) installed into the target repo's environment — see Prerequisites above.
-  Gate 0 hard-fails if any tool is missing, so nothing runs on a broken environment.
-
 ## Status
 
-`sdlc-lite` is **v1**: it has been run end-to-end against real Python features (a duration
-parser, a slugifier, and an async cached JSON fetcher), including a fault-injection pass, inside the
-dev container. See the [Developer Guide](dev-docs/developer-guide.md) for the testing methodology and the
+`sdlc-lite` is at **`1.0.0-beta.2`** — 1.0-quality, being validated before GA. It has been run
+end-to-end against real Python features (a duration parser, a slugifier, and an async cached JSON
+fetcher), including a fault-injection pass, inside the dev container. See the [Developer Guide](dev-docs/developer-guide.md) for the testing methodology and the
 recorded design decisions.
 
 ---

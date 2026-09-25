@@ -2,12 +2,6 @@
 
 How this repo is versioned, how issues are triaged, and how a release is cut and consumed.
 
-> **Status (2026-09-18):** the conventions **and** the procedure (§4) below are settled and in force
-> *now*, proven by **[#41 — release engineering](../../issues/41)**: `1.0.0-beta.1` was cut with
-> `release.sh` and verified by an automated clean-room run (`release-verify.sh`, 17/17 — GitHub
-> git-subdir install + Gate 0/Gate 1 + a `/plugin update` bump, from an isolated config). ADR-13 (Developer Guide §6) carries the
-> durable rationale.
-
 ---
 
 ## 1. Versioning scheme
@@ -87,18 +81,11 @@ What it does (each push is confirmation-gated):
    `ref`/`sha` to the new tag; commit. (Without `--umbrella` it prints the exact manual edit.)
 5. **Push both repos** (confirmation-gated), then print the clean-room verify handoff.
 
-Then **verify (the gate)** with `release-verify.sh` (§below), and confirm the milestone's issues are
-closed or explicitly punted before announcing the release.
-
-**The verify gate — `release-verify.sh`.** Automated clean-room check from an isolated
-`CLAUDE_CONFIG_DIR` (no dev marketplace, no cached plugins): `marketplace add Sdaas/claude-plugins`
-→ `install sdlc-lite@sdaas` → assert a genuine GitHub git-subdir clone at the tag, cached version
-`<version>` → headless Gate 0 preflight-pass + Gate 1 interview (authed from `.env`'s
-`CLAUDE_CODE_OAUTH_TOKEN`; see `.env.example`) → a `/plugin update` proof (installs the previous
-release from an old-pinned catalog, then `marketplace update` + `plugin update` must reach
-`<version>`) → the milestone eval suite, every case ≥ 0.8 (T1 of
-[`verification-ladder.md`](verification-ladder.md)). The full human-driven `/implement-feature` run to green+commit is the final
-belt-and-suspenders check (see the [README](../README.md)).
+Then **verify (the gate)** with `./release-verify.sh` — the automated clean-room install, Gate 0/1
+smoke, `/plugin update` proof and milestone eval suite, described in
+[`verification-ladder.md`](verification-ladder.md) §8 — and confirm the milestone's issues are closed
+or explicitly punted before announcing the release. The full human-driven `/implement-feature` run
+to green + commit is the final belt-and-suspenders check.
 
 ## 5. Consuming a release (customer)
 

@@ -17,17 +17,18 @@ Four things nest together, smallest to biggest:
 - **Skill** — a folder whose heart is `SKILL.md` (a `name` + `description` + plain-English
   instructions). A reusable *instruction packet* / "playbook." It contains guidance, not running code.
   A skill can **auto-activate** when its `description` matches the situation.
-- **Slash command** — a user-triggered entry point (`/implement-feature`). *You* press the button on
-  purpose. A command is usually a thin file that says "load this skill / run this workflow."
+- **Slash command** — a user-triggered entry point (`/greet`). *You* press the button on purpose. A
+  command file under `commands/` holds its own instructions. A skill also registers a slash command
+  under its own name, so a skill needs no command file — and must not have a same-named one (see §6).
 - **Subagent** — a separate Claude instance given a focused job. It runs in its **own fresh context
   window**, does the work, and returns only a result. Keeps the orchestrator's context clean and
   enables specialized, isolated work.
 - **Plugin** — the distributable **package** bundling skills + commands + subagents + a manifest. How
   you install and share.
 
-**Nesting:** plugin ⊃ (commands + skills + subagents); a command kicks off a skill; a skill may
-delegate to subagents. **Key distinction:** a skill can *auto-activate* by description; a command is
-*deliberate* invocation.
+**Nesting:** plugin ⊃ (commands + skills + subagents); a human starts a command or a skill with a
+slash command; a skill may delegate to subagents. **Key distinction:** a skill can *auto-activate* by
+description; a command is *deliberate* invocation.
 
 ---
 
@@ -118,9 +119,10 @@ my-plugin/
 
 ## 6. The runnable example: `toy-greet`
 
-`toy-greet-plugin/` is a minimal, two-file plugin — the whole workflow lives *inside the command file*
-(short workflows can; long ones belong in a skill with a thin command caller, which is what the real
-product does):
+`toy-greet-plugin/` is a minimal, two-file plugin — the whole workflow lives *inside the command file*.
+Short workflows can do that; long ones belong in a skill. The real product is a skill,
+`skills/implement-feature/SKILL.md`, with **no** `commands/implement-feature.md`: a same-named command
+file shadows the skill, and `SKILL.md` never loads (ADR-14 in the Developer Guide). The toy's layout:
 
 ```
 toy-greet-plugin/
@@ -228,19 +230,22 @@ were *wrong*:
 4. **Effort is frontmatter-only** — pin it in the agent-def; there's no spawn-time override.
 5. **A worktree does not hide files** — `isolation: worktree` is a full branch copy. To keep a file
    from an agent, keep it out of the agent's lane (the fence) or deny it in the hook.
-6. **Don't rely on parsing the transcript** for anything critical — its format is internal/unstable.
-   The hook audit log is the dependable record; use the transcript only as a best-effort source for
-   model/token figures.
+6. **The transcript is ground truth, but its format is internal/unstable.** It is the only record of
+   what an agent actually *saw* (tool output) and which model/effort it actually ran on, so the
+   analyzer relies on it for exactly those claims — and when the format drifts it fails loud or
+   reports UNKNOWN, never a silent PASS. The hook audit log is the stable record of *attempts*.
 
 ### How `implement-feature` enforces isolation (the guard hook)
 
 A single **plugin-shipped PreToolUse hook** (`hooks/hooks.json` → `hooks/scripts/guard.py`) does the
-cross-cutting work on every `Read`/`Bash`/`Grep`/`Glob`/`Edit`/`Write`/`NotebookEdit`, from the
-conductor *and* every subagent. It keys on the `agent_type` on stdin and: (a) **audits** every call to
-a run-log; (b) denies **secrets** for all agents; (c) denies the **test-writer** reading the internal
-design (algorithm-blind); (d) denies **any subagent** reading under `handoff/draft/`
-(draft-confinement); (e) denies the **implementer** editing any test file (it must pass the tests, not
-change them). A `deny` + exit code 2 hard-blocks the call. This is **defense-in-depth** with the
+cross-cutting work on every `Read`/`Bash`/`Grep`/`Glob`/`Edit`/`Write`/`NotebookEdit`/`Task`/`Agent`/
+`Skill` call, from the conductor *and* every subagent. It keys on the `agent_type` on stdin and:
+(a) **audits** every call to a run-log; (b) denies **secrets** for all agents; (c) denies the
+**test-writer** reading the internal design (algorithm-blind); (d) denies **any subagent** reading
+under `handoff/draft/` (draft-confinement); (e) denies the **implementer** editing any test file (it
+must pass the tests, not change them); (f) confines the **test-reviewer**, **verifier** and
+**code-reviewer** writes to their outbox + a scratch dir; (g) denies any `Skill` call to the plugin's
+own skills (explicit-entry). A `deny` + exit code 2 hard-blocks the call. This is **defense-in-depth** with the
 agents' own role instructions — in testing, the test-writer refused on its own *before* the hook even
 fired.
 
@@ -248,8 +253,11 @@ fired.
 
 Enforcing isolation *preventively* (the guard hook) is only half the story; you also want to *prove*
 after the fact what each agent did. The `analyzer/` reads the two evidence sources a run leaves behind —
-the guard's audit log (stable, load-bearing) and the session transcript (best-effort, for model/tokens)
-— and reports the per-gate model split + an isolation-compliance pass/fail. Crucially it is
+the guard's audit log (stable; records what each agent *attempted*) and the session transcript
+(unstable format, but the only proof of what each agent actually *saw* and which model/effort it
+ran on) — and reports a per-agent receipt: model/effort vs the pins, and isolation pass/fail. The
+transcript's content audit is the **authoritative** isolation check, because it catches a leak the
+guard's command-string view cannot see (developer guide, ADR-11). Crucially it is
 **deterministic Python that only reads**, never a summarizer subagent: "did the forbidden read happen?"
 is a grep-and-count fact, and making the analyzer an agent would inject a second AI acting inside the
 system — re-introducing the very "driver" the workflow avoids. **Code is allowed when it measures or

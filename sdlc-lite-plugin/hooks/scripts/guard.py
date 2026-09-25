@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """PreToolUse guard hook for /implement-feature.
 
-Does two jobs on every Read/Bash/Grep/Glob/Edit/Write/NotebookEdit (conductor AND every
-subagent): AUDIT (append one JSONL line per tool call) and ENFORCE (deny unauthorized
-access). The deny decision is computed FIRST so the audit line can record it truthfully;
+Does two jobs on every Read/Bash/Grep/Glob/Edit/Write/NotebookEdit/Task/Agent/Skill call
+(conductor AND every subagent): AUDIT (append one JSONL line per tool call) and ENFORCE
+(deny unauthorized access). The deny decision is computed FIRST so the audit line can record it truthfully;
 the audit still logs every call regardless of the decision.
 
   1. AUDIT  — append one JSONL line per tool call (agent_id/agent_type/tool/target +
@@ -180,7 +180,7 @@ def _bash_deny_reason(agent_type: str, command: str, handoff: str) -> str | None
                     "secrets/.env file's contents.")
 
     # (b) READ invariants that the command string exposes literally. A wildcard read that
-    #     could resolve to design-internal is handled by the R6 ban (added next commit).
+    #     could resolve to design-internal is handled by the R6 ban below.
     if "test-writer" in agent_type and policy.is_design_internal(command):
         return (_DENY_PREFIX + "the test-writer is algorithm-blind and must not read "
                 "design-internal.md.")
