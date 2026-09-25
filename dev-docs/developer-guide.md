@@ -1,115 +1,97 @@
-# Developer Guide — architecture, decisions, and how to work on the plugin
+# Developer Guide — how to change the plugin
 
-This guide is for someone improving `implement-feature`. It covers the architecture, the real code
-(the guard hook and the analyzer), the decisions behind them (ADRs), the design principles, and the
-testing method. To *run* the plugin, read the [README](../README.md). For the underlying concepts,
-start with the [Tutorial](tutorial.md). For versioning, issue triage, and releases, see
-[`RELEASING.md`](RELEASING.md).
+The hub for someone changing `sdlc-lite`. New here? Read [`jumpstart.md`](jumpstart.md) first.
+To *run* the plugin, see the [README](../README.md).
 
 ---
 
-## 0. Recommended reading order
+## 1. Where things are explained
 
-Read §1 and §2 first. Read §6 (ADRs) before you propose a structural change. Read §8, §9 and §10
-(this repo's own slash commands) when you are ready to make a change. The other sections are
-reference.
-
----
-
-## 1–5. Architecture
-
-Moved to [`architecture.md`](architecture.md): gates, handoff, model pins, guard hook, analyzer.
-
----
-
-## 6. Architecture decision records (ADRs)
-
-Moved to [`adr/`](adr/README.md): one file per ADR, with a one-line index.
+| I want to understand… | Read |
+|---|---|
+| The repo, one run end to end, key components | [`jumpstart.md`](jumpstart.md) |
+| Concepts (plugin, skill, subagent isolation) | [`tutorial.md`](tutorial.md) |
+| Gates, handoff, model pins, guard rules, analyzer | [`architecture.md`](architecture.md) |
+| *Why* a part is shaped this way | [`adr/`](adr/README.md) |
+| How much proof a change needs | [`verification-ladder.md`](verification-ladder.md) |
+| Writing an eval case | [`eval-tutorial.md`](eval-tutorial.md) |
+| Container, auth, entry-point check | [`DEVCONTAINER.md`](DEVCONTAINER.md) |
+| Dry-run fixtures | [`test-fixtures/README.md`](../test-fixtures/README.md) |
+| Channels, releases, issue triage | [`RELEASING.md`](RELEASING.md) |
+| Evidence behind decisions | [`findings/`](findings/) |
 
 ---
 
-## 7. Design principles (distilled)
+## 2. Change X → edit Y → verify with Z
 
-The load-bearing principles for anyone changing the plugin.
+Paths are under `sdlc-lite-plugin/`. Tiers: T1 = eval, T2 = pytest, T3 = container dry run
+([ladder](verification-ladder.md) §3).
 
-**Skills & workflow**
-- **Trigger-oriented descriptions.** A skill's `description` decides when it activates. Write it about
-  situations and phrasings, not just what the skill is.
-- **One name, one surface; explicit entry (ADR-14).** A command never shares a skill's name, and this
-  plugin's skills run only when a human types the slash command.
-- **Driverless workflow.** The skill body is an ordered English script; numbered gates, machine
-  conditions and "repeat until" loops replace orchestration code.
-- **Gate = approval checkpoint.** The approver is a human (STOP-until-APPROVED, worded imperatively) or
-  a machine-checkable condition ("until all tests pass"). Choose per phase.
-- **Bound every automated loop** and surface to the human on no progress.
+| Change | Edit | Also update | Verify |
+|---|---|---|---|
+| Gate wording, templates | `skills/implement-feature/SKILL.md`, `references/*-template.md` | — | T1 |
+| Gate behavior (routing, loops, STOPs) | `SKILL.md` | [`architecture.md`](architecture.md) §2 if gates/loops change | T1 + T3 |
+| "Green" or a threshold | `references/quality-standards.md` (only there) | — | T1 |
+| A gate's model / effort / tools | `agents/<role>.md` frontmatter (effort is frontmatter-only) | [`architecture.md`](architecture.md) §2, §4 | T1 + T2, receipt on T3 |
+| Bump the dated reviewer pin | `agents/test-reviewer.md`, `agents/code-reviewer.md` | ADR-2, architecture §2/§4 | T3 + receipt shows the exact id (#63) |
+| What an agent may read / write | the agent's prose inbox **and** `policy.py` | [`architecture.md`](architecture.md) §3 inbox table, §5 rules | T2 (`tests/test_policy.py`) + T1 |
+| A new guard rule | `policy.py` (+ `hooks/scripts/guard.py` / `hooks.json` matcher for a new tool) | architecture §5 rules table | T2 (+ T3 if `hooks.json`) |
+| Add or rename a skill / command | `skills/<x>/` — **never** a `commands/<x>.md` of the same name (ADR-14) | `policy.PLUGIN_SKILL_NAMES` | T2 (`tests/test_entry_points.py`) + `verify-entry-points.py` |
+| Analyzer logic | `analyzer/*.py` | [`analyzer/README.md`](../sdlc-lite-plugin/analyzer/README.md) | T2 |
+| Transcript format drifted | `analyzer/transcript.py` | [`TRANSCRIPT-FORMAT.md`](../sdlc-lite-plugin/analyzer/TRANSCRIPT-FORMAT.md) | T2 + a T3 run |
+| A structural decision | new `adr/ADR-NN-slug.md` | row in [`adr/README.md`](adr/README.md) | review |
+| Docs only | the doc | — | `./release-verify.sh --links-only` |
+
+**Always:** runtime behavior is verified in a container run, not taken from docs. The transcript and
+the guard's run-log are ground truth.
+
+---
+
+## 3. Review checklist
+
+Check a change against these before approving it.
+
+**Workflow prose**
+- [ ] Skill `description` names trigger situations and says explicit-entry only (ADR-14).
+- [ ] No `commands/<x>.md` shares a name with `skills/<x>/` (ADR-14).
+- [ ] Every gate has an approver: a human STOP-until-APPROVED (imperative wording) or a
+      machine-checkable condition.
+- [ ] Every automated loop is bounded and surfaces to the human on no progress.
+- [ ] Interview changes keep minimal-scope-first (ADR-9).
 
 **Subagents & handoff**
-- **Context-as-files handoff.** Each gate reads a defined inbox and writes a defined outbox as files.
-  Files are durable, and they let you choose what an agent sees.
-- **Asymmetric inboxes** — blind the producer (test-writer), inform the critic (test-reviewer).
-- **Standards live in one file, not in each brief.** Briefs load `quality-standards.md`; to raise the
-  bar, edit that file. Per-feature numbers (coverage/mutation) live in the test plan; universal
-  commands and the definition of "green" live in `quality-standards.md`.
-- **Anchored defaults beat free choice.** Ship a documented anchor (mutation kill-rate 80%) and require
-  a justification to deviate, surfaced at approval. An agent given a metric with no anchor drifts.
+- [ ] Context passes as files with a defined inbox/outbox, never a prior transcript.
+- [ ] Producer blind, critic informed (ADR-3).
+- [ ] Briefs load `quality-standards.md`; no standard is copied into a brief.
+- [ ] Any metric ships with an anchored default (e.g. mutation kill-rate 80%); deviating needs a
+      justification surfaced at approval.
 
 **Quality gating**
-- **Split checks by speed.** Fast checks (`ruff` + `mypy` + `pytest`) define the implementer's
-  inner-loop "green"; slow checks (`pytest-cov` + `mutmut`) gate CODE-REVIEW.
-- **Situational checks are boundary-driven.** Concurrency testing is required only when the boundary
-  inventory shows the feature is concurrent/async; otherwise it is skipped with a stated reason.
-- **VERIFY ≠ green tests.** Drive the real feature on each AC and exercise every boundary un-mocked; a
-  mocked test only proves the mock. Unit-green is the inner loop (IMPLEMENT); observed behavior is the
-  outer loop (VERIFY, a fresh read-only agent).
-- **Mutation grades tests after the fact.** A surviving mutant is an injected bug no test caught, so
-  mutation at CODE-REVIEW scores the test-writer and test-reviewer.
-- **A critic may probe, never implement.** A reviewer may write tiny throwaway probes but must not
-  build a reference implementation. Empirical mutation belongs at CODE-REVIEW, against the real code.
-- **Don't let the producer grade its own homework.** When an agent's acceptance criteria live in
-  files it could edit (the implementer and the tests), deny it write access to them by role.
+- [ ] Fast checks (`ruff`, `mypy`, `pytest`) = implementer's green; slow checks (`pytest-cov`,
+      `mutmut`) gate CODE-REVIEW.
+- [ ] Situational checks (e.g. concurrency) run only when the boundary inventory calls for them;
+      otherwise skipped with a stated reason.
+- [ ] VERIFY drives the real code un-mocked; unit-green is not "done".
+- [ ] Network boundary → at least one transport-level fault test
+      ([finding](findings/dry-run-fault-injection-findings.md)).
+- [ ] A critic may probe, never build a reference implementation.
+- [ ] No agent can edit the files its own acceptance depends on.
 
 **Enforcement & observability**
-- **Defense-in-depth** — role instruction *and* hook.
-- **Ship reliability-critical config with the plugin**, not project settings (headless-fire).
-- **Verify runtime behavior; don't trust docs or config.** Model, tool blocks, hook firing and agent
-  naming were all confirmed empirically. The docs were wrong on plugin-agent naming (it is namespaced,
-  `plugin:agent`) and unsure on headless hooks.
-- **Attribute every tool call** via `agent_type`/`agent_id`, for per-agent rules and a trustworthy
-  audit.
+- [ ] A prose rule the guard should enforce has a `policy.py` rule **and** a T2 test.
+- [ ] Reliability-critical config ships in the plugin, not project settings (ADR-1).
+- [ ] Every tool call stays attributable via `agent_type` / `agent_id`.
+- [ ] Measurement fails loud; no evidence = UNKNOWN, never PASS (ADR-5, ADR-11).
+- [ ] Design and every review run on a higher model than implementation (ADR-2).
+- [ ] Nothing commits before human approval, and never on the default branch (ADR-7).
 
 ---
 
-## 8. Testing & dry-run methodology
+## 4. Repo-local skills
 
-- Tiers and release gate: [`verification-ladder.md`](verification-ladder.md).
-- Container, auth, entry-point check, reading run files: [`DEVCONTAINER.md`](DEVCONTAINER.md).
-- Fixtures and how to run one: [`test-fixtures/README.md`](../test-fixtures/README.md).
-- Dry-run history and the transport-fault rule: [finding](findings/dry-run-fault-injection-findings.md).
-
----
-
-## 9. When you edit the product
-
-- **Behavior lives in Markdown** — `SKILL.md`, `agents/*.md`, `references/*`, `hooks.json`. Editing the
-  workflow means editing these, not writing code.
-- **Change a gate's model/effort/tools** → edit the matching `agents/*.md` frontmatter (effort is
-  frontmatter-only).
-- **Change what an agent may read/write** → update *both* the agent's prose inbox **and** `policy.py`
-  (defense-in-depth). `guard.py` and the analyzer both import it, so there is nothing to mirror.
-- **Change "green" or a threshold policy** → edit `references/quality-standards.md` (the single source
-  of truth), not individual briefs.
-- **Verify before you rely on runtime behavior** — do a container dry run; the transcript and the
-  guard's audit log are your ground truth.
-
----
-
-## 10. Repo-local skills (for working on this repo)
-
-This repo carries its own slash commands in `.claude/skills/`. They are **not** part of the shipped
-plugin — they load only when you run Claude Code from this repo's root, and only a human can start
-them (type the command; the model never invokes them). All share one process,
-[`.claude/sdlc/gates.md`](../.claude/sdlc/gates.md); why this repo needs its own rather than using
-`sdlc-lite` on itself: [`verification-ladder.md`](verification-ladder.md) §6.
+Slash commands for working on **this repo**, in `.claude/skills/`. Not shipped. Human-typed only.
+Shared process: [`.claude/sdlc/gates.md`](../.claude/sdlc/gates.md). Why not use `sdlc-lite` on
+itself: [`verification-ladder.md`](verification-ladder.md) §6.
 
 | Command | What it does | Status |
 |---|---|---|
