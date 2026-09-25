@@ -143,8 +143,8 @@ Two records, plus a hard guard, run alongside every gate:
 
 The deterministic analyzer reads the hook audit (stable source of reads) and cross-checks
 the session transcript for per-agent **model + token** figures. See the project's
-**Developer Guide** (`dev-docs/developer-guide.md` → the guard hook, the analyzer, and the
-isolation ADR) for the validation of all of the above.
+dev docs (`dev-docs/architecture.md` → the guard hook and the analyzer; `dev-docs/adr/` → the
+isolation ADRs) for the validation of all of the above.
 
 ---
 

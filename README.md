@@ -278,7 +278,9 @@ README.md                      # this file — install + run, for a user of the 
 CLAUDE.md                      # guidance for Claude Code working in this repo
 dev-docs/
   README.md                    # audience + findings-vs-proposals split
-  developer-guide.md           # understand / extend it
+  developer-guide.md           # hub: how to change the plugin
+  architecture.md              # how it works inside
+  adr/                         # why: architecture decision records
   tutorial.md                  # learn the underlying concepts
   RELEASING.md                 # versioning, issue triage, release procedure
   DEVCONTAINER.md              # the dev-container test harness
@@ -308,8 +310,8 @@ This repo's root `.claude-plugin/marketplace.json` is the **dev** catalog
 
 `sdlc-lite` is at **`1.0.0-beta.2`** — 1.0-quality, being validated before GA. It has been run
 end-to-end against real Python features (a duration parser, a slugifier, and an async cached JSON
-fetcher), including a fault-injection pass, inside the dev container. See the [Developer Guide](dev-docs/developer-guide.md) for the testing methodology and the
-recorded design decisions.
+fetcher), including a fault-injection pass, inside the dev container. See the [verification ladder](dev-docs/verification-ladder.md) for the testing methodology and
+[`dev-docs/adr/`](dev-docs/adr/README.md) for the recorded design decisions.
 
 ---
 Built by Soumendra Daas. Licensed MIT (see `sdlc-lite-plugin/.claude-plugin/plugin.json`).

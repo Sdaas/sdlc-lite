@@ -2,7 +2,8 @@
 
 The map for a developer new to this repo: what it ships, how a run flows, where each piece lives, and
 how it's tested. It stays short on purpose. For depth, follow the links, mostly into
-[`developer-guide.md`](developer-guide.md) (the "guide" below).
+[`architecture.md`](architecture.md) (how it works), [`adr/`](adr/README.md) (why), and
+[`developer-guide.md`](developer-guide.md) (how to change it).
 
 ---
 
@@ -13,7 +14,7 @@ how it's tested. It stays short on purpose. For depth, follow the links, mostly 
 - **How:** an interview → design → test-first → review workflow with a human at the approval gates.
 - **Core idea: behavior lives in Markdown.** No Python drives the workflow. The agent reads
   `SKILL.md` and executes it.
-- **Code only enforces or measures, never orchestrates (ADR-5).** The only real code:
+- **Code only enforces or measures, never orchestrates ([ADR-5](adr/ADR-05-measure-never-orchestrate.md)).** The only real code:
 
   | Code | Job |
   |---|---|
@@ -67,16 +68,16 @@ Each gate below is a `## Gate N` section in
 | # | Gate | Runs as (model) | Writes | Guard / rule enforced here |
 |---|---|---|---|---|
 | 0 | Classify + preflight | [C] | `.active-run` lock, run-log | lock check, toolchain preflight, layout + branch confirm. **You approve** |
-| 1 | Interview | [C] | `01-requirements.md` | draft → you review the real file → promote (ADR-8). **You approve** |
+| 1 | Interview | [C] | `01-requirements.md` | draft → you review the real file → promote ([ADR-8](adr/ADR-08-draft-review-promote.md)). **You approve** |
 | 2 | Design | [C] | `02-design-interface`, `03-design-internal`, `04-test-plan` | **You approve** |
-| 3 | Write tests | [I] `test-writer` (sonnet) | tests + `05-test-intent` | **cannot read `03`** (algorithm-blind, ADR-3). Suite must go red |
+| 3 | Write tests | [I] `test-writer` (sonnet) | tests + `05-test-intent` | **cannot read `03`** (algorithm-blind, [ADR-3](adr/ADR-03-interface-internal-design-split.md)). Suite must go red |
 | 4 | Test review | [I] `test-reviewer` (opus, dated) | `06-test-review-findings` | writes only to its outbox. Loops ↔ 3 |
 | 5 | Implement | [I] `implementer` (sonnet) | code in `<code_root>` | **cannot edit tests** |
 | 6 | Verify | [I] `verifier` (sonnet) | `07-verify-report` | read-only. Drives the real code un-mocked. Loops ↔ 5 |
 | 7 | Code review | [I] `code-reviewer` (opus, dated) | `08-code-review-findings` | read-only. Tags findings `→IMPLEMENT` / `→TESTS` |
 | 8 | Review guide | [C] | — (chat) | points you at files + findings |
 | 9 | **Human review** | [C] | — | analyzer fast pass (`--no-transcript`). **You approve = ship** |
-| 10 | Commit | [C] | git commit on the feature branch | never on the default branch (ADR-7). Clears the lock |
+| 10 | Commit | [C] | git commit on the feature branch | never on the default branch ([ADR-7](adr/ADR-07-never-commit-default-branch.md)). Clears the lock |
 | 11 | Report | [C] | `run-report.md` | full analyzer pass |
 
 **What's true at every gate:**
@@ -84,28 +85,28 @@ Each gate below is a `## Gate N` section in
 - No subagent may read `handoff/draft/`.
 - Every loop is **bounded**: no progress after N rounds → it stops and asks you.
 
-**Two trees (ADR-4):**
+**Two trees ([ADR-4](adr/ADR-04-product-vs-process.md)):**
 - **Product:** code + tests, written in place on the branch.
 - **Process:** handoff files + logs under gitignored `.implement-feature/`, never committed.
 
-More detail: guide §2 (inbox/outbox table, gate table).
+More detail: [`architecture.md`](architecture.md) §2–§3 (gate table, inbox/outbox table).
 
 ---
 
 ## 4. Key components
 
 **`SKILL.md`: the score.**
-- It's the authoritative description of the workflow. The guide is only a map of it.
+- It's the authoritative description of the workflow. [`architecture.md`](architecture.md) is only a map of it.
 - "Green" and all thresholds live in `references/quality-standards.md`. Change them there, not in
   the briefs.
 
 **`agents/*.md`: casting.**
 - Frontmatter pins `model`, `effort`, `tools` / `disallowedTools`. The body is the role brief.
 - Reviewers pin a dated `claude-opus-4-8` (reproducible). Producers pin the `sonnet` alias
-  (ADR-2).
+  ([ADR-2](adr/ADR-02-dated-reviewer-pins.md)).
 - Invariant: design + reviews run on a higher model than implementation.
 
-**`policy.py` + `guard.py`: enforcement** (guide §4).
+**`policy.py` + `guard.py`: enforcement** ([`architecture.md`](architecture.md) §5).
 - `policy.py`: `POLICY` (per-role rules) and `decide()` (the single verdict function), plus path
   predicates (`is_secret_path`, `is_design_internal`, `is_draft`, …).
 - `guard.py`: `main()` reads the hook's stdin JSON, then `_deny_reason()` / `_bash_deny_reason()`
@@ -115,7 +116,7 @@ More detail: guide §2 (inbox/outbox table, gate table).
 - Bash checks are **best-effort** (string matching, not a sandbox). The analyzer's auditor covers
   the gap.
 
-**`analyzer/`: measurement** (guide §5, [`analyzer/README.md`](../sdlc-lite-plugin/analyzer/README.md)).
+**`analyzer/`: measurement** ([`architecture.md`](architecture.md) §6, [`analyzer/README.md`](../sdlc-lite-plugin/analyzer/README.md)).
 - Entry: `analyze_run.py` → `main()` / `build_report()`.
 - `runlog.py`: the guard's audit log → intent-level verdicts (blocked attempts). Load-bearing.
 - `auditor.py`: the authoritative isolation leg. It fingerprints protected files and scans
@@ -137,15 +138,15 @@ All of these were verified in real container runs. Don't trust the docs over the
 change the related code.
 
 - **Slash command ≠ Skill tool call.** Typing `/implement-feature` makes no tool call. A
-  model-initiated start does, so the guard denies it (explicit entry only, ADR-14).
+  model-initiated start does, so the guard denies it (explicit entry only, [ADR-14](adr/ADR-14-explicit-entry.md)).
 - **`commands/<x>.md` shadows `skills/<x>/`.** `SKILL.md` silently never loads
-  ([finding](findings/2026-09-23-skill-suppression-findings.md), ADR-14).
+  ([finding](findings/2026-09-23-skill-suppression-findings.md), [ADR-14](adr/ADR-14-explicit-entry.md)).
 - **Tool lists don't confine reads.** A critic with `Bash` can still write via `cat >`. Hence the
-  guard (ADR-1).
+  guard ([ADR-1](adr/ADR-01-isolation-plugin-hook.md)).
 - **Project-settings hooks didn't fire headless. Plugin hooks do,** for the conductor and every
-  subagent (ADR-1).
+  subagent ([ADR-1](adr/ADR-01-isolation-plugin-hook.md)).
 - **Inline `model` accepts aliases only,** so gates are dispatched bare. **Effort is
-  frontmatter-only** and can only be audited, never enforced (ADR-12,
+  frontmatter-only** and can only be audited, never enforced ([ADR-12](adr/ADR-12-model-effort-integrity.md),
   [finding](findings/model-pinning-findings.md)).
 - **Plugin agents are namespaced:** `sdlc-lite:test-writer`. The bare name won't resolve.
 - **The transcript format is internal and unstable,** yet it's the only ground truth for model and
@@ -192,9 +193,9 @@ Full detail: [`verification-ladder.md`](verification-ladder.md).
 
 - **Never install the plugin into the Mac's `~/.claude`.** Run it in the dev container.
 - **Never commit before human approval**, both in the product (Gate 9) and in this repo.
-- **Change a gate's model/effort/tools** → its `agents/*.md` frontmatter.
-- **Change what an agent may read/write** → its prose brief **and** `policy.py`.
-- **Two channels (ADR-13):** this repo's `.claude-plugin/marketplace.json` is **dev**. The
+- **Changing anything** → [`developer-guide.md`](developer-guide.md) §2 (what to edit, what to
+  sync, how to verify).
+- **Two channels ([ADR-13](adr/ADR-13-one-plugin-two-channels.md)):** this repo's `.claude-plugin/marketplace.json` is **dev**. The
   **release** channel is the `Sdaas/claude-plugins` repo.
 - **Issues:** type labels only. A milestone = a release, no milestone = backlog. Follow
   [`issue-template.md`](issue-template.md), or use `/issue`.
@@ -219,12 +220,13 @@ Full detail: [`verification-ladder.md`](verification-ladder.md).
 4. `references/quality-standards.md`.
 5. [`verification-ladder.md`](verification-ladder.md) → [`eval-tutorial.md`](eval-tutorial.md):
    how you'll prove the change.
-6. Guide §6 (ADRs) before any structural change.
+6. [`adr/`](adr/README.md) before any structural change; [`developer-guide.md`](developer-guide.md) §2–§3
+   for what to edit and the review checklist.
 
 **Changing enforcement or measurement code**
 1. `policy.py`: the module docstring, then `POLICY` and `decide()`.
 2. `guard.py`: `main()`, then `_deny_reason()` / `_bash_deny_reason()`.
 3. `agentdefs.py`, then `analyzer/README.md` → `analyze_run.py` → `runlog` → `auditor` →
    `transcript` → `receipt`.
-4. Guide §4–§5, and ADR-10/11/12.
+4. [`architecture.md`](architecture.md) §5–§6, and [ADR-10](adr/ADR-10-secrets-path-components.md)/[ADR-11](adr/ADR-11-intent-and-effect.md)/[ADR-12](adr/ADR-12-model-effort-integrity.md).
 5. The matching tests, then T2.

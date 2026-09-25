@@ -10,7 +10,8 @@ This file provides guidance to Claude Code when working in this repository.
 - **`README.md`** — the single user-facing doc (install, setup, run, FAQ) for a real user on their
   own machine and repo. It routes developers to `dev-docs/` in one line.
 - **`dev-docs/`** — for someone improving the plugin. See `dev-docs/README.md` for the map:
-  - `developer-guide.md` — architecture, guard hook, analyzer, ADRs, design principles, testing.
+  - `developer-guide.md` — the hub: change → edit → verify table, review checklist, repo-local skills.
+  - `architecture.md` — gates, handoff, model pins, guard rules, analyzer. `adr/` — the ADRs.
   - `tutorial.md` — concepts + subagent isolation, with `toy-greet-plugin/` as the runnable example.
   - `DEVCONTAINER.md`, `verification-ladder.md`, `RELEASING.md`, `release-plan.md`,
     `issue-template.md`; `findings/` (settled investigations) and `proposals/` (unbuilt sketches).
@@ -21,7 +22,7 @@ This file provides guidance to Claude Code when working in this repository.
 
 ## Working conventions
 - **Repo-local skills** (`.claude/skills/`, human-typed only): filing an issue → `/issue`. Shared
-  process: `.claude/sdlc/gates.md`. List + status: `dev-docs/developer-guide.md` §10.
+  process: `.claude/sdlc/gates.md`. List + status: `dev-docs/developer-guide.md` §4.
 - **Process:** plan → approve → phased execution. Commit per **logical unit**. Keep git history.
 - **Before every commit:** give the user a concise list of the key files / changes to review, and
   wait for explicit approval. Never commit before the user has reviewed and approved.
@@ -59,8 +60,8 @@ This file provides guidance to Claude Code when working in this repository.
 - **Link check:** `./release-verify.sh --links-only`. Test tiers: `dev-docs/verification-ladder.md`.
 
 ## When editing the product
-Architecture, the guard hook's rules, and the ADRs are in `dev-docs/developer-guide.md`. The hard
-rules:
+What to edit for a given change, and how to verify it: `dev-docs/developer-guide.md` §2. Architecture:
+`dev-docs/architecture.md`. ADRs: `dev-docs/adr/`. The hard rules:
 - **Behavior lives in Markdown** (`SKILL.md`, `agents/*.md`, `references/*`, `hooks.json`). The only
   real code is `guard.py` + `policy.py` (enforcement) and `analyzer/` + `agentdefs.py`
   (measurement) — code may enforce or measure, never orchestrate.
@@ -70,11 +71,7 @@ rules:
   shadows the skill and `SKILL.md` silently never loads (ADR-14, #55).
 - **This plugin's skills are explicit-entry only** — a human types the slash command; the model never
   auto-invokes them. `guard.py` denies `Skill` calls to them; the skill `description` says so too.
-- **Change a gate's model/effort/tools** → edit the matching `agents/*.md` frontmatter (effort is
-  frontmatter-only).
-- **Change what an agent may read/write** → update both the agent's prose inbox **and** `policy.py`.
-  `guard.py` and the analyzer both import `policy.py`, so there is nothing else to sync.
-- **Change "green" or a threshold** → edit `references/quality-standards.md`, not individual briefs.
+- **Agent read/write rules change in two places:** the agent's prose inbox **and** `policy.py`.
 - **Core invariants** (also in `SKILL.md` → Rules): design and every review use a higher model than
   implementation; green unit tests are not "Done" (VERIFY drives the real code un-mocked); bound every
   automated loop; **never commit before human approval**.

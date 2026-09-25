@@ -7,7 +7,7 @@ and the **execution order** (given the milestone's issues, which order to implem
 (milestones = releases); this file only adds the *ordering*, referencing each issue as
 **`#NN` + its title as a convenience copy** so a reader knows what `#NN` is without a round trip.
 Titles can drift — GitHub wins; re-check with `gh issue list --milestone "<title>" --state open`.
-Decision history lives in the issues and the ADRs (`developer-guide.md` §6);
+Decision history lives in the issues and the ADRs (`adr/`);
 release conventions live in `RELEASING.md`._
 
 _Last updated: 2026-09-25._

@@ -23,7 +23,7 @@ droppable"; that premise is FALSE on this platform (a bare-dispatch frontmatter 
 honored) and the hook BROKE the dated reviewer pins — the inline `model` lever accepts
 only family aliases {sonnet,opus,haiku,fable}, so a forced inline name could only be the
 `opus` alias, which (rank-1) overrode the dated `claude-opus-4-8` pin -> `claude-opus-5`.
-#36 reverted it. See dev-docs/findings/model-pinning-findings.md §7 and the developer-guide ADR-12.
+#36 reverted it. See dev-docs/findings/model-pinning-findings.md §7 and dev-docs/adr/ADR-12-model-effort-integrity.md.
 
 Effort asymmetry (verified against the current Claude Code platform, 2026-09): the
 dispatch tool exposes an inline `model` lever but NO `effort` lever — `effort` is

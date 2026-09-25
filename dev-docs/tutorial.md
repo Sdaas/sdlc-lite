@@ -122,7 +122,7 @@ my-plugin/
 `toy-greet-plugin/` is a minimal, two-file plugin — the whole workflow lives *inside the command file*.
 Short workflows can do that; long ones belong in a skill. The real product is a skill,
 `skills/implement-feature/SKILL.md`, with **no** `commands/implement-feature.md`: a same-named command
-file shadows the skill, and `SKILL.md` never loads (ADR-14 in the Developer Guide). The toy's layout:
+file shadows the skill, and `SKILL.md` never loads ([ADR-14](adr/ADR-14-explicit-entry.md)). The toy's layout:
 
 ```
 toy-greet-plugin/
@@ -190,7 +190,7 @@ Two design touches are worth calling out because they recur in any serious workf
   frontmatter pins `model`, `effort`, and `tools`. (The Agent tool can set model inline but **not**
   effort — so effort must live in the file.)
 
-The Developer Guide walks the full twelve-gate score.
+[`architecture.md`](architecture.md) maps the full twelve-gate score.
 
 ---
 
@@ -272,4 +272,4 @@ enforces, never when it orchestrates.**
   gates as an ordered English script.
 - **Read the enforcement:** `sdlc-lite-plugin/hooks/scripts/guard.py` and `analyzer/` — the
   only two pieces of real code, and why they're allowed to be code.
-- **Understand the decisions:** the [Developer Guide](developer-guide.md)'s ADRs and design principles.
+- **Understand the decisions:** the [ADRs](adr/README.md) and the [review checklist](developer-guide.md).

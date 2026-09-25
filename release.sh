@@ -3,7 +3,7 @@
 # release.sh — cut a versioned release of the sdlc-lite plugin (cross-repo).
 #
 # Automates dev-docs/RELEASING.md §4 steps 2–4 and hands off to the verify gate (step 5).
-# Background + rationale: dev-docs/developer-guide.md → ADR-13 (two-channel distribution).
+# Background + rationale: dev-docs/adr/ADR-13-one-plugin-two-channels.md (two-channel distribution).
 #
 # Two channels live in TWO repos (ADR-13):
 #   • dev      → this repo's root catalog (name: sdlc-lite-dev), directory source, live.

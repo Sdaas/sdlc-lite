@@ -64,7 +64,7 @@ Every review states each dimension. `N/A — <why>` is allowed; silently droppin
    denial and a T2 test?
 4. **Context cost** — does the edit earn the tokens it adds to an always-loaded file?
 5. **Isolation integrity** — does it leak a withheld artifact into a gate's inbox?
-6. **Doc parity** — do `README.md`, `developer-guide.md`, or an ADR need to change with it?
+6. **Doc parity** — do `README.md`, `dev-docs/architecture.md`, `developer-guide.md`, or an ADR need to change with it?
 
 ---
 

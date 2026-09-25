@@ -8,8 +8,11 @@ here — the root [`README.md`](../README.md) is the complete user-facing doc. E
 
 - **[`jumpstart.md`](jumpstart.md)** — read first: a short map of the repo, one run end to end,
   the key components, and the test tiers, with a reading track per kind of change.
-- **[`developer-guide.md`](developer-guide.md)** — architecture (conductor + isolated gates), the
-  guard hook, the analyzer, the design decisions (ADRs), and the container testing methodology.
+- **[`developer-guide.md`](developer-guide.md)** — the hub for changing the plugin: what to edit for
+  each kind of change, how to verify it, and the review checklist.
+- **[`architecture.md`](architecture.md)** — gates, handoff contract, model pins, guard rules,
+  analyzer.
+- **[`adr/`](adr/README.md)** — the architecture decision records, one file each.
 - **[`tutorial.md`](tutorial.md)** — the underlying concepts (plugin vs command vs skill vs
   workflow) and subagent isolation, built up from a minimal runnable example (`toy-greet-plugin/`).
 - **[`verification-ladder.md`](verification-ladder.md)** — how much proof a change owes before it
@@ -30,8 +33,7 @@ here — the root [`README.md`](../README.md) is the complete user-facing doc. E
 Two directories hold write-ups that are easy to confuse — the split is:
 
 - **`findings/`** — dated records of an investigation that already happened: what was probed, what
-  was found, and the decision it fed into. **Settled** — referenced by the ADRs in the Developer
-  Guide as the evidence behind a decision that's already in force.
+  was found, and the decision it fed into. **Settled** — referenced by the [ADRs](adr/README.md) as the evidence behind a decision that's already in force.
 - **`proposals/`** — design sketches for capabilities that are **not yet built**. Unwired: nothing
   in the shipped product depends on them, and they may never be built as written. Treat a proposal
   as a starting point for discussion, not as documentation of current behavior.
