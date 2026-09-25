@@ -6,6 +6,8 @@ here — the root [`README.md`](../README.md) is the complete user-facing doc. E
 
 ## Where to start
 
+- **[`jumpstart.md`](jumpstart.md)** — read first: a short map of the repo, one run end to end,
+  the key components, and the test tiers, with a reading track per kind of change.
 - **[`developer-guide.md`](developer-guide.md)** — architecture (conductor + isolated gates), the
   guard hook, the analyzer, the design decisions (ADRs), and the container testing methodology.
 - **[`tutorial.md`](tutorial.md)** — the underlying concepts (plugin vs command vs skill vs
