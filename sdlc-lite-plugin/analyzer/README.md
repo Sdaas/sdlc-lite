@@ -74,15 +74,15 @@ never even marks the main section as drift.
 ## The isolation verdicts (from the run-log alone)
 1. test-writer never *attempted* to read `design-internal.md`
 2. implementer never *attempted* to write/edit a test file
-3. no agent *attempted* to read secrets/`.env` (tool-aware, mirrors `guard.py`)
+3. no agent *attempted* to read secrets/`.env` (tool-aware, same `policy.py` rules as `guard.py`)
 4. test-reviewer never *attempted* to write into the product tree (#12)
 5. distinct expected subagents actually ran
 
 > The audit records **attempts**, not outcomes: `guard.py` logs every call
 > (job #1) *before* it may deny it. A forbidden entry here means an agent *tried*;
 > the guard blocks it at runtime. Preventive (guard) + detective (analyzer)
-> together. The secret / test-path / reviewer-write predicates here **mirror
-> `guard.py`** and must be kept in sync.
+> together. The secret / test-path / reviewer-write predicates come from
+> `policy.py`, which `guard.py` also imports — one rule set, nothing to sync.
 
 ## Known minor semantics
 `Bash` counts as a "read-ish" tool, so a Bash command target is included in an

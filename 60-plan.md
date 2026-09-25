@@ -1,7 +1,7 @@
 # 60-plan — repo + open-issue audit; simplify developer-guide
 
 **Issue:** [#60](https://github.com/Sdaas/sdlc-lite/issues/60) · **Milestone:** `1.0.0-beta.3` ·
-**Branch:** `60-repo-review` · **Status:** audit + triage done; Phase 3 (fixes) not started.
+**Branch:** `60-repo-review` · **Status:** audit + triage done; Phase A done; Phase B next.
 
 Branch-scoped working plan. `git rm` this file in the merge/close commit.
 
@@ -44,12 +44,12 @@ Branch-scoped working plan. `git rm` this file in the merge/close commit.
 | **B** | P1-2..P1-13 issue edits (with Q17–Q20 answers) + Q19 file copy; `release-plan.md`: add #60 before #51, #58 + #61 into beta.3 order, #62 into 1.0.0 after #58 | `docs(proposals): …` + `docs(release-plan): …` | links |
 | **C** | P2-1..P2-16 — cross-doc consistency + topic ownership (Q11) | `docs(dev-docs): …` | links |
 | **D** | P3-1 developer-guide rewrite; P3-2 CLAUDE.md; P3-3 README | `docs(dev-docs): simplify developer-guide (#60)` | links; section/ADR numbers unchanged (`grep '^##' `) |
-| **E** | Close-out: re-run pytest + links; `git rm 60-plan.md`; merge; close #60 | merge commit | — |
+| **E** | Close-out: re-run pytest + links; T1 `--tag gate-0` eval in the container (deferred from A); `git rm 60-plan.md`; merge; close #60 | merge commit | eval green |
 
 ## Progress
 
 - [x] Audit + triage; #60, #61, #62, #63 filed; #58 → beta.3; merged branches deleted
-- [ ] A — P0 wording fixes
+- [x] A — P0 wording fixes (pytest + links green; T1 `--tag gate-0` eval deferred to E, before merge)
 - [ ] B — issue edits + proposals copy + release-plan
 - [ ] C — P2 dev-docs consistency
 - [ ] D — P3 simplification

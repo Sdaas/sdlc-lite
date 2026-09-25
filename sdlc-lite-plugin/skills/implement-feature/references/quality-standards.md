@@ -5,12 +5,11 @@
 > edit **this file** — not the individual gates or agents.
 
 ## Environment assumption
-This workflow is **prescriptive about the dev container**: it runs inside the project
-dev container (see `.devcontainer/`), where the pinned toolchain
-(`sdlc-lite-plugin/toolchain/requirements-dev.txt`) is installed. It is not
-supported to run on a bare host.
+This workflow runs in the target repo's active Python environment. The pinned toolchain
+(`toolchain/requirements-dev.txt`, shipped with the plugin) must be installed there —
+see the sdlc-lite README.
 
-## Toolchain (pinned in the container)
+## Toolchain (pinned)
 | Tool | Purpose | Command |
 |------|---------|---------|
 | ruff | lint + format | `ruff check .` and `ruff format --check .` |
@@ -22,11 +21,11 @@ supported to run on a bare host.
 
 ## Gate 0 preflight (hard-fail)
 Before any work, the conductor verifies the environment. **If any check fails, STOP and
-tell the human to rebuild/enter the dev container — do not proceed.**
+tell the human to install the pinned toolchain into this repo's active Python environment —
+do not proceed.**
 ```
 ruff --version && mypy --version && pytest --version && python -c "import importlib.metadata as m; print('mutmut', m.version('mutmut'))"
 ```
-(Also confirm we are inside the container, not the host.)
 
 > **Why not `mutmut --version`?** mutmut eagerly loads its config on *any* invocation and
 > hard-fails when run outside a project with a discoverable source layout (e.g. a bare

@@ -212,8 +212,9 @@ verified above), so it is audit-only: the receipt WARNs on any deviation, either
 
 `hooks/hooks.json` registers a **PreToolUse** hook (`hooks/scripts/guard.py`) that fires for the
 conductor **and every subagent**, on every
-`Read`/`Bash`/`Grep`/`Glob`/`Edit`/`Write`/`NotebookEdit`. It keys on the `agent_type` (namespaced,
-e.g. `sdlc-lite:test-writer`) and `agent_id` carried on stdin. Five jobs:
+`Read`/`Bash`/`Grep`/`Glob`/`Edit`/`Write`/`NotebookEdit`/`Task`/`Agent`/`Skill` call. It keys on the
+`agent_type` (namespaced, e.g. `sdlc-lite:test-writer`) and `agent_id` carried on stdin. The allow/deny
+rules live in [`policy.py`](../sdlc-lite-plugin/policy.py); `guard.py` calls it. Seven jobs:
 
 1. **Audit** — appends `{ts, agent_type, agent_id, tool, target}` per tool call — a tamper-evident,
    per-agent record of exactly what each agent read. Timestamps are logged **UTC/tz-aware** so they
@@ -223,8 +224,10 @@ e.g. `sdlc-lite:test-writer`) and `agent_id` carried on stdin. Five jobs:
    containing `os.environ` isn't false-denied.
 3. **Algorithm-blind** — denies the **test-writer** reading `03-design-internal.md`, Read *and* Bash.
 4. **Draft-confinement** — denies **any subagent** reading under `handoff/draft/`.
-5. **Test-integrity** — denies the **implementer** editing/writing any test file; and confines the
-   **test-reviewer**'s writes to its outbox + a scratch dir.
+5. **Test-integrity** — denies the **implementer** editing/writing any test file.
+6. **Write-confinement** — confines the **test-reviewer**, **verifier** and **code-reviewer** writes to
+   their outbox + a scratch dir.
+7. **Explicit-entry** — denies any `Skill` call to this plugin's own skills (ADR-14).
 
 A `deny` decision + exit code 2 hard-blocks the call. Each rule is **defense-in-depth** with the
 agents' own role instructions (the agent usually declines on its own; the hook is the backstop).
@@ -240,8 +243,8 @@ root — which Gate 0 also gitignores.
 **not** fire in headless (`claude -p`) runs; the plugin-shipped hook fires for the conductor and every
 subagent. Reliability-critical config ships with the plugin.
 
-Keep `guard.py` and the analyzer's isolation predicates in sync — they implement the same secret /
-test-path / reviewer-write rules (preventive vs detective).
+`guard.py` (preventive) and the analyzer (detective) both import `policy.py`, so they apply the same
+secret / test-path / reviewer-write rules with nothing to keep in sync.
 
 ### Bash enforcement is best-effort — and the transcript auditor closes it (#30)
 
@@ -1047,8 +1050,8 @@ prompt. Both are v1.1/v2, independent of this script, and neither blocks using i
   workflow means editing these, not writing code.
 - **Change a gate's model/effort/tools** → edit the matching `agents/*.md` frontmatter (effort is
   frontmatter-only).
-- **Change what an agent may read/write** → update *both* the agent's prose inbox **and** `guard.py`
-  (defense-in-depth), and keep the analyzer's mirrored predicate in sync.
+- **Change what an agent may read/write** → update *both* the agent's prose inbox **and** `policy.py`
+  (defense-in-depth). `guard.py` and the analyzer both import it, so there is nothing to mirror.
 - **Change "green" or a threshold policy** → edit `references/quality-standards.md` (the single source
   of truth), not individual briefs.
 - **Verify before you rely on runtime behavior** — do a container dry run; the transcript and the

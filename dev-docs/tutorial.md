@@ -17,17 +17,18 @@ Four things nest together, smallest to biggest:
 - **Skill** — a folder whose heart is `SKILL.md` (a `name` + `description` + plain-English
   instructions). A reusable *instruction packet* / "playbook." It contains guidance, not running code.
   A skill can **auto-activate** when its `description` matches the situation.
-- **Slash command** — a user-triggered entry point (`/implement-feature`). *You* press the button on
-  purpose. A command is usually a thin file that says "load this skill / run this workflow."
+- **Slash command** — a user-triggered entry point (`/greet`). *You* press the button on purpose. A
+  command file under `commands/` holds its own instructions. A skill also registers a slash command
+  under its own name, so a skill needs no command file — and must not have a same-named one (see §6).
 - **Subagent** — a separate Claude instance given a focused job. It runs in its **own fresh context
   window**, does the work, and returns only a result. Keeps the orchestrator's context clean and
   enables specialized, isolated work.
 - **Plugin** — the distributable **package** bundling skills + commands + subagents + a manifest. How
   you install and share.
 
-**Nesting:** plugin ⊃ (commands + skills + subagents); a command kicks off a skill; a skill may
-delegate to subagents. **Key distinction:** a skill can *auto-activate* by description; a command is
-*deliberate* invocation.
+**Nesting:** plugin ⊃ (commands + skills + subagents); a human starts a command or a skill with a
+slash command; a skill may delegate to subagents. **Key distinction:** a skill can *auto-activate* by
+description; a command is *deliberate* invocation.
 
 ---
 
@@ -118,9 +119,10 @@ my-plugin/
 
 ## 6. The runnable example: `toy-greet`
 
-`toy-greet-plugin/` is a minimal, two-file plugin — the whole workflow lives *inside the command file*
-(short workflows can; long ones belong in a skill with a thin command caller, which is what the real
-product does):
+`toy-greet-plugin/` is a minimal, two-file plugin — the whole workflow lives *inside the command file*.
+Short workflows can do that; long ones belong in a skill. The real product is a skill,
+`skills/implement-feature/SKILL.md`, with **no** `commands/implement-feature.md`: a same-named command
+file shadows the skill, and `SKILL.md` never loads (ADR-14 in the Developer Guide). The toy's layout:
 
 ```
 toy-greet-plugin/
@@ -235,12 +237,14 @@ were *wrong*:
 ### How `implement-feature` enforces isolation (the guard hook)
 
 A single **plugin-shipped PreToolUse hook** (`hooks/hooks.json` → `hooks/scripts/guard.py`) does the
-cross-cutting work on every `Read`/`Bash`/`Grep`/`Glob`/`Edit`/`Write`/`NotebookEdit`, from the
-conductor *and* every subagent. It keys on the `agent_type` on stdin and: (a) **audits** every call to
-a run-log; (b) denies **secrets** for all agents; (c) denies the **test-writer** reading the internal
-design (algorithm-blind); (d) denies **any subagent** reading under `handoff/draft/`
-(draft-confinement); (e) denies the **implementer** editing any test file (it must pass the tests, not
-change them). A `deny` + exit code 2 hard-blocks the call. This is **defense-in-depth** with the
+cross-cutting work on every `Read`/`Bash`/`Grep`/`Glob`/`Edit`/`Write`/`NotebookEdit`/`Task`/`Agent`/
+`Skill` call, from the conductor *and* every subagent. It keys on the `agent_type` on stdin and:
+(a) **audits** every call to a run-log; (b) denies **secrets** for all agents; (c) denies the
+**test-writer** reading the internal design (algorithm-blind); (d) denies **any subagent** reading
+under `handoff/draft/` (draft-confinement); (e) denies the **implementer** editing any test file (it
+must pass the tests, not change them); (f) confines the **test-reviewer**, **verifier** and
+**code-reviewer** writes to their outbox + a scratch dir; (g) denies any `Skill` call to the plugin's
+own skills (explicit-entry). A `deny` + exit code 2 hard-blocks the call. This is **defense-in-depth** with the
 agents' own role instructions — in testing, the test-writer refused on its own *before* the hook even
 fired.
 

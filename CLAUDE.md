@@ -50,13 +50,15 @@ Core invariants (also in `SKILL.md` → Rules): design & every review use a high
 ### The guard hook 
 Isolation is enforced, not just requested.
 
-`sdlc-lite-plugin/hooks/hooks.json` registers a **PreToolUse** hook (`hooks/scripts/guard.py`) that fires for the conductor **and every subagent** and keys on `agent_type`. On every Read/Bash/Grep/Glob/Edit/Write/NotebookEdit it does the following 
+`sdlc-lite-plugin/hooks/hooks.json` registers a **PreToolUse** hook (`hooks/scripts/guard.py`) that fires for the conductor **and every subagent** and keys on `agent_type`. On every Read/Bash/Grep/Glob/Edit/Write/NotebookEdit/Task/Agent/Skill call it does the following. The allow/deny rules live in `sdlc-lite-plugin/policy.py`; `guard.py` calls it.
 
 - **audits** — appends a JSONL line per tool call; 
-- **secrets guardrail** — denies reading `.env`/keys/credentials for any agent; -
+- **secrets guardrail** — denies reading `.env`/keys/credentials for any agent;
 - **algorithm-blind** — denies the `test-writer` reading the internal design;
-- **test-integrity** — denies the `implementer` editing/writing any test file; plus reviewer write-confinement (writes only to its outbox + scratch).
-- **draft-confinement** — denies any subagent reading under `handoff/draft/`.
+- **test-integrity** — denies the `implementer` editing/writing any test file;
+- **write-confinement** — the `test-reviewer`, `verifier` and `code-reviewer` may write only to their outbox + scratch;
+- **draft-confinement** — denies any subagent reading under `handoff/draft/`;
+- **explicit-entry** — denies any `Skill` call to this plugin's own skills.
 
 A **plugin** hook (not a project-settings hook) was required for it to fire for subagents in headless.
 
@@ -102,5 +104,6 @@ sdlc-lite-plugin -q`. The full pinned toolchain (ruff/mypy/mutmut) runs only in-
   auto-invokes them. Enforced by `guard.py` denying `Skill` calls in the `sdlc-lite:` namespace
   (the typed slash command bypasses that tool), and stated in prose in the skill `description`.
 - Changing a gate's model/effort/tools → edit the matching `agents/*.md` frontmatter.
-- Changing what an agent may read/write → update both the agent's prose inbox **and** `guard.py`
-  (defense-in-depth: role instruction + hook enforcement).
+- Changing what an agent may read/write → update both the agent's prose inbox **and** `policy.py`
+  (defense-in-depth: role instruction + hook enforcement). `guard.py` and the analyzer both import
+  `policy.py`, so there is nothing else to keep in sync.

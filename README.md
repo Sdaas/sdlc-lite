@@ -114,12 +114,13 @@ commands in** (use a virtualenv for your project):
 
 The plugin ships the pinned list at
 `sdlc-lite-plugin/toolchain/requirements-dev.txt`. Install it into your project's environment,
-either from the file (after `claude plugin install`, it lives under your Claude Code plugins cache) or
-by name:
+either from the file (after `claude plugin install`, it lives under your Claude Code plugins cache,
+in a directory named for the installed version) or by name:
 
 ```bash
-# from the pinned file (path is under your plugins cache after install):
-pip install -r ~/.claude/plugins/**/sdlc-lite-plugin/toolchain/requirements-dev.txt
+# from the pinned file (<version> = the installed version, e.g. 1.0.0-beta.2;
+# `ls ~/.claude/plugins/cache/sdaas/sdlc-lite/` shows it):
+pip install -r ~/.claude/plugins/cache/sdaas/sdlc-lite/<version>/toolchain/requirements-dev.txt
 
 # or simply, by name (the pinned floors):
 pip install ruff mypy pytest pytest-cov mutmut hypothesis pytest-asyncio
@@ -197,9 +198,7 @@ of the commit. Browse `handoff/` top-to-bottom (files are numbered in read order
 
 **"Preflight failed — `<tool>` not found."**
 A required tool isn't importable in the active environment. Install the toolchain (above) into the same
-Python environment Claude Code runs commands in, then re-run. *(The message mentions rebuilding a dev
-container — that's how the plugin's authors run it; on your own machine the equivalent is just having
-the toolchain installed on PATH.)*
+Python environment Claude Code runs commands in, then re-run.
 
 **"`<pkg>` is not importable — a src-layout package that isn't installed."**
 Your source package isn't on `sys.path`, so the test suite would go *falsely* red and could never reach
