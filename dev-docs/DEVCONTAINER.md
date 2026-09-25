@@ -233,6 +233,17 @@ Verdicts are transcript signatures, never a model judgment:
 - Proven red (claude 2.1.281): restoring the #55 shim reds cells 2 and 4; dropping `Skill` from the
   guard matcher reds 7–8.
 
+## Reading a fixture run's files from the Mac
+
+A fixture run lives in `/workspaces/<slug>-run/`, outside the bind mount, so its `.implement-feature/`
+is not on the Mac ([fixtures](../test-fixtures/README.md)). Three ways to read a gate's file at a STOP:
+
+| Way | How |
+|---|---|
+| `devcontainer exec` | `devcontainer exec --workspace-folder . cat /workspaces/<slug>-run/.implement-feature/<run>/handoff/draft/<file>.md` |
+| VS Code | Command Palette → **Dev Containers: Attach to Running Container** → open `/workspaces/<slug>-run` ("Reopen in Container" shows only `sdlc-lite`) |
+| `docker cp` | `docker cp sdlc-lite-test:/workspaces/<slug>-run/.implement-feature/<run>/handoff/draft/<file>.md ./review.md` |
+
 ---
 
 ## VS Code — Command Palette (⇧⌘P / Cmd-Shift-P)
