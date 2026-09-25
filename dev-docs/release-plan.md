@@ -52,22 +52,18 @@ its children (#50, #57, #51, #52, #53) and closes when #53 closes.
 
 ### Open — in execution order
 
-1. **#51** — `feat(repo): shared SDLC gate spine + /issue skill`
-   *Next. `.claude/sdlc/gates.md` links to the verification ladder rather than restating it. The
-   spine must land before #52 or #53 so neither invents its own gate prose. No eval cases for the
-   repo-local skills (48-plan D13).*
-2. **#52** — `feat(repo): /feature skill — 9 gates, 4 STOPs`
-   *After #51 — it executes the spine. Its Open Question (does `/feature` also update this file) is
-   settled: **no** — roadmap ordering stays a human call.*
-3. **#53** — `feat(repo): /fix skill — REPRODUCE + DEPOSIT gates`
+1. **#52** — `feat(repo): /feature skill — 9 gates, 4 STOPs`
+   *Next — it executes the spine in `.claude/sdlc/gates.md`. Its Open Question (does `/feature`
+   also update this file) is settled: **no** — roadmap ordering stays a human call.*
+2. **#53** — `feat(repo): /fix skill — REPRODUCE + DEPOSIT gates`
    *Reuses #52's spine and adds the two gates that close the regression-safety gap. Also carries
    #48's close-out: repo-local SDLC docs in `dev-docs/`, this file's update, removing `48-plan.md`,
    and deciding whether the root scripts move (#60, Q14).*
-4. **#58** — `fix(skill): conductor sometimes skips the lock STOP and the explicit-entry redirect`
+3. **#58** — `fix(skill): conductor sometimes skips the lock STOP and the explicit-entry redirect`
    *Must land before the cut: `release-verify.sh` gates it on the eval suite at 0.8, and the
    opus-5-5 baseline is 5/7 because of this bug. Still live: `gate-0-lock-stop` failed 1 of 3 runs
    in #60's close-out eval.*
-5. **#61** — `fix(skill): agent inboxes and quality-standards disagree with SKILL.md`
+4. **#61** — `fix(skill): agent inboxes and quality-standards disagree with SKILL.md`
    *Found by #60. Share #58's container session; proof is a `roman-numeral` dry run to Gate 7.*
 
 ### Closed
@@ -81,6 +77,7 @@ its children (#50, #57, #51, #52, #53) and closes when #53 closes.
 | **#59** `chore(repo): bump the dev container claude so the eval gate can run on claude-opus-5-5` | 2026-09-25 (`35857b0`) | Container claude 2.1.281; first opus-5-5 baseline 5/7 (the gap is #58). |
 | **#57** `test(repo): automate the 8-cell entry-point contract` | 2026-09-25 (`9f0bed7`) | `verify-entry-points.py`, 16/16 green; the #55 bug class is still live, so the check stays. |
 | **#60** `docs(repo): audit repo + open issues for staleness; simplify developer-guide` | 2026-09-25 (`ab24d4c`) | Docs and open issues current; filed #61, #62, #63; moved #58 into beta.3. |
+| **#51** `feat(repo): shared SDLC gate spine + /issue skill` | 2026-09-25 (`7247813`) | `.claude/sdlc/gates.md` is the spine #52/#53 execute, incl. the fail-fast eval budget; `/issue` filed #64 (`/regression`, backlog). |
 
 ## Next release — `1.0.0` (GA)
 
