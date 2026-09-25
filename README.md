@@ -126,7 +126,8 @@ pip install -r ~/.claude/plugins/cache/sdaas/sdlc-lite/<version>/toolchain/requi
 pip install ruff mypy pytest pytest-cov mutmut hypothesis pytest-asyncio
 ```
 
-> **Auto-installing the toolchain is a v1.1 backlog item.** For v1, this manual step is expected.
+> **Auto-installing the toolchain is planned for `1.0.0`**
+> ([#19](https://github.com/Sdaas/sdlc-lite/issues/19)). Until then, this manual step is expected.
 
 ### 3. Grant the plugin directory a one-time read permission
 
@@ -239,7 +240,7 @@ No. The implementer subagent is blocked (by a guard hook, by its role instructio
 code review) from editing any test file. The tests are the approved, independently-reviewed contract.
 
 **What languages does it support?**
-Python only, in v1.
+Python only.
 
 **Does it need the dev container?**
 No — the container is how the plugin's authors test it (see the Developer Guide, linked below).
@@ -300,19 +301,11 @@ This repo's root `.claude-plugin/marketplace.json` is the **dev** catalog
 
 ---
 
-## Requirements at a glance
-
-- **Claude Code** (the CLI, desktop, or IDE extension).
-- **Python 3.12+** on the target repo.
-- The pinned dev toolchain (`ruff`, `mypy`, `pytest`, `pytest-cov`, `mutmut`, `hypothesis`,
-  `pytest-asyncio`) installed into the target repo's environment — see Prerequisites above.
-  Gate 0 hard-fails if any tool is missing, so nothing runs on a broken environment.
-
 ## Status
 
-`sdlc-lite` is **v1**: it has been run end-to-end against real Python features (a duration
-parser, a slugifier, and an async cached JSON fetcher), including a fault-injection pass, inside the
-dev container. See the [Developer Guide](dev-docs/developer-guide.md) for the testing methodology and the
+`sdlc-lite` is at **`1.0.0-beta.2`** — 1.0-quality, being validated before GA. It has been run
+end-to-end against real Python features (a duration parser, a slugifier, and an async cached JSON
+fetcher), including a fault-injection pass, inside the dev container. See the [Developer Guide](dev-docs/developer-guide.md) for the testing methodology and the
 recorded design decisions.
 
 ---

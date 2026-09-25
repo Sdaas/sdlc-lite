@@ -65,7 +65,7 @@ A **plugin** hook (not a project-settings hook) was required for it to fire for 
 ### Quality standards / toolchain 
 `sdlc-lite-plugin/skills/implement-feature/references/quality-standards.md` defines "green", coverage/mutation thresholds, boundary-resilience policy, and concurrency policy. The pinned toolchain is `sdlc-lite-plugin/toolchain/requirements-dev.txt` (ruff, mypy, pytest, pytest-cov, mutmut, hypothesis, pytest-asyncio). 
 
-Gate 0 preflight hard-fails if any tool is missing. **A real user must install this toolchain into their own environment** (v1: documented manual install; auto-install is a v1.1 backlog item).
+Gate 0 preflight hard-fails if any tool is missing. **A real user must install this toolchain into their own environment** (documented manual install today; auto-install is #19, planned for `1.0.0`).
 
 ## Running / testing the plugin (dev container = our test harness)
 
@@ -87,16 +87,16 @@ devcontainer exec --workspace-folder . bash -c \
   "set -a; source /workspaces/sdlc-lite/.env; set +a; claude"
 ```
 
-The container's directory-source marketplace loads the plugin **from the workspace**
-(`/workspaces/sdlc-lite/sdlc-lite-plugin/**`), not the `~/.claude/plugins/cache`
-copy — so a workspace edit takes effect after a fresh container Claude session restart, with no
-cache-sync step. Host unit tests (guard + analyzer, pytest-only): `python3 -m pytest
+The container's directory-source marketplace is assumed to load the plugin live from the workspace,
+so a workspace edit takes effect on a fresh Claude session — unverified, see #45 and
+`dev-docs/DEVCONTAINER.md` → How the plugin loads. Host unit tests (guard, policy, agentdefs, analyzer; pytest-only): `python3 -m pytest
 sdlc-lite-plugin -q`. The full pinned toolchain (ruff/mypy/mutmut) runs only in-container.
 
 ## When editing the product
 - The **behavior lives in Markdown** (`SKILL.md`, `agents/*.md`, `references/*`, `hooks.json`). Editing
-  the workflow means editing these files, not writing code. The only real code is `guard.py` (the hook)
-  and `analyzer/` (deterministic measurement, not orchestration — both allowed).
+  the workflow means editing these files, not writing code. The only real code is `guard.py` + `policy.py`
+  (enforcement) and `analyzer/` + `agentdefs.py` (measurement) — allowed because they enforce or
+  measure, never orchestrate.
 - **Never add a `commands/<x>.md` whose name matches a `skills/<x>/` directory** — the command
   shadows the skill and `SKILL.md` never loads, silently, on every load path (ADR-14, #55). A skill
   registers its own slash command, so the command file buys nothing.

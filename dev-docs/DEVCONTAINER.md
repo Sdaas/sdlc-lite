@@ -1,8 +1,7 @@
 # Dev Container guide — how to run, manage, and tear down the sandbox
 
-This repo uses a **dev container** so we can install and run the plugin (and later the
-code-writing `/implement-feature` product) inside an isolated Claude Code, **without ever
-touching your Mac's `~/.claude`**. Config lives in `.devcontainer/` at the repo root.
+This repo uses a **dev container** so we can install and run the plugin inside an isolated Claude
+Code, **without ever touching your Mac's `~/.claude`**. Config lives in `.devcontainer/` at the repo root.
 
 - **Your code** always lives on the Mac (bind-mounted into the container) — never at risk.
 - **Claude Code's login** lives in a Docker **named volume** `sdlc-lite-claude`
@@ -37,10 +36,19 @@ devcontainer up --workspace-folder . --remove-existing-container   # force a fre
 devcontainer build --workspace-folder .                            # just build; surfaces errors early
 ```
 
-### Find the container (no fixed name — the CLI names it)
-```bash
-docker ps -a --filter "label=devcontainer.local_folder=$(pwd)"
-```
+### Find the container
+It is always named **`sdlc-lite-test`** (`runArgs --name` in `devcontainer.json`), whatever path
+the repo is cloned to. `docker ps -a --filter name=sdlc-lite-test` shows it.
+
+### Fresh setup from zero (no container, image, or volume yet)
+1. `docker ps` — confirms Docker Desktop is running.
+2. `devcontainer up --workspace-folder .` — builds the image, starts the container, and creates the
+   `sdlc-lite-claude` volume if absent. `post-start.sh` provisions `~/.claude` (see below).
+3. Confirm the pinned toolchain installed cleanly:
+   `devcontainer exec --workspace-folder . bash -c "ruff --version && mypy --version && pytest --version && claude --version"`.
+4. Set up auth once (see **Authentication** below).
+5. Start `claude` in the container and confirm `/implement-feature` resolves (see **How the plugin
+   loads** below; a fresh volume may need a one-time manual install — #45).
 
 ### Stop / remove / teardown — four levels, shallowest first
 ```bash
@@ -159,6 +167,40 @@ modes either way.
 | Settings, plugins, session history | `~/.claude/` | ✅ |
 | Onboarding / theme / folder trust | `~/.claude.json` | ❌ — re-seeded each start |
 | Token | `.env` on the Mac | n/a — bind-mounted, never copied in |
+
+## How the plugin loads — three load paths
+
+The plugin can reach a Claude session three ways. They can resolve skills differently, so a result
+proven on one says nothing about the others (ADR-14 measured all three):
+
+| Load path | Used by | Plugin source |
+|---|---|---|
+| **Directory marketplace** `sdlc-lite@sdlc-lite-dev` | container sessions (the default profile) | the workspace, `/workspaces/sdlc-lite/sdlc-lite-plugin/` |
+| **`--plugin-dir`** | `claude plugin eval`, `verify-entry-points.py` | the path given |
+| **Installed from the umbrella** `sdlc-lite@sdaas` | customers; `release-verify.sh` | a tag-pinned copy under `~/.claude/plugins/cache/sdaas/sdlc-lite/<version>/` |
+
+The directory marketplace is registered by the seeded `settings.json`. The working assumption is
+that it loads **live from the workspace**, so a workspace edit takes effect on the next fresh Claude
+session with no cache sync. **That is unverified** — `claude plugin list` reports "No plugins
+installed" yet the plugin loads, and whether a fresh volume needs a manual
+`claude plugin install sdlc-lite@sdlc-lite-dev` is also open. Both are tracked in
+[#45](https://github.com/Sdaas/sdlc-lite/issues/45).
+
+## Two Claude profiles in one container (`CLAUDE_CONFIG_DIR`)
+
+`CLAUDE_CONFIG_DIR` is where Claude Code keeps a profile (default `~/.claude`): login, `settings.json`,
+registered marketplaces, installed plugins. Point it at another directory and you get a separate
+profile on the same filesystem and toolchain. That lets one container be two environments:
+
+| | `~/.claude` (default) — **dev** | `~/.claude-verify*` — **clean-room** |
+|---|---|---|
+| Marketplace | `sdlc-lite-dev` (directory source) | `sdaas` (umbrella, `git-subdir` from GitHub) |
+| Plugin source | the workspace | the real GitHub release (tag-pinned) |
+| Answers | "does my edit work?" | "does the shipped artifact work for a stranger?" |
+| Python toolchain | shared — installed system-wide | shared — the same one |
+
+`release-verify.sh` builds the clean-room profile fresh each run
+([`verification-ladder.md`](verification-ladder.md) §8). No second container is needed.
 
 ## Entry-point check — `verify-entry-points.py`
 

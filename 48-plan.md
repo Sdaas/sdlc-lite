@@ -1,7 +1,7 @@
 # 48-plan — Repo-local SDLC skills (`/issue`, `/feature`, `/fix`)
 
 **Issue:** [#48](https://github.com/Sdaas/sdlc-lite/issues/48) · **Milestone:** `1.0.0-beta.3`
-**Branches:** one per child issue, `<NN>-<slug>` (#48 itself has no branch) · **Status:** not started; #55 and #49 already closed ahead of it
+**Branches:** one per child issue, `<NN>-<slug>` (#48 itself has no branch) · **Status:** P1 (#50) and P2 (#57) done; P3 (#51) next, after #60
 
 Branch-scoped working plan. `git rm` this file in the merge/close commit.
 
@@ -11,7 +11,7 @@ Branch-scoped working plan. `git rm` this file in the merge/close commit.
 
 Give *this repo* a gated, human-approved SDLC for its own work — authoring Markdown
 (`SKILL.md`, `agents/*.md`, `hooks.json`) plus the small real-code surface
-(`guard.py`, `analyzer/`).
+(`guard.py`, `policy.py`, `agentdefs.py`, `analyzer/`).
 
 **Non-goals:** replacing or converging with `sdlc-lite`; evaluating the three new skills
 themselves; automating the dev-container dry run.
@@ -192,13 +192,8 @@ list presented before each commit; nothing commits without approval.
 - [ ] `git rm 48-plan.md` in the close commit (P5)
 - [ ] Close #48 when #50, #51, #52, #53 are all closed
 
-## 8. Open items
+## 8. Settled questions
 
-- The issue-title area vocabulary (`gate-N · skill · guard-hook · analyzer · docs · release ·
-  toolchain`) has no slot for repo-local dev tooling. `#48` uses `skill`. Consider adding a
-  `repo` area — not blocking.
-
-## 9. Settled questions
-
+- **Issue-title area for repo-local tooling?** `repo` — added to `dev-docs/issue-template.md`.
 - **Does `/feature` also update `dev-docs/release-plan.md`?** **No** — confirmed 2026-09-24.
   Roadmap ordering stays a human call. This unblocks #52.

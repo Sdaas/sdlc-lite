@@ -17,7 +17,8 @@ python -m analyzer.analyze_run --workdir /path/to/.implement-feature/<run>/
 --runlog PATH        # explicit run-log path (overrides --workdir)
 --projects-dir DIR   # Claude Code projects dir (default: ~/.claude/projects)
 --slug SLUG          # project subdir under projects-dir (default: derived from cwd)
---no-transcript      # skip the best-effort token/cost analysis
+--no-transcript      # skip the transcript (tokens, receipt actuals, content audit)
+--out PATH           # also write the report here (Gate 11 writes <workdir>/run-report.md)
 ```
 
 The run-log is resolved as: `--runlog` if given, else `<workdir>/handoff/run-log.jsonl`
@@ -26,16 +27,21 @@ The analyzer **never reads `.active-run`** — knowing the *active* run is a hig
 concern (that pointer is the conductor↔guard channel, not the analyzer's).
 
 The report's headline is the **per-agent trust receipt** — see
-[`SAMPLE-RECEIPT.md`](SAMPLE-RECEIPT.md) for a rendered example (skeleton state + a preview of the
-fully-adjudicated form once #22/#30 land).
+[`SAMPLE-RECEIPT.md`](SAMPLE-RECEIPT.md) for rendered examples.
 
-## Architecture — two independent readers
+## Architecture — two independent evidence sources
 
 ```
 analyze_run.py            entry point; orchestrates + QUARANTINES the satellite
-├── runlog.py             LOAD-BEARING. Parses if-runlog.jsonl only.
-│                         Per-agent activity + the 4 isolation verdicts.
+├── runlog.py             LOAD-BEARING. Parses the run-log only.
+│                         Per-agent activity + the 5 intent-level isolation verdicts.
 │                         Zero knowledge of the transcript; cannot be broken by it.
+├── auditor.py            AUTHORITATIVE isolation leg (#30). Fingerprints each
+│                         protected artifact and scans subagent tool output for it.
+│                         A hit voids trust; no transcript -> UNKNOWN, never PASS.
+├── receipt.py            The per-agent receipt: requested model/effort (agentdefs.py
+│                         pins) vs actual (transcript). Model mismatch = FAIL,
+│                         effort deviation = WARN.
 ├── transcript.py         BEST-EFFORT satellite. Parses the Claude Code session
 │                         transcript for per-model tokens (main thread + each
 │                         subagent under <uuid>/subagents/*.jsonl, attributed via
@@ -75,7 +81,8 @@ never even marks the main section as drift.
 1. test-writer never *attempted* to read `design-internal.md`
 2. implementer never *attempted* to write/edit a test file
 3. no agent *attempted* to read secrets/`.env` (tool-aware, same `policy.py` rules as `guard.py`)
-4. test-reviewer never *attempted* to write into the product tree (#12)
+4. the read-only critics (test-reviewer, verifier, code-reviewer) never *attempted* to write
+   outside their outbox + scratch
 5. distinct expected subagents actually ran
 
 > The audit records **attempts**, not outcomes: `guard.py` logs every call
@@ -83,6 +90,8 @@ never even marks the main section as drift.
 > the guard blocks it at runtime. Preventive (guard) + detective (analyzer)
 > together. The secret / test-path / reviewer-write predicates come from
 > `policy.py`, which `guard.py` also imports — one rule set, nothing to sync.
+> These verdicts see only the command string; a Bash glob/indirect read is caught by the
+> transcript content audit (`auditor.py`) instead.
 
 ## Known minor semantics
 `Bash` counts as a "read-ish" tool, so a Bash command target is included in an

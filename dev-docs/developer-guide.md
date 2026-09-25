@@ -39,9 +39,9 @@ phase 2." Instead:
 - an **analyzer** (`analyzer/`) measures, after the fact, what actually happened.
 
 The agent is the runtime: it reads the score and executes it conversationally. **The behavior lives in
-Markdown.** The only real code is `guard.py` (enforcement) and `analyzer/` (measurement) — both
-permitted precisely because they *enforce or measure*, never *orchestrate* (see the ADR on
-observability). Editing the workflow means editing Markdown, not writing code.
+Markdown.** The only real code is `guard.py` + `policy.py` (enforcement), `analyzer/` +
+`agentdefs.py` (measurement) — all permitted precisely because they *enforce or measure*, never
+*orchestrate* (ADR-5). Editing the workflow means editing Markdown, not writing code.
 
 ### Repository layout of the product
 
@@ -65,11 +65,15 @@ sdlc-lite-plugin/
 │   ├── test-writer.md  test-reviewer.md  implementer.md  verifier.md  code-reviewer.md
 ├── hooks/
 │   ├── hooks.json                      # registers the PreToolUse guard
-│   ├── scripts/guard.py                # the enforcement code
+│   ├── scripts/guard.py                # the enforcement code (calls policy.py)
 │   └── tests/test_guard.py
+├── policy.py                           # the allow/deny rules — SSOT for guard + analyzer
+├── agentdefs.py                        # reads agents/*.md model/effort pins for the receipt
 ├── analyzer/                           # deterministic after-the-fact reporter
-│   ├── analyze_run.py runlog.py transcript.py report.py _util.py
+│   ├── analyze_run.py runlog.py auditor.py transcript.py receipt.py report.py _util.py
 │   └── tests/
+├── tests/                              # policy, agentdefs, entry-point structure
+├── evals/                              # `claude plugin eval` suite (T1)
 └── toolchain/requirements-dev.txt      # pinned dev tools
 ```
 
@@ -547,19 +551,6 @@ promised and what is verified cannot drift — the discipline ADR-11 gives the i
 
 ### ADR-13 — One `sdlc-lite` plugin; two channels are two marketplaces in two repos
 
-> **Status (2026-09-18):** **proven.** `1.0.0-beta.1` and `1.0.0-beta.2` were cut with `release.sh`
-> (tag in this repo + umbrella repoint) and verified by an automated clean-room run
-> (`release-verify.sh`, 17/17): from an isolated `CLAUDE_CONFIG_DIR` with no dev marketplace,
-> `marketplace add Sdaas/claude-plugins` → `install sdlc-lite@sdaas` fetched the tagged commit via a
-> **git-subdir** source (cached version matching `plugin.json`), passed Gate 0 preflight + Gate 1
-> interview headless, and a `/plugin update` step advanced beta.1 → beta.2. `release.sh`,
-> `RELEASING.md` §2/§4/§5, and the customer install commands are now authoritative.
->
-> *Supersedes an earlier draft of this ADR* (a single repo carrying two catalog entries —
-> `implement-feature` github-pinned + `implement-feature-dev` directory). That approach worked but was
-> abandoned once we chose separate repos per plugin (below); the two-marketplace split is cleaner and is
-> the ecosystem's documented pattern.
-
 *Decision — the product is one plugin, `sdlc-lite`.* The plugin bundles the whole SDLC workflow — the
 commands `/implement-feature` and `/analyze-run` today, `/plan-feature` next — over **one** shared
 guard hook, **one** set of five model-pinned isolated gates, and **one** quality-standards SSOT. The
@@ -571,32 +562,13 @@ in its own repo**.
 
 *Decision — two channels, two marketplaces, two repos.* A Claude marketplace is exactly **one catalog
 (`.claude-plugin/marketplace.json`) in one repo**, and a directory source loaded in place is **never
-version-pinned**. So the channels are physically separate catalogs:
-
-| Channel | Lives in | Catalog `name` | `sdlc-lite` entry source | Audience |
-|---|---|---|---|---|
-| **dev** | **this repo** (`Sdaas/sdlc-lite`) root catalog | `sdlc-lite-dev` | **directory** `./sdlc-lite-plugin` (live) | dev container only — enables `sdlc-lite@sdlc-lite-dev` |
-| **release** | **umbrella repo** `Sdaas/claude-plugins` | `sdaas` | **git-subdir** (explicit https url to `Sdaas/sdlc-lite`, `path: sdlc-lite-plugin`), pinned `ref: vX.Y.Z` + `sha` | customers — `marketplace add Sdaas/claude-plugins` → `install sdlc-lite@sdaas` |
-
-**Why `git-subdir`, not `github` (caught in the clean-room verify).** The plugin lives in the
-`sdlc-lite-plugin/` **subdirectory** of `Sdaas/sdlc-lite`, but a plain `github` marketplace source can
-only target a repo **root** — so the customer install resolved the repo root, found no `plugin.json`,
-and loaded **zero commands**. The fix is a **`git-subdir`** source with `path: sdlc-lite-plugin`,
-which targets the subdir. Its url must be an **explicit https url** (`https://github.com/Sdaas/sdlc-lite`),
-not the `owner/repo` shorthand, because the shorthand defaulted to an **SSH** clone that failed in the
-credential-less clean-room environment. Same tag/sha as the first cut — this was a catalog-source fix,
-not a re-release.
-
-The **umbrella** repo (`Sdaas/claude-plugins`, catalog `sdaas`) is the maintainer's cross-product
-marketplace: each future plugin (in its **own** repo) gets one pinned git-subdir entry here, so `sdaas`
-*honestly* aggregates plugins that live in different repos — which a single per-product catalog cannot.
-This repo's root catalog is now **dev-only** (the container reads it via a directory source; it also
-lists `toy-greet` for the Tutorial). Customers never read it — a README pointer routes them to the
-umbrella so nobody accidentally `marketplace add Sdaas/sdlc-lite` and gets an unpinned live install.
-
-A **release** is cut by `release.sh` (cross-repo): **bump `plugin.json` `version`** → **tag `vX.Y.Z`**
-in this repo → **repoint the umbrella's `sdlc-lite` entry** `ref`/`sha` to that tag. All three are
-required (see below). Verification is the gate — see the last bullet.
+version-pinned**. So the channels are physically separate catalogs: **dev** is this repo's root
+catalog (`sdlc-lite-dev`, a live directory source, dev container only); **release** is the umbrella
+repo `Sdaas/claude-plugins` (`sdaas`, a tag- and sha-pinned `git-subdir` source, for customers). The
+umbrella's job is to aggregate each future plugin — each in its **own** repo — which a single
+per-product catalog cannot. The channel table, why the source is `git-subdir` rather than `github`,
+and the release procedure (version bump + tag + umbrella repoint) are in
+[`RELEASING.md`](RELEASING.md) §2 and §4.
 
 *Why:*
 
@@ -635,9 +607,9 @@ required (see below). Verification is the gate — see the last bullet.
 
 ### ADR-14 — One name, one surface; and a workflow is entered explicitly
 
-> **Status (2026-09-23):** **measured, then fixed** (#55). Evidence:
-> [`findings/2026-09-23-skill-suppression-findings.md`](findings/2026-09-23-skill-suppression-findings.md)
-> — 3 load paths x 2 arms x 2 runs, 12/12 unambiguous.
+*Evidence (#55):*
+[`findings/2026-09-23-skill-suppression-findings.md`](findings/2026-09-23-skill-suppression-findings.md)
+— 3 load paths x 2 arms x 2 runs, 12/12 unambiguous.
 
 *Decision — a command and a skill may never share a name.* `sdlc-lite-plugin/commands/<x>.md`
 alongside `sdlc-lite-plugin/skills/<x>/` **shadows the skill**. Measured on **all three** load paths
@@ -790,176 +762,31 @@ anyone changing the plugin.
 
 ## 8. Testing & dry-run methodology
 
-**The plugin is never installed into the developer's global `~/.claude`.** It's installed and run
-inside a **dev container** with its own isolated `~/.claude` (login persisted in the named volume
-`sdlc-lite-claude`) and the pinned Python toolchain. The container is both the blast-radius
-boundary (the product *writes and commits code*) and the environment where Gate 0's preflight passes.
-Full lifecycle — build, shell in, teardown levels, VS Code palette commands, the container's Claude UX
-provisioning — is in **[DEVCONTAINER.md](DEVCONTAINER.md)**.
+**The plugin is never installed into the developer's global `~/.claude`.** It runs inside a **dev
+container** with its own `~/.claude` and the pinned Python toolchain. The container is both the
+blast-radius boundary (the product *writes and commits code*) and the environment where Gate 0's
+preflight passes. Topic owners — this section links to them rather than restating them:
 
-### Fresh setup from zero (no container, image, or volume yet)
-
-1. **Docker up** — `docker ps` — confirms Docker Desktop is running.
-2. **Build + start** — `devcontainer up --workspace-folder .` — builds the image (first time only)
-   and starts the container, named per `runArgs` in `.devcontainer/devcontainer.json`. Creates the
-   `sdlc-lite-claude` volume if absent.
-3. **Verify toolchain** — `devcontainer exec --workspace-folder . bash -c "python --version && ruff
-   --version && mypy --version && pytest --version && python -c \"import importlib.metadata as m;
-   print('mutmut', m.version('mutmut'))\" && claude --version"` — confirms the pinned toolchain
-   (`postCreateCommand`) installed cleanly.
-4. **Login** — `devcontainer exec --workspace-folder . claude` (interactive) — first run on a fresh
-   volume needs OAuth login; persists into the `sdlc-lite-claude` volume.
-5. **Install plugin** — inside that `claude` session: `/plugin install sdlc-lite@sdlc-lite-dev`
-   (or `claude plugin install sdlc-lite@sdlc-lite-dev` from a container shell) — **known gap:**
-   `postStartCommand` registers the `sdlc-lite-dev` marketplace (a `directory` source pointing at the
-   bind-mounted `/workspaces/sdlc-lite`, per `.devcontainer/claude/settings.json`) but does not install
-   the plugin itself on a fresh volume — this step is required once per fresh volume. This dev catalog
-   holds a **single directory-source entry** (`sdlc-lite` → `./sdlc-lite-plugin`), so the install loads
-   from the **local workspace**, not GitHub. The tag-pinned *customer* channel lives in a separate
-   umbrella repo (`Sdaas/claude-plugins`, `sdlc-lite@sdaas`) — see the channels table in ADR-13 and the
-   clean-room verification note below.
-6. **Verify** — `/plugin` or `/plugin list` inside Claude — confirms `sdlc-lite` shows enabled.
-
-To rename the container, set `runArgs: ["--name", "<name>"]` in `.devcontainer/devcontainer.json`
-before step 2 — `devcontainer` CLI has no `--name` flag of its own.
-
-**Clarification — step 5 installs from the local workspace, not GitHub.** The container's
-`settings.json` pre-registers the `sdlc-lite-dev` marketplace as a `directory` source pointing at
-`/workspaces/sdlc-lite` (the bind-mounted repo). It resolves `sdlc-lite` — the sole directory-source
-entry (`./sdlc-lite-plugin`) in `.claude-plugin/marketplace.json` — and copies it into
-`~/.claude/plugins/cache/`. The github-tag-pinned *customer* channel is **not in this repo's catalog**;
-it lives in the umbrella repo `Sdaas/claude-plugins` (`sdlc-lite@sdaas`) — ADR-13. This is the dev
-path — the "Clean-room verification" note below documents the *separate* real-user path
-(`claude plugin marketplace add Sdaas/claude-plugins` → install `sdlc-lite@sdaas`, a real GitHub clone).
+- **[`DEVCONTAINER.md`](DEVCONTAINER.md)** — container lifecycle, fresh setup, auth (`.env`), the two
+  Claude profiles, and how the plugin loads in the container.
+- **[`verification-ladder.md`](verification-ladder.md)** — the test tiers (T1 evals, T2 pytest, T3
+  dry run) and the `release-verify.sh` clean-room gate.
+- **[`RELEASING.md`](RELEASING.md)** — channels and release mechanics.
 
 Two harnesses:
 
-- **Host unit tests** — `guard.py` and `analyzer/` have real unit tests (synthetic stdin, synthetic
-  run-logs + transcripts including both degradation modes). Run them in-container against the pinned
-  toolchain: `python -m pytest sdlc-lite-plugin -q`. `guard.py`'s tests cover every deny/allow
-  branch; the analyzer's cover both transcript-degradation modes.
-- **End-to-end dry runs** — a human drives an actual `/implement-feature` run in a container terminal
-  (a TTY constraint), then the analyzer is run over the resulting logs and the fallout is fixed.
-
-**Reviewing handoff files mid-run, from the Mac.** When a run happens against a fixture's scratch
-repo (`/workspaces/<slug>-run/`, see "Standard fixtures" below), its `.implement-feature/` artifacts
-are **container-only** — they're outside the `sdlc-lite` bind mount, so they don't exist on the Mac's
-filesystem and a normal Mac editor/Finder can't see them. Three ways to read a gate's draft/handoff
-file at a STOP:
-1. **`devcontainer exec` + `cat`** — quickest, no GUI: `devcontainer exec --workspace-folder . cat
-   /workspaces/<slug>-run/.implement-feature/<run>/handoff/draft/<file>.md`.
-2. **VS Code, attached to the container** — Command Palette → **"Dev Containers: Attach to Running
-   Container"** → pick the container → open `/workspaces/<slug>-run`. This differs from "Reopen in
-   Container," which only ever shows the bind-mounted `sdlc-lite` folder — *Attach* opens a window on
-   the container's whole filesystem, so fixture scratch repos are visible too.
-3. **`docker cp`** — pull a copy onto the Mac as a real local file: `docker cp
-   <container>:/workspaces/<slug>-run/.implement-feature/<run>/handoff/draft/<file>.md ./review.md`.
+- **Unit tests (T2)** — `guard.py`, `policy.py`, `agentdefs.py` and `analyzer/` have real unit tests
+  (synthetic stdin, synthetic run-logs + transcripts including both degradation modes):
+  `python3 -m pytest sdlc-lite-plugin -q`, on the host or in the container.
+- **End-to-end dry runs (T3)** — a human drives an actual `/implement-feature` run in a container
+  terminal (a TTY constraint), usually against a standard fixture (below); then the analyzer is run
+  over the resulting logs and the fallout is fixed.
 
 **A dry run is a bug-finding machine.** The first full run (`parse_duration`) validated the core design
 *and* shook out ~13 concrete improvements. Subsequent runs (`slugify`, and the async `CachedFetcher`
 with a fault-injection pass) confirmed the fixes and the invariants: model pinning splits exactly as
 designed (reviews on Opus, producers on Sonnet — transcript-proven), isolation holds (the test-writer
 stayed algorithm-blind, the implementer never touched a test file), and the pipeline commits.
-
-### Two Claude profiles in one container (`CLAUDE_CONFIG_DIR`)
-
-`CLAUDE_CONFIG_DIR` is where Claude Code keeps a **per-user profile** (default `~/.claude`): the
-login/credentials, `settings.json` (model, permissions, hooks, `enabledPlugins`,
-`extraKnownMarketplaces`), the installed-plugin cache, and which marketplaces are registered. Point
-that variable at a **different directory** and you get a **completely separate Claude profile** — a
-different login, different marketplaces, different installed plugins — on the **same machine, same
-filesystem, same toolchain**. That one lever lets a single dev container be **two environments at
-once**:
-
-| | `~/.claude` (default) — **DEV** | `~/.claude-*` — **CUSTOMER / clean-room** |
-|---|---|---|
-| Marketplace | `sdlc-lite-dev` (directory source) | `sdaas` (umbrella, `git-subdir` from GitHub) |
-| Plugin source | **live from the workspace** | **the real GitHub release** (tag-pinned) |
-| Purpose | iterate on the plugin | simulate exactly what a stranger installs |
-| Python toolchain | **shared** — installed system-wide (`uv pip install --system`) | **shared** — the same one |
-
-The toolchain is installed at the OS level, so the customer profile inherits it for free; the
-isolation is **purely the config layer**. The dev profile answers *"does my edit work live?"*; a
-fresh clean-room profile (no dev marketplace) answers *"does the shipped artifact work for someone
-who's never seen my workspace?"* — which is exactly what the release gate (#41 Phase E) needs. No
-second container required.
-
-### Automated clean-room verification (`release-verify.sh`)
-
-`release-verify.sh` (repo root) automates the customer path end-to-end — *"automate whatever can be
-automated"* — and hands off only the irreducibly-human step. It spins up a **fresh isolated
-`CLAUDE_CONFIG_DIR`** (no dev marketplace), installs `sdlc-lite@sdaas` from the umbrella on GitHub,
-asserts a genuine `git-subdir` install (cached version == `plugin.json` version, commands/agents/hooks
-present), then runs a **headless two-call Gate 0/Gate 1 smoke** on a fresh fixture:
-
-- **call 1** — `claude -p "/implement-feature <request>"` → asserts **Gate 0 "Preflight passed"** and
-  the confirm-STOP (`.active-run` written);
-- **call 2** — `claude --continue -p "APPROVED …"` → asserts the **Gate 1 interview** started.
-
-Finally it proves **`/plugin update`** (git/fs only, no model calls): it reconstructs the umbrella
-catalog **as of the previous tag** (rewriting the entry's `ref`/`sha` to `v<prev>` in a throwaway
-clone), installs that older release, then advances the catalog to the current pin and runs
-`marketplace update` + `plugin update <plugin>` — asserting the installed version moves `<prev>` →
-`<current>`. Skipped automatically on the first release (no previous tag).
-
-Last, it runs the **milestone eval suite** — T1 of the
-[verification ladder](verification-ladder.md): `claude plugin eval` over `sdlc-lite-plugin/evals/`
-with both arms, a pinned `--model`, and `--threshold 0.8`. This step grades the plugin **source at
-the checkout** (the tag, at release time), not the installed copy. The whole run is **18/18** when a
-previous tag exists.
-
-The full gated run past Gate 1 stays a **human** step (approval gates; never commits before a human
-approves), which the script prints as a handoff.
-
-**Auth — `.env` (git-ignored).** The `claude -p` calls run **inside the container** (that's where the
-toolchain and the clean-room profile live), so they need non-interactive auth. Supply it via a
-repo-root `.env` that the script `source`s *inside* the container (bind-mounted at
-`/workspaces/sdlc-lite/.env`, so the token never appears in host process args, and `*.env` is
-git-ignored so it can't be committed). One line:
-
-```dotenv
-CLAUDE_CODE_OAUTH_TOKEN=<token>
-```
-
-Mint the token **once on the Mac** with **`claude setup-token`** (a long-lived, Claude-subscription
-token — it doesn't expire like a session login) and paste its output. An `ANTHROPIC_API_KEY=…`
-(Console key, API-billed) works instead. Copy `.env.example` → `.env` to start. Run:
-`./release-verify.sh` (add `--keep` to retain the config/fixture, `--no-smoke` for install-verify only,
-`--no-evals` to skip the ~15-minute eval suite, `--evals-only` to run just that suite).
-
-### The plugin loads from the workspace
-
-In the container, the directory-source marketplace loads the plugin **from the mounted workspace**
-(`/workspaces/.../sdlc-lite-plugin/**`), *not* the `~/.claude/plugins/cache` copy (which is
-vestigial there). So editing the plugin needs **no cache-sync step** — a workspace edit takes effect on
-a **fresh container Claude session restart** (SKILL/agents load at startup; the guard hook reloads per
-tool call). Note this differs from a *real end-user* install, which hits the cache path — the User
-Guide documents that distinction.
-
-### Install-from-GitHub verification (real user path, checked)
-
-> **⚠️ Superseded by the umbrella design (ADR-13, #41).** The run below verified the *old* single-repo
-> path (`marketplace add Sdaas/sdlc-lite` → `install implement-feature@sdaas-sdlc-lite`), which no
-> longer exists — the customer channel moved to the umbrella repo `Sdaas/claude-plugins`
-> (`sdlc-lite@sdaas`). Kept as a historical record that a github-clone install works end to end; the
-> **new** customer path is verified by the automated **`release-verify.sh`** clean-room run (see the
-> CLAUDE_CONFIG_DIR two-profile section below) — 17/17, incl. a `/plugin update` bump.
-
-The **real end-user path** — `claude plugin marketplace add Sdaas/sdlc-lite` +
-`claude plugin install implement-feature@sdaas-sdlc-lite` — was verified for real on 2026-09-12,
-inside the dev container but from `/tmp` (outside the bind-mounted workspace, so `marketplace add`
-had no local copy to fall back to):
-
-- `claude plugin marketplace add Sdaas/sdlc-lite` logged `cloning via HTTPS:
-  https://github.com/Sdaas/sdlc-lite.git` and `Clone complete, validating marketplace…` — a genuine
-  network clone, not the directory source.
-- `claude plugin install implement-feature@sdaas-sdlc-lite` succeeded; `claude plugin list` showed it
-  `✔ enabled`.
-- The installed cache (`~/.claude/plugins/cache/sdaas-sdlc-lite/implement-feature/0.1.0/`) was
-  spot-checked for completeness: `skills/implement-feature/SKILL.md` (615 lines, 53 `Gate`
-  mentions) and all five `agents/*.md` files were present and intact.
-- The test marketplace/plugin were removed afterward so they don't linger in the persisted
-  `sdlc-lite-claude` login volume.
 
 ### Fault injection (the un-mocked resiliency check)
 
@@ -1040,7 +867,18 @@ gate prompts or destroy/rebuild the container. Those are separate, larger, not-y
 **#21** (destroy + rebuild the container fresh per run, deterministic setup) is expected to wrap this
 script rather than reinvent it; **#34** (an agent driving the gates unattended, with the receipt —
 never the driver's judgment — as the pass/fail oracle) consumes a fixture's `BRIEF.md` as its input
-prompt. Both are v1.1/v2, independent of this script, and neither blocks using it by hand today.
+prompt. #21 is planned for `1.0.0`, #34 is backlog; neither blocks using the script by hand today.
+
+**Reviewing handoff files mid-run, from the Mac.** A fixture run's `.implement-feature/` artifacts
+live in `/workspaces/<slug>-run/`, outside the `sdlc-lite` bind mount, so they don't exist on the
+Mac's filesystem. Three ways to read a gate's draft/handoff file at a STOP:
+1. **`devcontainer exec` + `cat`** — quickest, no GUI: `devcontainer exec --workspace-folder . cat
+   /workspaces/<slug>-run/.implement-feature/<run>/handoff/draft/<file>.md`.
+2. **VS Code, attached to the container** — Command Palette → **"Dev Containers: Attach to Running
+   Container"** → open `/workspaces/<slug>-run`. ("Reopen in Container" only shows the bind-mounted
+   `sdlc-lite` folder.)
+3. **`docker cp`** — pull a local copy: `docker cp
+   sdlc-lite-test:/workspaces/<slug>-run/.implement-feature/<run>/handoff/draft/<file>.md ./review.md`.
 
 ---
 

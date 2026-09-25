@@ -1,7 +1,7 @@
 # 60-plan — repo + open-issue audit; simplify developer-guide
 
 **Issue:** [#60](https://github.com/Sdaas/sdlc-lite/issues/60) · **Milestone:** `1.0.0-beta.3` ·
-**Branch:** `60-repo-review` · **Status:** audit + triage done; Phases A–B done; Phase C next.
+**Branch:** `60-repo-review` · **Status:** audit + triage done; Phases A–C done; Phase D next.
 
 Branch-scoped working plan. `git rm` this file in the merge/close commit.
 
@@ -51,7 +51,7 @@ Branch-scoped working plan. `git rm` this file in the merge/close commit.
 - [x] Audit + triage; #60, #61, #62, #63 filed; #58 → beta.3; merged branches deleted
 - [x] A — P0 wording fixes (pytest + links green; T1 `--tag gate-0` eval deferred to E, before merge)
 - [x] B — issue edits + proposals copy + release-plan
-- [ ] C — P2 dev-docs consistency
+- [x] C — P2 dev-docs consistency (pytest 177/177 + links green; SKILL.md:29 left to #62)
 - [ ] D — P3 simplification
 - [ ] E — close-out
 

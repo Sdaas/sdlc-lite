@@ -5,7 +5,7 @@ The pins live in the agent-definition frontmatter (`agents/<role>.md`):
     ---
     name: code-reviewer
     model: claude-opus-4-8
-    effort: high
+    effort: medium
     ...
     ---
 
@@ -34,8 +34,8 @@ pin is honored on a bare dispatch. Either way, both pins are proven by the analy
 Frontmatter is parsed by hand (no PyYAML dependency): the guard hook must stay
 dependency-free, and the frontmatter we read is flat `key: value` lines. Pure w.r.t.
 process state; the only I/O is reading the agent-def files. Never raises — a missing
-or unparseable agent-def yields no pin (the receipt degrades that column to UNKNOWN,
-and the guard fails OPEN on it), never a guess.
+or unparseable agent-def yields no pin (the receipt degrades that column to UNKNOWN),
+never a guess.
 """
 from __future__ import annotations
 

@@ -5,8 +5,9 @@
 ## 1. The problem
 
 **This product's source is prose.** The behavior of `sdlc-lite` lives in `SKILL.md`,
-`agents/*.md`, `references/*` and `hooks.json`. The only real code is `guard.py` (the guard hook)
-and `analyzer/` — a few hundred lines out of a product that is otherwise Markdown.
+`agents/*.md`, `references/*` and `hooks.json`. The only real code is `guard.py` + `policy.py` (the
+guard hook and its rules), `agentdefs.py` and `analyzer/` — a small surface in a product that is
+otherwise Markdown.
 
 That creates four problems a normal repo does not have.
 
@@ -82,9 +83,10 @@ One slice of T3 *is* scripted: **`verify-entry-points.py`** (#57) proves the ent
 command loads the body, and the model cannot start the workflow itself — on both load paths, with no
 human in the loop. See [`DEVCONTAINER.md`](DEVCONTAINER.md#entry-point-check--verify-entry-pointspy).
 
-**T3 cannot be automated, and that is a design fact, not a gap.** A dry run *is* another Claude
-session with a human at the approval gates; there is nothing for a script to assert. So a gate that
-requires T3 **STOPs and the human attests** — they ran it, and here is what they saw. No skill, no
+**The rest of T3 cannot be automated, and that is a design fact, not a gap.** A full dry run *is*
+another Claude session with a human at the approval gates; past the entry points there is nothing
+for a script to assert. So a gate that requires T3 **STOPs and the human attests** — they ran it,
+and here is what they saw. No skill, no
 script and no agent may mark a T3 requirement satisfied on its own.
 
 ---
@@ -103,8 +105,8 @@ rows, take the union.
 | `hooks.json` registration | **T3** — nothing else proves a hook fires |
 | Docs only (`README.md`, `dev-docs/**`) | none — see below |
 
-**Docs-only changes are not gated.** Gating a README edit is theater; `/feature` declines docs-only
-and shell-only changes outright. The one exception: a doc whose path the *shipped* `SKILL.md` prints
+**Docs-only changes are not gated.** Gating a README edit is theater (the planned repo-local
+`/feature` skill, #52, declines docs-only and shell-only changes outright). The one exception: a doc whose path the *shipped* `SKILL.md` prints
 at runtime — changing that is a prose change to the product, not a doc change.
 
 **Enforcement parity.** A new prose rule that the guard hook is meant to enforce needs its matching
@@ -128,7 +130,7 @@ claude plugin eval sdlc-lite-plugin --ablation none --tag <area>
 thing", not "is the plugin worth its tokens". Run it this way once before trusting any delta.
 
 **Milestone / pre-release (the full gate).** The whole suite, both arms, pinned models, a threshold,
-run in the dev container and wired into `release-verify.sh`:
+run in the dev container and wired into `release-verify.sh` (§8):
 
 ```bash
 claude plugin eval sdlc-lite-plugin \
@@ -205,6 +207,38 @@ Declare the tier **at plan time**, before implementing — it is part of what th
 Write the eval case **before** the prose it verifies. Run the declared tier and present the
 evidence, not a claim. If the tier includes T3, stop and let the human attest. If the change fixed a
 bug, deposit the case that reproduces it, so the next edit cannot silently undo the fix.
+
+---
+
+## 8. The release gate — `release-verify.sh`
+
+`release-verify.sh` (repo root, run on the Mac) automates the customer path end to end and hands off
+only the irreducibly-human step. [`RELEASING.md`](RELEASING.md) §4 says *when* to run it; this
+section says what it checks. It starts with a relative-link check over every `*.md`
+(`--links-only` runs just that, on the host), then:
+
+1. **Clean-room install.** A fresh isolated `CLAUDE_CONFIG_DIR` in the container (no dev marketplace
+   — see [`DEVCONTAINER.md`](DEVCONTAINER.md) → Two Claude profiles) installs `sdlc-lite@sdaas` from
+   the umbrella on GitHub and asserts a genuine `git-subdir` install: cached version equals
+   `plugin.json`, commands/agents/hooks present.
+2. **Gate 0/1 smoke (headless, two calls)** on a fresh fixture: `claude -p "/implement-feature …"`
+   must print Gate 0 "Preflight passed" and write `.active-run`; `claude --continue -p "APPROVED …"`
+   must start the Gate 1 interview. A body canary reads the session transcript and fails if the
+   skill body was shadowed or never injected (ADR-14).
+3. **`/plugin update` proof** (git/fs only, no model calls). Rebuilds the umbrella catalog as of the
+   previous tag in a throwaway clone, installs that release, advances the catalog, and runs
+   `marketplace update` + `plugin update` — the installed version must move `<prev>` → `<current>`.
+   Skipped on the first release.
+4. **Milestone eval suite (T1, §4).** `claude plugin eval` over `sdlc-lite-plugin/evals/`, both arms,
+   pinned `--model`, `--threshold 0.8`. It grades the plugin **source at the checkout** (the tag, at
+   release time), not the installed copy.
+
+The whole run is **18/18** when a previous tag exists. The full gated run past Gate 1 stays a
+**human** step (T3), which the script prints as a handoff.
+
+Auth comes from the repo-root `.env` (see [`DEVCONTAINER.md`](DEVCONTAINER.md) → Authentication).
+Flags: `--keep` retains the config/fixture, `--no-smoke` does install-verify only, `--no-evals`
+skips the ~15-minute eval suite, `--evals-only` runs just that suite.
 
 ---
 

@@ -230,9 +230,10 @@ were *wrong*:
 4. **Effort is frontmatter-only** — pin it in the agent-def; there's no spawn-time override.
 5. **A worktree does not hide files** — `isolation: worktree` is a full branch copy. To keep a file
    from an agent, keep it out of the agent's lane (the fence) or deny it in the hook.
-6. **Don't rely on parsing the transcript** for anything critical — its format is internal/unstable.
-   The hook audit log is the dependable record; use the transcript only as a best-effort source for
-   model/token figures.
+6. **The transcript is ground truth, but its format is internal/unstable.** It is the only record of
+   what an agent actually *saw* (tool output) and which model/effort it actually ran on, so the
+   analyzer relies on it for exactly those claims — and when the format drifts it fails loud or
+   reports UNKNOWN, never a silent PASS. The hook audit log is the stable record of *attempts*.
 
 ### How `implement-feature` enforces isolation (the guard hook)
 
@@ -252,8 +253,11 @@ fired.
 
 Enforcing isolation *preventively* (the guard hook) is only half the story; you also want to *prove*
 after the fact what each agent did. The `analyzer/` reads the two evidence sources a run leaves behind —
-the guard's audit log (stable, load-bearing) and the session transcript (best-effort, for model/tokens)
-— and reports the per-gate model split + an isolation-compliance pass/fail. Crucially it is
+the guard's audit log (stable; records what each agent *attempted*) and the session transcript
+(unstable format, but the only proof of what each agent actually *saw* and which model/effort it
+ran on) — and reports a per-agent receipt: model/effort vs the pins, and isolation pass/fail. The
+transcript's content audit is the **authoritative** isolation check, because it catches a leak the
+guard's command-string view cannot see (developer guide, ADR-11). Crucially it is
 **deterministic Python that only reads**, never a summarizer subagent: "did the forbidden read happen?"
 is a grep-and-count fact, and making the analyzer an agent would inject a second AI acting inside the
 system — re-introducing the very "driver" the workflow avoids. **Code is allowed when it measures or
