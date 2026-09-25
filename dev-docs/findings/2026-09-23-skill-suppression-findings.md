@@ -233,3 +233,11 @@ bare id was observed in practice.
 
 **Load paths used:** cells 1, 2, 5, 7 via `--plugin-dir`; cells 3, 4, 6, 8 via the directory
 marketplace. Assuming paths behave alike is what let this bug hide — a checker must sweep both.
+
+## Addendum — 2026-09-25: the typed slash still shadows, on the namespaced spelling (#57)
+
+Re-measured with `verify-entry-points.py` on Claude Code **2.1.281**, shim restored in a scratch copy,
+both load paths, both session modes. **Bare `/implement-feature` loads the body; `/sdlc-lite:implement-feature`
+expands the shim** (`shim=1`, `body=0`) — 4/16 cells red. The 2026-09-24 addendum measured the bare
+spelling only, so its "no longer reproduces" holds for that spelling alone. The #55 bug class is live
+in current Claude Code; the checker's two-spelling sweep is what catches it.

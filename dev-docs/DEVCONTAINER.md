@@ -160,6 +160,18 @@ modes either way.
 | Onboarding / theme / folder trust | `~/.claude.json` | ❌ — re-seeded each start |
 | Token | `.env` on the Mac | n/a — bind-mounted, never copied in |
 
+## Entry-point check — `verify-entry-points.py`
+
+Runs the 8-cell entry-point contract (ADR-14) against the working tree, on both load paths:
+
+```bash
+devcontainer exec --workspace-folder . python3 /workspaces/sdlc-lite/verify-entry-points.py               # 8 headless sessions, ~1 min
+devcontainer exec --workspace-folder . python3 /workspaces/sdlc-lite/verify-entry-points.py --interactive # all 16, ~5 min
+```
+
+Run it after editing a skill's frontmatter/`description`, adding or renaming a command or skill,
+changing the guard's `Skill` rule, or bumping the container's Claude Code version. Exit non-zero = a red cell.
+
 ---
 
 ## VS Code — Command Palette (⇧⌘P / Cmd-Shift-P)
