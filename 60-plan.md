@@ -52,7 +52,9 @@ Branch-scoped working plan. `git rm` this file in the merge/close commit.
 - [x] A — P0 wording fixes (pytest + links green; T1 `--tag gate-0` eval deferred to E, before merge)
 - [x] B — issue edits + proposals copy + release-plan
 - [x] C — P2 dev-docs consistency (pytest 177/177 + links green; SKILL.md:29 left to #62)
-- [ ] D — P3 simplification
+- [ ] D — P3 simplification. Already done in C: P3-3's "Requirements at a glance" dropped (lead
+      bullets still to tighten); dev-guide §8 cut to intro + links + fault injection + fixtures.
+      Dev-guide is 896 lines going in (target ~600–650).
 - [ ] E — close-out
 
 ---
