@@ -185,7 +185,7 @@ list presented before each commit; nothing commits without approval.
 ## 7. Progress tracker
 
 - [x] P1 #50 — verification ladder · eval tutorial · eval seed suite · release-verify hook (green run on claude-opus-5-5 → #59)
-- [ ] P2 #57 — 8-cell entry-point checker
+- [x] P2 #57 — 8-cell entry-point checker (`verify-entry-points.py`; 16/16 green, shim restored → red)
 - [ ] P3 #51 — shared spine + `/issue`
 - [ ] P4 #52 — `/feature`
 - [ ] P5 #53 — `/fix` + docs close-out

@@ -705,6 +705,26 @@ and still announcing gates, so every downstream signal looks healthy. Two regres
 checks exist because of that: `tests/test_entry_points.py` (structural — the name collision, host-only,
 no model call) and a behavioral canary asserting `SKILL.md`-only text, since gate markers prove nothing.
 
+*Conformance (#57).* The contract is checked by `verify-entry-points.py` (repo root, in the dev
+container). Every cell runs on **both** `--plugin-dir` and the directory marketplace; verdicts are
+transcript signatures, never a model judgment.
+
+| # | Typed | Session | Green when the transcript shows |
+|---|---|---|---|
+| 1 | `/implement-feature` | headless | `Base directory for this skill`, no shim text |
+| 2 | `/sdlc-lite:implement-feature` | headless | same |
+| 3 | `/implement-feature` | interactive (`--interactive`) | same |
+| 4 | `/sdlc-lite:implement-feature` | interactive (`--interactive`) | same |
+| 5 | natural phrasing | headless | body never injected |
+| 6 | natural phrasing | interactive (`--interactive`) | body never injected |
+| 7 | "invoke the Skill tool" | headless | a `Skill` call **and** the guard's explicit-entry denial |
+| 8 | "invoke the Skill tool" | interactive (`--interactive`) | same |
+
+Cells 7-8 test the **hook alone**: they run against a copy with a neutral skill `description`,
+because the real one makes the model refuse the call, which leaves the guard unexercised. Cells 5-6
+test the as-shipped stack. Proven red (claude 2.1.281): restoring the #55 shim reds cells 2 and 4;
+dropping `Skill` from the guard matcher reds 7-8.
+
 ---
 
 ## 7. Design principles (distilled)

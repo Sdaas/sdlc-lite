@@ -78,6 +78,10 @@ Python change. Runs on the host.
 The only rung that proves a hook actually **fires**, a gate is actually **reached**, or the plugin
 loads at all — because it is the only one that runs the real thing end to end.
 
+One slice of T3 *is* scripted: **`verify-entry-points.py`** (#57) proves the entry points — the slash
+command loads the body, and the model cannot start the workflow itself — on both load paths, with no
+human in the loop. See [`DEVCONTAINER.md`](DEVCONTAINER.md#entry-point-check--verify-entry-pointspy).
+
 **T3 cannot be automated, and that is a design fact, not a gap.** A dry run *is* another Claude
 session with a human at the approval gates; there is nothing for a script to assert. So a gate that
 requires T3 **STOPs and the human attests** — they ran it, and here is what they saw. No skill, no

@@ -80,10 +80,11 @@ Current milestone: **`1.0.0-beta.3`**.
    **Done 2026-09-25** (`35857b0`). *Container claude pinned to 2.1.281. First opus-5-5 baseline:
    5/7 pass, $3.51 for one with-without run. The two failures are #58 render paraphrases.
    Threshold/`--runs` tuning is deferred to the beta.3 release cut.*
-7. **#57** — `test(repo): automate the 8-cell entry-point contract`
-   *Next. After #50 — the checker is a rung of that issue's verification ladder, so it lands inside the
-   ladder rather than beside it. It locks what #55 and #56 established: both slash spellings work in
-   both session modes, and the model never starts the workflow on its own.*
+7. ~~**#57**~~ — `test(repo): automate the 8-cell entry-point contract`
+   **Done 2026-09-25.** *`verify-entry-points.py` — 8 cells x 2 load paths, 16/16 green on 2.1.281.
+   Restoring the #55 shim still reds `/sdlc-lite:implement-feature`, so the bug class is live in
+   current Claude Code and the check earns its keep. Cells 7-8 test the hook alone (neutral-description
+   copy): the real description makes the model refuse the call.*
 8. **#51** — `feat(repo): shared SDLC gate spine + /issue skill`
    *After #50 — `.claude/sdlc/gates.md` links to the ladder rather than restating it, and
    `/issue`'s two eval cases need the suite to live in. The spine must land before #52 or #53 so
