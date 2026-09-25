@@ -1,7 +1,7 @@
 # 60-plan — repo + open-issue audit; simplify developer-guide
 
 **Issue:** [#60](https://github.com/Sdaas/sdlc-lite/issues/60) · **Milestone:** `1.0.0-beta.3` ·
-**Branch:** `60-repo-review` · **Status:** audit + triage done; Phases A–C done; Phase D next.
+**Branch:** `60-repo-review` · **Status:** audit + triage done; Phases A–D done; Phase E next.
 
 Branch-scoped working plan. `git rm` this file in the merge/close commit.
 
@@ -52,9 +52,9 @@ Branch-scoped working plan. `git rm` this file in the merge/close commit.
 - [x] A — P0 wording fixes (pytest + links green; T1 `--tag gate-0` eval deferred to E, before merge)
 - [x] B — issue edits + proposals copy + release-plan
 - [x] C — P2 dev-docs consistency (pytest 177/177 + links green; SKILL.md:29 left to #62)
-- [ ] D — P3 simplification. Already done in C: P3-3's "Requirements at a glance" dropped (lead
-      bullets still to tighten); dev-guide §8 cut to intro + links + fault injection + fixtures.
-      Dev-guide is 896 lines going in (target ~600–650).
+- [x] D — P3 simplification. Dev-guide 896 → 703 lines (−33% vs the 1,056 baseline), all ADRs
+      in Context/Decision/Consequences, §0–§9 + ADR-1..14 unchanged; CLAUDE.md → conventions,
+      rules, pointers; README lead bullets tightened (pytest 177/177 + links green).
 - [ ] E — close-out
 
 ---

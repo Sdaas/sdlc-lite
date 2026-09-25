@@ -12,15 +12,18 @@ whole workflow is expressed in Markdown, and the agent is the runtime.
 
 What that buys you:
 
-- Tests are written by an *algorithm-blind* subagent, reviewed by an independent critic *before* any code exists, and the implementer is *barred from editing them*.
-- Design and every review gate run on a higher model than implementation
-- A separate verifier drives the *real* feature against every
-  acceptance criterion and exercises every external boundary un-mocked.
+- Tests are written by an *algorithm-blind* subagent and reviewed by an independent critic *before*
+  any code exists. The implementer is *barred from editing them*.
+- Design and every review gate run on a higher model than implementation.
+- A separate verifier drives the *real* feature against every acceptance criterion and exercises
+  every external boundary un-mocked.
 - Nothing is committed until you review the real artifacts and approve.
-- Every gate is *isolated* (it reads only the files
-  curated for its role) and runs at a *pinned model/effort*. 
-- After each run a deterministic audit produces a **receipt** that verifies both from the ground-truth session transcript — turning "we
-  isolate and we bound the reasoning budget" from a claim into a per-run, checkable fact. The model, effort, and isolation are all **verified** by the receipt from the transcript, with **best-effort real-time prevention** by the guard (isolation).
+- Every gate is *isolated* (it reads only the files curated for its role) and runs at a *pinned
+  model/effort*. A guard hook blocks isolation breaches as they happen (best-effort for shell
+  commands).
+- After each run, a deterministic audit reads the session transcript and produces a **receipt**
+  showing which model and effort each gate actually used and what each one saw. A violation marks
+  the run untrusted.
 
 ---
 
