@@ -85,18 +85,26 @@ Current milestone: **`1.0.0-beta.3`**.
    Restoring the #55 shim still reds `/sdlc-lite:implement-feature`, so the bug class is live in
    current Claude Code and the check earns its keep. Cells 7-8 test the hook alone (neutral-description
    copy): the real description makes the model refuse the call.*
-8. **#51** — `feat(repo): shared SDLC gate spine + /issue skill`
-   *Next. After #50 — `.claude/sdlc/gates.md` links to the ladder rather than restating it, and
+8. **#60** — `docs(repo): audit repo + open issues for staleness; simplify developer-guide`
+   *Next — in progress on `60-repo-review`; resume with **"read 60-plan.md and continue"**. Lands
+   before #51 so the repo-local skills are written against current docs and issues.*
+9. **#51** — `feat(repo): shared SDLC gate spine + /issue skill`
+   *After #60 and #50 — `.claude/sdlc/gates.md` links to the ladder rather than restating it, and
    `/issue`'s two eval cases need the suite to live in. The spine must land before #52 or #53 so
    neither invents its own gate prose. Settle the eval target first — `/issue` is repo-local, not in
    the plugin (see the comment on #51).*
-9. **#52** — `feat(repo): /feature skill — 9 gates, 4 STOPs`
+10. **#52** — `feat(repo): /feature skill — 9 gates, 4 STOPs`
    *After #51 — it executes the spine. Its **Open Question** (whether `/feature` also updates
    this file) is settled: **no** — roadmap ordering stays a human call. #52 is unblocked.*
-10. **#53** — `feat(repo): /fix skill — REPRODUCE + DEPOSIT gates`
+11. **#53** — `feat(repo): /fix skill — REPRODUCE + DEPOSIT gates`
    *Last — reuses #52's spine and adds the two gates that close the regression-safety gap. Also
    carries the close-out: the developer-guide rationale, README routing, this file's final update,
    and removing `48-plan.md`.*
+12. **#58** — `fix(skill): conductor sometimes skips the lock STOP and the explicit-entry redirect`
+   *Moved in from `1.0.0` by #60: `release-verify.sh` gates the cut on the eval suite at 0.8, and the
+   opus-5-5 baseline is 5/7 because of this bug — beta.3 cannot pass its own gate without it.*
+13. **#61** — `fix(skill): agent inboxes and quality-standards disagree with SKILL.md`
+   *Found by #60. Share #58's container session; proof is a `roman-numeral` dry run to Gate 7.*
 
 ## Next release — `1.0.0` (GA)
 
@@ -112,9 +120,8 @@ section becomes the current release.
    *First: every other issue's "Done" bar is a green dry run in the dev container — this is what
    makes a fresh container boot reliably testable at all, and it also settles whether workspace
    edits load live or need a reinstall, which the remaining issues' verification depends on.*
-2. **#58** — `fix(skill): conductor sometimes skips the lock STOP and the explicit-entry redirect`
-   *After #45 — a prose fix whose proof is the eval suite (`--tag gate-0 --tag routing --runs 8`)
-   in the container. A runtime behavior change, so it waits for GA rather than beta.3.*
+2. **#62** — `feat(skill): simplify SKILL.md prose for a cold reader, verified by the eval suite`
+   *After #58 (beta.3) — same prose, same eval proof; land the behavior fix before the rewrite.*
 3. **#43** — `fix(guard-hook): bash_write_targets misreads scratch writes as product-tree writes`
    *Self-contained, unit-testable on the host, and it removes the false denials that make the
    other issues harder to verify in a dry run.*
