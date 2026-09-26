@@ -1,6 +1,6 @@
 ---
 description: Typing /implement-feature starts the workflow, which runs Gate 0 and stops for confirmation
-tags: [entry-point, gate-0]
+tags: [smoke, entry-point, gate-0]
 plugins: ["../.."]
 max_turns: 30
 timeout_seconds: 900

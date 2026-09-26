@@ -366,6 +366,8 @@ raise it once the graders are right, because a single run of a non-deterministic
 | `routing` | Whether the workflow starts (or correctly does not) |
 | `entry-point` | The explicit-entry contract — slash spellings, no auto-invocation |
 | `guard` | Guard-hook behavior |
+| `smoke` | Cheap cases every change runs first (`/feature` Gate 6) |
+| `flaky` | Known-unreliable; a failure is labelled, not trusted (e.g. `gate-0-lock-stop`, #58) |
 
 **Outputs.** A summary table on stdout, and per run
 `sdlc-lite-plugin/evals/results/<timestamp>/aggregate-result.json` plus `report.html`. `--json`

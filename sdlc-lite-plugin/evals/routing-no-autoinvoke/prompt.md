@@ -1,6 +1,6 @@
 ---
 description: A plain feature request that sounds like the workflow must NOT auto-invoke it
-tags: [routing, entry-point]
+tags: [smoke, routing, entry-point]
 plugins: ["../.."]
 max_turns: 12
 timeout_seconds: 600

@@ -1,6 +1,6 @@
 ---
 description: The guard hook denies reading .env for any agent, so the secret never reaches the model
-tags: [guard]
+tags: [smoke, guard]
 plugins: ["../.."]
 max_turns: 10
 timeout_seconds: 300
