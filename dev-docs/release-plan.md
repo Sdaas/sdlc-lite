@@ -10,7 +10,7 @@ Titles can drift — GitHub wins; re-check with `gh issue list --milestone "<tit
 Decision history lives in the issues and the ADRs (`adr/`);
 release conventions live in `RELEASING.md`._
 
-_Last updated: 2026-09-25._
+_Last updated: 2026-09-26._
 
 ---
 
@@ -52,18 +52,15 @@ its children (#50, #57, #51, #52, #53) and closes when #53 closes.
 
 ### Open — in execution order
 
-1. **#52** — `feat(repo): /feature skill — 12 gates, 4 STOPs`
-   *Next — it executes the spine in `.claude/sdlc/gates.md`. Its Open Question (does `/feature`
-   also update this file) is settled: **no** — roadmap ordering stays a human call.*
-2. **#53** — `feat(repo): /fix skill — REPRODUCE + DEPOSIT gates`
-   *Reuses #52's spine and adds the two gates that close the regression-safety gap. Also carries
-   #48's close-out: repo-local SDLC docs in `dev-docs/`, this file's update, removing `48-plan.md`,
+1. **#53** — `feat(repo): /fix skill — REPRODUCE + DEPOSIT gates`
+   *Next — discuss before starting. Reuses #52's 12-gate spine and adds the two gates that close
+   the regression-safety gap. Also carries #48's close-out: repo-local SDLC docs in `dev-docs/`, this file's update, removing `48-plan.md`,
    and deciding whether the root scripts move (#60, Q14).*
-3. **#58** — `fix(skill): conductor sometimes skips the lock STOP and the explicit-entry redirect`
+2. **#58** — `fix(skill): conductor sometimes skips the lock STOP and the explicit-entry redirect`
    *Must land before the cut: `release-verify.sh` gates it on the eval suite at 0.8, and the
    opus-5-5 baseline is 5/7 because of this bug. Still live: `gate-0-lock-stop` failed 1 of 3 runs
    in #60's close-out eval.*
-4. **#61** — `fix(skill): agent inboxes and quality-standards disagree with SKILL.md`
+3. **#61** — `fix(skill): agent inboxes and quality-standards disagree with SKILL.md`
    *Found by #60. Share #58's container session; proof is a `roman-numeral` dry run to Gate 7.*
 
 ### Closed
@@ -78,6 +75,7 @@ its children (#50, #57, #51, #52, #53) and closes when #53 closes.
 | **#57** `test(repo): automate the 8-cell entry-point contract` | 2026-09-25 (`9f0bed7`) | `verify-entry-points.py`, 16/16 green; the #55 bug class is still live, so the check stays. |
 | **#60** `docs(repo): audit repo + open issues for staleness; simplify developer-guide` | 2026-09-25 (`ab24d4c`) | Docs and open issues current; filed #61, #62, #63; moved #58 into beta.3. |
 | **#51** `feat(repo): shared SDLC gate spine + /issue skill` | 2026-09-25 (`7247813`) | `.claude/sdlc/gates.md` is the spine #52/#53 execute, incl. the fail-fast eval budget; `/issue` filed #64 (`/regression`, backlog). |
+| **#52** `feat(repo): /feature skill — 12 gates, 4 STOPs` | 2026-09-26 (`fc05474`) | Spine reworked to 12 gates / 4 STOPs (scope, design, tests, implementation), both reviews before any eval spend; proven by driving #37 end to end. Filed #65, #66. |
 
 ## Next release — `1.0.0` (GA)
 
@@ -103,14 +101,15 @@ section becomes the current release.
    other issues harder to verify in a dry run.*
 5. **#44** — `feat(gate-7): pre-configure [tool.mutmut] in the python-starter fixtures`
    *After #43 — its verification is a clean Gate 7 mutmut run, which #43 stops the guard from blocking.*
-6. **#37** — `feat(skill): add a mechanical pytest.raises match= check at gates 3 and 4`
-   *After #43/#44 — proving it needs a Gate 7 run that isn't drowning in mutmut-setup noise.*
-7. **#19** — `feat(toolchain): add a setup command that installs the pinned toolchain`
+6. **#19** — `feat(toolchain): add a setup command that installs the pinned toolchain`
    *A new command with a **blocking Open Question** (the command's name) that must be answered
    before work starts.*
-8. **#21** — `feat(toolchain): add a clean-run harness that rebuilds the dev container per dry run`
+7. **#21** — `feat(toolchain): add a clean-run harness that rebuilds the dev container per dry run`
    *Last: automates the exact clean-boot verification loop the other issues rely on, so it
-   should land once the boot path (#45) and the changes it will exercise (#43/#44/#37/#19) exist.*
+   should land once the boot path (#45) and the changes it will exercise (#43/#44/#19) exist.*
+
+**Closed early:** **#37** `feat(skill): add a mechanical pytest.raises match= check at gates 3 and 4`
+— 2026-09-26 (`e2a33e7`), as the `/feature` proof run; its T3 reached Gate 7 with no loop.
 
 ## Backlog
 
