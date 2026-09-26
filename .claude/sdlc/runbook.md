@@ -12,7 +12,7 @@ Announce each gate as you enter it (`Gate N — NAME`), so the human always know
 - **Never work on `main`.** Branch at Gate 0, before any edit.
 - **Stop at every STOP.** End the turn and wait; never chain two STOPs in one turn.
 - **Nothing is committed before STOP ④.** Silence is not approval.
-- **No eval money before STOP ③.**
+- **No eval money before STOP ③** — except `/fix`'s T1 repro run, within the cap approved at STOP ①.
 - **One issue per run.** Scope creep found mid-run → offer `/issue` for it, don't absorb it.
 
 ## Gate 0 — CLASSIFY
@@ -40,8 +40,29 @@ decisions to the human. Open with the minimal version and the out-of-scope list.
 testable → say so and go straight to the STOP.
 
 **STOP ①** — show the settled scope (in / out), the surface, the tier with its ladder §3 row, the
-branch, plan file yes/no. On approval, post the scope as one issue comment:
-`gh issue comment NN --body-file <file>`.
+branch, plan file yes/no; for `/fix`, the planned reproduction route (T2 · T1 · T3 — read the files
+the Steps to Reproduce name to choose it) and, if T1, its `--max-cost-usd` cap. A T3 route that cites
+an existing dry run asks for the human's attestation here. On approval, post the scope as one issue
+comment: `gh issue comment NN --body-file <file>`.
+
+## Gate 1b — REPRODUCE (`/fix` only)
+
+Run the route approved at STOP ①:
+
+- **T2** — the defect is visible in files alone (e.g. two files that disagree): write a `pytest`
+  under `sdlc-lite-plugin/` that asserts the Expected; run `python3 -m pytest <file> -q`, show it red.
+- **T1** — it needs a model to show it: write the eval case complete (as at Gate 3: its `tags:`
+  name the areas it covers, its `evals/README.md` row exists), run it once (see *Running a case*)
+  with the repro cap, show it red.
+- **T3** — nothing cheaper shows it: the STOP ① attestation stands, or run the dry run per Gate 7's
+  T3 procedure.
+
+The route does not show the bug → **halt** (as a Gate 7 failure does; not an approval STOP): show
+what was tried; the human approves another route (and its cap), narrows the issue, or closes it as
+not reproducible. Never move to a costlier route unapproved; never design a fix for an unreproduced
+bug. Record the tier, the case path (or the recipe), the red output, and the fingerprint
+`git hash-object <files>` over the case **and every fixture, conftest or helper it depends on**;
+they open the Gate 2 design.
 
 ## Gate 2 — DESIGN
 
@@ -55,7 +76,8 @@ said so; it holds the design and a progress tracker.
 
 Write the cases under `sdlc-lite-plugin/evals/<case>/` (authoring: `dev-docs/eval-tutorial.md`);
 add a row to the case table in `sdlc-lite-plugin/evals/README.md`. Code change: write the `pytest`.
-Check the frontmatter parses. Run nothing that costs money.
+Check the frontmatter parses. Run nothing that costs money. `/fix`: the reproducing case exists
+from 1b; write only the other approved cases.
 
 ## Gate 4 — EVAL-REVIEW
 
@@ -68,6 +90,8 @@ line per check per case. Fix findings (Gate 3), re-review — at most twice.
 ## Gate 5 — IMPLEMENT
 
 1. **Confirm red** — each new case once, in design order (see *Running a case*); new `pytest` red.
+   `/fix`: re-run the reproducing case only if its fingerprint changed since 1b; either way record
+   the fingerprint of its last red run.
    Record per case: fails · passes for the wrong reason (why) · **passes** (show it to the human).
 2. Edit. In this session by default; spawn an ad-hoc subagent with **`model: sonnet`** when the
    diff spans more than 3 files or touches `guard.py`, `policy.py` or `analyzer/` — its brief is the
@@ -94,6 +118,9 @@ once. Route findings per `gates.md`; fast checks after every fix; re-review at m
   something you can read, and never `tmux send-keys`. At `ENDED`: tell them to detach, `make t3-stop`,
   collect the attestation at STOP ④; never mark it satisfied yourself.
 
+`/fix`: always include the tier the bug was reproduced at, and run the reproducing case first
+(T2: `python3 -m pytest <file> -q`, then the suite).
+
 A failure stops here: show it; the human decides re-run, repair (→ Gate 5), or abandon.
 
 ## Gate 8 — REGRESSION
@@ -103,9 +130,27 @@ the areas the diff touched (e.g. edited Gate 0 prose → `gate-0`), skipping one
 List tags with `grep -h '^tags:' sdlc-lite-plugin/evals/*/prompt.md`. A failing `flaky` case is
 labelled `flaky`. Code changed → pytest again. Never the full suite (`/regression`).
 
+## Gate 8b — DEPOSIT (`/fix` only)
+
+Checks only — 8b edits nothing. A failed check is a `→ WRITE-EVALS` finding (Gate 3, then back
+through STOP ③ and forward again).
+
+1. Recompute the fingerprint (same file set as 1b) and compare with the last red run's (1b or
+   Gate 5). Changed → stash the fix (`git stash push -u -- <fixed files>`), re-run the case as at 1b
+   (T1 with the STOP ② cap), then `git stash pop`. It must be red; green means the case no longer
+   reproduces the bug.
+2. Confirm it was green at Gate 7 (T3: the human's attestation stands in, at STOP ④).
+3. T1 → its `tags:` name the areas it covers and its `evals/README.md` row exists. T2 → it sits
+   where `python3 -m pytest sdlc-lite-plugin -q` collects it.
+4. T3-only → post the recipe on the issue (`gh issue comment NN --body-file <file>`) and ask the
+   human to file a follow-up with `/issue` for a cheaper case.
+
+Emit one line for Gate 9: `Deposit: <path or recipe> — <tier>, last red <1b|5|8b>, green at 7`.
+
 ## Gate 9 — REVIEW-GUIDE
 
-`git status` + `git diff --stat <base>...`, then the items Gate 9 lists in `gates.md`.
+`git status` + `git diff --stat <base>...`, then the items Gate 9 lists in `gates.md`; `/fix` adds
+the Deposit line and puts the reproducing case in the same commit as the fix.
 
 ## Gate 10 — HUMAN REVIEW
 

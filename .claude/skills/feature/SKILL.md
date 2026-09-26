@@ -17,4 +17,4 @@ seem to disagree, `gates.md` wins.
 ## Entry
 
 Applied at Gate 0, step 2, once the issue is found and conforms: the issue is a `bug` → point to
-`/fix` (#53) and exit.
+`/fix` and exit.

@@ -1,7 +1,7 @@
 # 53-plan — `/fix` skill (REPRODUCE + DEPOSIT) and the #48 close-out
 
 **Issue:** [#53](https://github.com/Sdaas/sdlc-lite/issues/53) · **Parent:** #48 (`48-plan.md` P5) ·
-**Milestone:** `0.1.0` · **Branch:** `53-fix-skill` · **Status:** P1 done; P2 next
+**Milestone:** `0.1.0` · **Branch:** `53-fix-skill` · **Status:** P1–P3 done (merged); P4 `/fix #61` next, fresh session
 
 Branch-scoped working plan. `git rm` this file (and `48-plan.md`) in the close-out commit (P5).
 GitHub #53 is the spec; this file holds only the locked decisions, the phases and the tracker.
@@ -47,7 +47,7 @@ dev-docs/repo-local-skills.md    # NEW (P5)
 ## 4. Progress tracker
 
 - [x] P1 — runbook extracted, `/feature` slimmed, cold-read parity (before/after `opus` reads match)
-- [ ] P2 — `1b REPRODUCE` / `8b DEPOSIT` in `gates.md` + runbook
-- [ ] P3 — `fix/SKILL.md`; `/feature` routes bugs; committed + merged to `main`
+- [x] P2 — `1b REPRODUCE` / `8b DEPOSIT` in `gates.md` + runbook
+- [x] P3 — `fix/SKILL.md`; `/feature` routes bugs; committed + merged to `main`
 - [ ] P4 — `/fix #61` green (deposited case red → green)
 - [ ] P5 — docs page + routing, F7 comment, release-plan, `git rm` both plans, close #53 and #48

@@ -98,5 +98,5 @@ itself: [`verification-ladder.md`](verification-ladder.md) §6.
 |---|---|---|
 | `/issue` | Files one GitHub issue per [`issue-template.md`](issue-template.md), after you approve the draft | available |
 | `/feature` | Implements an issue through gates 0–11; you approve scope, design, tests and implementation | available |
-| `/fix` | `/feature` plus REPRODUCE and DEPOSIT gates for bugs | planned — #53 |
+| `/fix` | Fixes a `bug` issue: reproduces it first, runs `/feature`'s gates, and commits the reproducing case with the fix | available |
 | `/regression` | Runs the whole eval suite, 3 runs per case | planned — #64 |

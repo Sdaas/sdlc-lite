@@ -47,7 +47,7 @@ rung it must reach.
 | Tier | What it is | Cost | What it actually proves |
 |---|---|---|---|
 | **T1** | `claude plugin eval` — seeded cases run in a fresh isolated `claude -p` session with only this plugin loaded, 3 runs each, scored by graders | seconds–minutes | A cold agent reads the prose the way you intended |
-| **T2** | `python3 -m pytest sdlc-lite-plugin -q` | seconds | The executable surface (`guard.py`, `analyzer/`) is correct |
+| **T2** | `python3 -m pytest sdlc-lite-plugin -q` | seconds | The executable surface (`guard.py`, `analyzer/`) is correct; also pins a static prose defect (two files that disagree) |
 | **T3** | A dev-container end-to-end dry run ([`DEVCONTAINER.md`](DEVCONTAINER.md)) | a full session | The plugin loads, the hook fires, the gate is reached |
 
 ### T1 — `claude plugin eval`
