@@ -12,12 +12,12 @@
 #   2. Copies test-fixtures/python-starter/<slug>/ to /workspaces/<slug>-run/.
 #   3. git init's a fresh repo there on branch `main` and commits the copied
 #      baseline — so /implement-feature's "never commit on default branch"
-#      guard forces it onto a feature branch, per #21's design.
+#      guard forces it onto a feature branch.
 #   4. `pip install -e .` so the package is importable (Gate 0's preflight).
 #
-# This is the reusable building block #21 (clean-container-per-run) and #34
-# (agent-driven regression harness) are expected to wrap later — it does not
-# itself destroy/rebuild the container or drive the workflow.
+# This is the reusable building block: clean-run.sh (#21) wraps it after
+# resetting the container, and #34 (agent-driven regression harness) is expected
+# to later. It does not itself reset the container or drive the workflow.
 
 set -euo pipefail
 
