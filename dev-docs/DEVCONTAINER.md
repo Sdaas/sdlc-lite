@@ -75,9 +75,9 @@ Only removing the **volume** loses state you'd notice (you re-login). Code is ne
 
 The container's Claude gets a curated setup provisioned from the templates in
 **`.devcontainer/claude/`** by **`.devcontainer/post-start.sh`**, which `devcontainer.json` runs as
-its `postStartCommand` on every start (create, restart, rebuild). The script is idempotent by two
-rules — **refresh** files we own outright, **seed** (only if absent) files Claude Code writes to —
-and it is the commented source of truth for what lands where:
+its `postStartCommand` on every start (create, restart, rebuild). The script is idempotent by three
+rules — **refresh** files we own outright, **seed** (only if absent) `settings.json`, **merge** the
+first-run keys into `~/.claude.json` — and it is the commented source of truth for what lands where:
 
 - **`statusline-command.sh`** + **`smart_rm_hook.sh`** are refreshed into `~/.claude/` on every
   start (static scripts — safe to overwrite). The status line shows dir · branch · `user@host` ·
@@ -152,12 +152,17 @@ recreated empty on every container rebuild, and a bare interactive `claude` stop
 wizard and the folder-trust dialog. That is **not** an auth failure: the token authenticates both
 modes either way.
 
-`.devcontainer/post-start.sh` now seeds `~/.claude.json` from `.devcontainer/claude/claude.json`
-**only if absent** (same self-healing rule as `settings.json`), so interactive sessions start clean.
+`.devcontainer/post-start.sh` **merges** the keys in `.devcontainer/claude/claude.json` into
+`~/.claude.json` on every start (`jq` deep merge: only those keys are set, everything else Claude
+Code wrote is kept), so interactive sessions start clean. It is a merge, not an "only if absent"
+seed, because the Dockerfile's `claude --version` already creates `~/.claude.json` in the image —
+the original #54 seed never applied on a fresh container (#45).
 
-- The seed pre-trusts **`/workspaces/sdlc-lite`** only. Starting Claude in a *different* directory
+- The merge pre-trusts **`/workspaces/sdlc-lite`** only. Starting Claude in a *different* directory
   still shows the one-time trust dialog — that's a deliberate safety prompt, not an auth issue.
-- To re-run the onboarding wizard: `rm ~/.claude.json` and restart the container.
+- The merge re-applies on every start, so deleting `~/.claude.json` no longer brings the onboarding
+  wizard back. A `/theme` change lasts until the next container start; to change it for good, edit
+  `.devcontainer/claude/claude.json`.
 
 ### What persists where
 
@@ -165,7 +170,7 @@ modes either way.
 |---|---|---|
 | `/login` credential | `~/.claude/.credentials.json` | ✅ |
 | Settings, plugins, session history | `~/.claude/` | ✅ |
-| Onboarding / theme / folder trust | `~/.claude.json` | ❌ — re-seeded each start |
+| Onboarding / theme / folder trust | `~/.claude.json` | ❌ — merged in each start |
 | Token | `.env` on the Mac | n/a — bind-mounted, never copied in |
 
 ## How the plugin loads — three load paths
@@ -179,12 +184,18 @@ proven on one says nothing about the others (ADR-14 measured all three):
 | **`--plugin-dir`** | `claude plugin eval`, `verify-entry-points.py` | the path given |
 | **Installed from the umbrella** `sdlc-lite@sdaas` | customers; `release-verify.sh` | a tag-pinned copy under `~/.claude/plugins/cache/sdaas/sdlc-lite/<version>/` |
 
-The directory marketplace is registered by the seeded `settings.json`. The working assumption is
-that it loads **live from the workspace**, so a workspace edit takes effect on the next fresh Claude
-session with no cache sync. **That is unverified** — `claude plugin list` reports "No plugins
-installed" yet the plugin loads, and whether a fresh volume needs a manual
-`claude plugin install sdlc-lite@sdlc-lite-dev` is also open. Both are tracked in
-[#45](https://github.com/Sdaas/sdlc-lite/issues/45).
+The directory marketplace is registered by the seeded `settings.json` and needs **no
+`claude plugin install`**. It loads **live from the workspace**: a workspace edit takes effect on the
+next fresh Claude session, with no install and no cache sync. Verified on a fresh volume
+([#45](https://github.com/Sdaas/sdlc-lite/issues/45), 2026-09-26): the session's init event reports
+the plugin at `path: /workspaces/sdlc-lite/sdlc-lite-plugin` with `sdlc-lite:implement-feature`
+registered, and a newly added `agents/*.md` file shows up in the next session. `claude plugin list`
+still says "No plugins installed" — it lists installed (cached) plugins only, so ignore it for this
+path. To check what a session actually loaded:
+
+```bash
+claude -p --output-format stream-json --verbose --max-turns 1 "reply ok" | head -1 | jq '.plugins'
+```
 
 ## Two Claude profiles in one container (`CLAUDE_CONFIG_DIR`)
 
