@@ -53,27 +53,23 @@ its children (#50, #57, #51, #52, #53) and closes when #53 closes.
 
 ### Open — in execution order
 
-1. **#45** — `fix(toolchain): dev container never runs "claude plugin install"; live-workspace load path unverified`
-   *Next. Boot correctness: a fresh container/volume boots with the plugin registered and **no
-   onboarding, login or trust prompt** (auth from `.env` alone — the `~/.claude.json` seeding bug).
-   Its live-load answer decides whether #21 must rebuild or can just reset. Proof destroys the
-   `sdlc-lite-claude` volume.*
-2. **#21** — `feat(toolchain): add a clean-run harness that rebuilds the dev container per dry run`
-   *The deterministic, no-AI command that takes the machine to a known dry-run state. Rebuild vs
-   reset is decided at its interview, from #45's result.*
-3. **#66** — `feat(toolchain): hands-off dev-container test runs — fresh state, auto-auth, tmux, live progress`
+1. **#21** — `feat(toolchain): add a clean-run harness that rebuilds the dev container per dry run`
+   *Next. The deterministic, no-AI command that takes the machine to a known dry-run state. #45
+   showed the plugin loads live from the workspace with no install, so plugin edits need no rebuild
+   — reset vs rebuild is still settled at its interview.*
+2. **#66** — `feat(toolchain): hands-off dev-container test runs — fresh state, auto-auth, tmux, live progress`
    *The agent practice on top of #21: launch in `tmux`, the human only attaches and answers STOPs,
    live progress reports, teardown. Proof: one full hands-off `roman-numeral` run.*
-4. **#53** — `feat(repo): /fix skill — REPRODUCE + DEPOSIT gates`
+3. **#53** — `feat(repo): /fix skill — REPRODUCE + DEPOSIT gates`
    *Reuses #52's 12-gate spine and adds the two gates that close the regression-safety gap; its T3
    proof uses #66. Also carries #48's close-out: repo-local SDLC docs in `dev-docs/`, this file's
    update, removing `48-plan.md`, and deciding whether the root scripts move (#60, Q14). **#48**
    closes with it.*
-5. **#58** — `fix(skill): conductor sometimes skips the lock STOP and the explicit-entry redirect`
+4. **#58** — `fix(skill): conductor sometimes skips the lock STOP and the explicit-entry redirect`
    *Must land before the cut: `release-verify.sh` gates it on the eval suite at 0.8, and the
    opus-5-5 baseline is 5/7 because of this bug. Still live: `gate-0-lock-stop` failed 1 of 3 runs
    in #60's close-out eval.*
-6. **#61** — `fix(skill): agent inboxes and quality-standards disagree with SKILL.md`
+5. **#61** — `fix(skill): agent inboxes and quality-standards disagree with SKILL.md`
    *Found by #60. Share #58's container session; proof is a `roman-numeral` dry run to Gate 7.*
 
 ### Closed
@@ -89,6 +85,7 @@ its children (#50, #57, #51, #52, #53) and closes when #53 closes.
 | **#60** `docs(repo): audit repo + open issues for staleness; simplify developer-guide` | 2026-09-25 (`ab24d4c`) | Docs and open issues current; filed #61, #62, #63; moved #58 into beta.3. |
 | **#51** `feat(repo): shared SDLC gate spine + /issue skill` | 2026-09-25 (`7247813`) | `.claude/sdlc/gates.md` is the spine #52/#53 execute, incl. the fail-fast eval budget; `/issue` filed #64 (`/regression`, backlog). |
 | **#52** `feat(repo): /feature skill — 12 gates, 4 STOPs` | 2026-09-26 (`fc05474`) | Spine reworked to 12 gates / 4 STOPs (scope, design, tests, implementation), both reviews before any eval spend; proven by driving #37 end to end. Filed #65, #66. |
+| **#45** `fix(toolchain): dev container never runs "claude plugin install"; live-workspace load path unverified` | 2026-09-26 (`574c15d`) | Fresh volume boots with the plugin live-loaded from the workspace (no install) and no onboarding/login/trust prompt; `~/.claude.json` keys are merged each start. |
 
 ## Next release — `1.0.0` (GA)
 
