@@ -1,7 +1,10 @@
 # #31b-iii finding — bare `pytest.raises(T)` survived Gate 3 + Gate 4, caught only at Gate 7
 
-_Not yet applied. Drafted during the roman-numeral clean acceptance run (2026-09-18), captured for
-a later commit._
+_P1 and P2 applied in #37 (2026-09-26), with corrections to the drafts below: the grep covers only this
+run's test files (not all of `<tests_root>`, which would sweep in unrelated pre-existing tests), each
+hit's full call is read since `match=` may sit on the next line, and `as excinfo` plus an assert on
+the message counts as pinned. P3 is not
+applied. Drafted during the roman-numeral clean acceptance run (2026-09-18)._
 
 ## What happened
 

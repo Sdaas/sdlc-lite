@@ -34,9 +34,15 @@ the implementation, stop — write the test against the contract instead.
    boundary, include the plan's transport-level fault test (a timeout / connection failure
    raised *before* a response) asserting it propagates and is **not cached** — distinct from
    response-level (status / body) faults.
-2. Write `<artifact_dir>/handoff/05-test-intent.md` — one line per test: which AC / edge it
+2. **Self-check before finishing — a required step, not a reminder.** Run
+   `grep -n "pytest.raises(" <each test file you wrote>` and read each hit's **full** call
+   (`match=` may sit on a following line). A call is pinned if it has `match=`, or binds
+   `as excinfo` and asserts on `str(excinfo.value)`. For every unpinned call, look up that
+   exception in `02-design-interface.md`: if the contract specifies message content, add
+   `match=…` for it; if it specifies none, leave the call bare and say so in `05-test-intent.md`.
+3. Write `<artifact_dir>/handoff/05-test-intent.md` — one line per test: which AC / edge it
    pins and why.
-3. Run `python3 -m pytest -q` and confirm the suite is **RED** for the right reason
+4. Run `python3 -m pytest -q` and confirm the suite is **RED** for the right reason
    (implementation absent — e.g. `ImportError: cannot import name '<symbol>'`,
    `AttributeError`, or an assertion), **not** from import/syntax errors in the tests.
    **One red does NOT count as success:** `ModuleNotFoundError: No module named '<the

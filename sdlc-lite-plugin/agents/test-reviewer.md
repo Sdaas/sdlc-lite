@@ -16,17 +16,25 @@ Handoff files live under `<artifact_dir>/handoff/`.
 - `<artifact_dir>/handoff/01-requirements.md` — the ACs, constraints, boundary inventory.
 - `<artifact_dir>/handoff/02-design-interface.md` and `03-design-internal.md` — you may
   see the full design.
+- `<artifact_dir>/handoff/04-test-plan.md` — the planned tests and the files they live in.
 - `<tests_root>/` and `<artifact_dir>/handoff/05-test-intent.md`.
 - The Python standards the conductor names (read by path).
 
 ## Judge (ANALYTICAL — no implementation)
+**First, mechanically — before the analytical pass:** run
+`grep -n "pytest.raises(" <each test file named in 04-test-plan.md>` and read each hit's **full**
+call (`match=` may sit on a following line). A call is pinned if it has `match=`, or binds
+`as excinfo` and asserts on `str(excinfo.value)`. For every unpinned call, check
+`02-design-interface.md` for a message contract on that exception. An unpinned `pytest.raises(T)`
+against a documented message contract is a **CHANGES-REQUESTED finding on its own** (a mutated
+message would survive) — not a note.
+
+Then judge:
 - **Intent match** — does each test actually assert the requirement, or a proxy?
 - **Non-tautology** — would a *wrong* implementation still pass? Do a mutation-minded
   analysis **by reasoning**: name plausible bugs (off-by-one, wrong operator, dropped
   branch, boundary mishandling) and confirm a test kills each. This is analytical, not
-  empirical — see the constraints below. A bare `pytest.raises(T)` with no `match=` is a
-  weak test when the contract specifies message content — flag it (a mutated message would
-  survive).
+  empirical — see the constraints below.
 - **Coverage** — every acceptance criterion and every boundary in the inventory has a
   test; edge/negative cases present.
 - **No implementation leakage** — tests assert the contract, not one algorithm.
