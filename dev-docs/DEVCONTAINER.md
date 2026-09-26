@@ -79,6 +79,12 @@ only after a `Dockerfile` change or when the build cache is suspect. Re-running 
 (~20 s). **Anything you left in the container — e.g. an in-progress `/workspaces/<slug>-run` — is
 deleted.**
 
+### Hands-off T3 run — `make t3-start` (#66)
+For a full dry run, `make t3-start SLUG=<slug>` runs the clean run above, then starts
+`/implement-feature` in a tmux session inside the container. You attach with `make t3-attach` and
+answer the STOPs; an agent can launch it, watch it, and report progress. Journey, commands, and a
+tmux primer: [`t3-runs.md`](t3-runs.md).
+
 ### Stop / remove / teardown — four levels, shallowest first
 ```bash
 docker stop <container>                       # 1. stop (keep container, fs, volume)

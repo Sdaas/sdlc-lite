@@ -84,6 +84,8 @@ command loads the body, and the model cannot start the workflow itself — on bo
 human in the loop. See [`DEVCONTAINER.md`](DEVCONTAINER.md#entry-point-check--verify-entry-pointspy).
 The setup is scripted too: **`make clean-run`** (#21) resets the container and fixtures to a known
 state and checks it ([`DEVCONTAINER.md`](DEVCONTAINER.md#clean-run--make-clean-run-before-every-dry-run)).
+So is the launch: **`make t3-start`** (#66) starts the session in tmux, and the agent watches and
+reports while the human attaches and answers the STOPs ([`t3-runs.md`](t3-runs.md)).
 
 **The rest of T3 cannot be automated, and that is a design fact, not a gap.** A full dry run *is*
 another Claude session with a human at the approval gates; past the entry points there is nothing

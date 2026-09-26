@@ -95,11 +95,12 @@ once. Route findings per `gates.md`; fast checks after every fix; re-review at m
 
 - **T1** — this change's new cases, in design order, fail-fast, one run each.
 - **T2** — `python3 -m pytest sdlc-lite-plugin -q` (host).
-- **T3** — do every step you can yourself: set up the fixture and start the session
-  (`test-fixtures/README.md`), then read the run's handoff files and `run-log.jsonl` via
-  `devcontainer exec` and report progress. Ask the human only for what you cannot do — typing into
-  the interactive session, approvals — and never to check something you can read (#66). Collect the
-  attestation at STOP ④; never mark it satisfied yourself.
+- **T3** — follow `dev-docs/t3-runs.md` §1: `make t3-start SLUG=<slug>`, check `make t3-peek`, run
+  `make t3-watch` under Monitor, give the human `make t3-attach`, and report each event in chat
+  (⏸ at every WAITING, with the ask). Read handoff files yourself via `devcontainer exec`. Ask the
+  human only for what you cannot or must not do — typing into the session, approvals — never to check
+  something you can read, and never `tmux send-keys`. At `ENDED`: tell them to detach, `make t3-stop`,
+  collect the attestation at STOP ④; never mark it satisfied yourself.
 
 A failure stops here: show it; the human decides re-run, repair (→ Gate 5), or abandon.
 
