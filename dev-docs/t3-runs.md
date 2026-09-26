@@ -30,7 +30,7 @@ The agent below is Claude Code on the Mac, in this repo (for example at `/featur
 | 5 | Human | Opens a Mac terminal tab in the repo, runs `make t3-attach`, and sees the session already working. |
 | 6 | Agent | Reports in chat as events arrive: gates passed, isolated agents starting, guard denials, errors. |
 | 7 | Agent → Human | At each STOP the agent posts "⏸ waiting for you" with the ask (and can summarize the handoff file). The human answers **in the tmux pane**. |
-| 8 | Agent → Human | When the run ends the agent says so; the human detaches (`Ctrl-b d`) and attests what they saw. The agent runs `make t3-stop`. |
+| 8 | Agent → Human | When the run ends the agent says so; the human detaches (`Ctrl-b d`) and attests what they saw. The agent runs `make t3-stop`. (The analyzer's breach check needs no extra step: the session runs it at Gate 9.) |
 
 **The human does only what the agent cannot or must not:** type into the session (answer STOPs,
 approve dialogs) and attest. The agent never types into the session (`tmux send-keys`), never answers
@@ -66,7 +66,7 @@ Reading the run's files while it runs:
 | `DENY <agent> <tool> <target>` | run-log, `guard_decision: deny` | The guard blocked a call. |
 | `ERROR <conductor\|subagent> API: …` / `tool: …` | transcripts | An API error, or a failed non-Bash tool call. |
 | `WORKING` | conductor transcript | The session is working. |
-| `WAITING — <the ask>` | conductor transcript | The turn ended: the session waits for the human. Quotes the last paragraph of the conductor's message. |
+| `WAITING — <the ask>` | conductor transcript | The turn ended: the session waits for the human. Quotes the last paragraph of the conductor's message. A turn that ends while an isolated agent it launched is still running stays `WORKING`: the session waits for the agent, not you. |
 | `WAITING (dialog) — …` | screen | A permission dialog or picker is open. |
 | `ENDED` | tmux | `claude` exited (the final screen stays readable with `t3-peek`) or the session is gone. |
 
@@ -98,6 +98,9 @@ the container as user `vscode`, and the session is named `t3`.
 **In Claude Code, inside tmux:**
 - **Shift+Enter** inserts a newline, thanks to `extended-keys` in the config.
 - **Don't press Ctrl-C to clear the input:** pressed twice, it exits `claude`. Use Backspace.
+- **Answer STOPs in the main conversation.** While an isolated agent runs, `←` opens the
+  agent picker, and the prompt then reads `Message @sdlc-lite:<agent>…`: text typed there goes to
+  the agent, not the session. Press **Esc** (or select `main`) before you answer.
 - **Closing the terminal tab** is the same as detaching: the run keeps going. Re-attach with `make t3-attach`.
 
 **Nested tmux.** If your Mac terminal is itself inside tmux, `Ctrl-b` goes to the *outer* tmux.
@@ -113,7 +116,7 @@ one.
 
 **Config.** The container's `~/.tmux.conf` is [`.devcontainer/tmux.conf`](../.devcontainer/tmux.conf),
 installed by `post-start.sh` on every container start. It turns on the mouse, a 50 000-line
-scrollback, Shift+Enter (`extended-keys`), clipboard copy (`set-clipboard`), and `remain-on-exit` (the
+scrollback, Shift+Enter (`extended-keys`), focus events, clipboard copy (`set-clipboard`), and `remain-on-exit` (the
 pane stays after `claude` exits). A running server ignores edits: `make clean-run` (a new container)
 applies them.
 

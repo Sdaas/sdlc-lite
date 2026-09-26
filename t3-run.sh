@@ -31,7 +31,10 @@
 #                   WORKING / WAITING …         a dialog on screen (permission, picker) =
 #                                               waiting; else the conductor transcript: its
 #                                               last turn ended (system/turn_duration) =
-#                                               waiting, anything later = working. Debounced
+#                                               waiting, anything later = working. A turn
+#                                               that ended while an isolated agent it
+#                                               launched is still running = working (the
+#                                               session waits for the agent). Debounced
 #                                               over 2 polls; WAITING quotes the ask (the
 #                                               last paragraph of the conductor's message)
 #                   ENDED                       claude exited or the session is gone; exits 0
@@ -98,6 +101,18 @@ JQ_ASK='
   | select(length > 0) | join("\n\n") | split("\n\n") | map(select(test("\\S"))) | last // empty
   | gsub("\\s+"; " ")'
 
+# Isolated agents the conductor launched that have not reported back. A launch is the
+# Agent tool_result "Async agent launched"; a finish (completed, failed or killed) is a
+# <task-notification> naming the same tool-use id. Prints the count.
+pending_agents() {
+  local main="$1" launched finished
+  launched="$(grep -F 'Async agent launched' "$main" 2>/dev/null \
+    | jq -r '.message.content[]? | select(.type? == "tool_result") | .tool_use_id' 2>/dev/null | sort -u)"
+  finished="$(grep -F '<task-notification>' "$main" 2>/dev/null \
+    | grep -oE '<tool-use-id>[^<]+' | cut -d'>' -f2 | sort -u)"
+  comm -23 <(printf '%s\n' "$launched") <(printf '%s\n' "$finished") | grep -c . || true
+}
+
 declare -A OFFSET SEEN 2>/dev/null || true   # bash 4+ (the container); unused on the Mac
 
 # Set BUF to every COMPLETE new line of file $1 since the last call (a line still being
@@ -148,11 +163,14 @@ watch_loop() {
     fi
     screen="$(tmux capture-pane -p -J -t "$SESSION")"
     # A dialog is on screen only (not yet in the transcript), so it wins. Otherwise the
-    # conductor transcript decides: a turn ends with a system/turn_duration record.
+    # conductor transcript decides: a turn ends with a system/turn_duration record. A turn
+    # that ends right after launching an isolated agent waits for the agent, not the human.
     main="$(find "$tdir" -maxdepth 1 -name '*.jsonl' -print0 2>/dev/null | xargs -0 ls -t 2>/dev/null | head -1)"
     if grep -qE 'Do you want to|Would you like to|Enter to select' <<<"$screen"; then
       now="WAITING (dialog)"
     elif [[ -n "$main" ]] && [[ "$(tail -n 300 "$main" | jq -r "$JQ_TURN" 2>/dev/null | tail -1)" == busy ]]; then
+      now="WORKING"
+    elif [[ -n "$main" ]] && [[ "$(pending_agents "$main")" -gt 0 ]]; then
       now="WORKING"
     else
       now="WAITING"
