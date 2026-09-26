@@ -105,8 +105,8 @@ rows, take the union.
 | `hooks.json` registration | **T3** — nothing else proves a hook fires |
 | Docs only (`README.md`, `dev-docs/**`) | none — see below |
 
-**Docs-only changes are not gated.** Gating a README edit is theater (the planned repo-local
-`/feature` skill, #52, declines docs-only and shell-only changes outright). The one exception: a doc whose path the *shipped* `SKILL.md` prints
+**Docs-only changes are not gated.** Gating a README edit is theater (the repo-local
+`/feature` skill declines docs-only and shell-only changes outright). The one exception: a doc whose path the *shipped* `SKILL.md` prints
 at runtime — changing that is a prose change to the product, not a doc change.
 
 **Enforcement parity.** A new prose rule that the guard hook is meant to enforce needs its matching
