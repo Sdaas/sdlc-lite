@@ -121,7 +121,7 @@ either from the file (after `claude plugin install`, it lives under your Claude 
 in a directory named for the installed version) or by name:
 
 ```bash
-# from the pinned file (<version> = the installed version, e.g. 1.0.0-beta.2;
+# from the pinned file (<version> = the installed version, e.g. 0.1.0;
 # `ls ~/.claude/plugins/cache/sdaas/sdlc-lite/` shows it):
 pip install -r ~/.claude/plugins/cache/sdaas/sdlc-lite/<version>/toolchain/requirements-dev.txt
 
@@ -308,7 +308,7 @@ This repo's root `.claude-plugin/marketplace.json` is the **dev** catalog
 
 ## Status
 
-`sdlc-lite` is at **`1.0.0-beta.2`** — 1.0-quality, being validated before GA. It has been run
+`sdlc-lite` is at **`0.1.0`** — 1.0-quality, being validated before GA. It has been run
 end-to-end against real Python features (a duration parser, a slugifier, and an async cached JSON
 fetcher), including a fault-injection pass, inside the dev container. See the [verification ladder](dev-docs/verification-ladder.md) for the testing methodology and
 [`dev-docs/adr/`](dev-docs/adr/README.md) for the recorded design decisions.

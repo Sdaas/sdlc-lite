@@ -31,7 +31,7 @@ _Last updated: 2026-09-26._
 
 --- 
 
-## Current release — `1.0.0-beta.3` (process & tooling)
+## Current release — `0.1.0` (process & tooling)
 
 Theme: **get the house in order before GA.** Groundwork that does not change the
 plugin's runtime behavior: a documentation restructure that gives the repo one discoverable shape,
@@ -39,16 +39,16 @@ and the repo-local SDLC skills that give *this repo* the requirements → design
 `sdlc-lite` plugin gives a Python repo. Added 2026-09-26: **hands-off dev-container
 test runs** (#45 → #21 → #66, all done), so every later dry run — #53's proof, #58, #61 — is cheap to repeat.
 
-**Why before GA, and why it is a beta and not GA.** The `1.0.0` issues are real behavior changes
+**Why before GA, and why it is `0.1.0` and not GA.** The `1.0.0` issues are real behavior changes
 to a product whose source is prose, and today they would be verified only by ad-hoc dry runs and
 judgment. #48 supplies the missing verification primitive (`claude plugin eval` over `SKILL.md`, plus
 the T1/T2/T3 ladder). Using new tooling for the first time on release-critical work is a risk, so the
-release it is first exercised on is labeled **beta.3**, not GA — the tooling gets proven on real work
+release it is first exercised on is labeled **`0.1.0`**, not GA — the tooling gets proven on real work
 before `1.0.0` depends on it.
 
 ## Execution order (current release)
 
-Current milestone: **`1.0.0-beta.3`**. **#48** is a tracking issue, not a unit of work: it ships as
+Current milestone: **`0.1.0`**. **#48** is a tracking issue, not a unit of work: it ships as
 its children (#50, #57, #51, #52, #53) and closes when #53 closes.
 
 ### Open — in execution order
@@ -75,7 +75,7 @@ its children (#50, #57, #51, #52, #53) and closes when #53 closes.
 | **#50** `feat(repo): verification ladder + eval seed suite + release-verify hook` | 2026-09-24 (`6553a6a`) | T1/T2/T3 ladder + eval corpus: the quality signal for every later issue. |
 | **#59** `chore(repo): bump the dev container claude so the eval gate can run on claude-opus-5-5` | 2026-09-25 (`35857b0`) | Container claude 2.1.281; first opus-5-5 baseline 5/7 (the gap is #58). |
 | **#57** `test(repo): automate the 8-cell entry-point contract` | 2026-09-25 (`9f0bed7`) | `verify-entry-points.py`, 16/16 green; the #55 bug class is still live, so the check stays. |
-| **#60** `docs(repo): audit repo + open issues for staleness; simplify developer-guide` | 2026-09-25 (`ab24d4c`) | Docs and open issues current; filed #61, #62, #63; moved #58 into beta.3. |
+| **#60** `docs(repo): audit repo + open issues for staleness; simplify developer-guide` | 2026-09-25 (`ab24d4c`) | Docs and open issues current; filed #61, #62, #63; moved #58 into 0.1.0. |
 | **#51** `feat(repo): shared SDLC gate spine + /issue skill` | 2026-09-25 (`7247813`) | `.claude/sdlc/gates.md` is the spine #52/#53 execute, incl. the fail-fast eval budget; `/issue` filed #64 (`/regression`, backlog). |
 | **#52** `feat(repo): /feature skill — 12 gates, 4 STOPs` | 2026-09-26 (`fc05474`) | Spine reworked to 12 gates / 4 STOPs (scope, design, tests, implementation), both reviews before any eval spend; proven by driving #37 end to end. Filed #65, #66. |
 | **#45** `fix(toolchain): dev container never runs "claude plugin install"; live-workspace load path unverified` | 2026-09-26 (`574c15d`) | Fresh volume boots with the plugin live-loaded from the workspace (no install) and no onboarding/login/trust prompt; `~/.claude.json` keys are merged each start. |
@@ -84,16 +84,16 @@ its children (#50, #57, #51, #52, #53) and closes when #53 closes.
 
 ## Next release — `1.0.0` (GA)
 
-The GA build. Theme: **robustness and real-user UX hardening** — beta-validation feedback plus the
+The GA build. Theme: **robustness and real-user UX hardening** — pre-GA validation feedback plus the
 committed follow-ups from v1 acceptance: toolchain auto-install so a stranger can run it unaided, and
 closing the test-quality and isolation-correctness gaps the acceptance runs surfaced. Milestone:
-`1.0.0`. Scope may grow or shrink during the release — that's expected; when beta.3 ships, this
+`1.0.0`. Scope may grow or shrink during the release — that's expected; when 0.1.0 ships, this
 section becomes the current release.
 
 **Execution order** (verified with the ladder and eval corpus from #48):
 
 1. **#62** — `feat(skill): simplify SKILL.md prose for a cold reader, verified by the eval suite`
-   *After #58 (beta.3) — same prose, same eval proof; land the behavior fix before the rewrite.*
+   *After #58 (0.1.0) — same prose, same eval proof; land the behavior fix before the rewrite.*
 2. **#63** — `chore(skill): re-evaluate the dated reviewer pin claude-opus-4-8`
    *After #62 — both touch SKILL.md's model table. GA should not ship a reviewer pin that was never
    re-checked against the current Opus; the decision is recorded in ADR-2.*
@@ -106,7 +106,7 @@ section becomes the current release.
    *A new command with a **blocking Open Question** (the command's name) that must be answered
    before work starts.*
 
-**Moved to beta.3:** #45 and #21 (2026-09-26), as the base for hands-off testing.
+**Moved to 0.1.0:** #45 and #21 (2026-09-26), as the base for hands-off testing.
 
 **Closed early:** **#37** `feat(skill): add a mechanical pytest.raises match= check at gates 3 and 4`
 — 2026-09-26 (`e2a33e7`), as the `/feature` proof run; its T3 reached Gate 7 with no loop.

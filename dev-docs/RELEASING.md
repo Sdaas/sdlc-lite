@@ -6,20 +6,16 @@ How this repo is versioned, how issues are triaged, and how a release is cut and
 
 ## 1. Versioning scheme
 
-Semantic versioning (`MAJOR.MINOR.PATCH`) with **prerelease identifiers**:
+Plain semantic versioning (`MAJOR.MINOR.PATCH`):
 
-- `1.0.0-beta.N` — a shippable, 1.0-quality build being **validated with early customers**
-  before we commit to GA. This is *not* "half-built"; it is 1.0 on probation.
-- `1.0.0-rc.N` — release candidate (optional, if beta stabilizes and we want a final gate).
-- `1.0.0` — GA.
+- `0.x.y` — pre-GA releases. Each one is shippable and gets validated with real usage; `0.x` signals
+  "not yet committed to the GA contract," not "half-built." Bump the minor (`0.1.0` → `0.2.0`) per
+  release; patch (`0.1.1`) for a fix that doesn't change scope.
+- `1.0.0` — GA: feature-complete and hardened, the version we commit to.
 - Post-GA: `1.0.1` (patch), `1.1.0` (minor), `2.0.0` (breaking).
 
 The version lives in **`sdlc-lite-plugin/.claude-plugin/plugin.json`** (`version` field)
 and is mirrored by a git **tag** `v<version>` on the release commit.
-
-> **Why not `0.5`?** `0.x` signals "expect churn / not feature-complete." Our first release is
-> feature-complete and hardened — we are only validating it in the wild. `1.0.0-beta.1` says
-> exactly that.
 
 ## 2. Distribution — two channels in two repos
 
@@ -30,7 +26,7 @@ marketplace in a separate repo** (ADR-13):
 | Channel | Repo · catalog name | Audience | Marketplace source | Moves when |
 |---|---|---|---|---|
 | **dev / in-place** | `Sdaas/sdlc-lite` (this repo) · `sdlc-lite-dev` | maintainer + dev container | local **directory** source (`./sdlc-lite-plugin`) | every workspace edit (no release needed) |
-| **release / stable** | `Sdaas/claude-plugins` (umbrella) · `sdaas` | real customers | **git-subdir** source pinned to a tag (explicit https url, `path: sdlc-lite-plugin`, `ref: v1.0.0-beta.1` + `sha`) | only when a release is cut |
+| **release / stable** | `Sdaas/claude-plugins` (umbrella) · `sdaas` | real customers | **git-subdir** source pinned to a tag (explicit https url, `path: sdlc-lite-plugin`, `ref: v0.1.0` + `sha`) | only when a release is cut |
 
 - The dev container keeps loading the plugin from the workspace directory (see `DEVCONTAINER.md`)
   — unchanged.
@@ -49,7 +45,7 @@ marketplace in a separate repo** (ADR-13):
 
 **Releases are GitHub milestones. Labels describe *type* only. No milestone = backlog.**
 
-- **Milestones** = releases: `1.0.0-beta.1`, `1.0.0`, … An issue in a milestone is *committed to
+- **Milestones** = releases: `0.1.0`, `1.0.0`, … An issue in a milestone is *committed to
   that release*.
 - **Backlog** = **no milestone**. Deferred, not blocking any committed release.
 - **Type labels** (the only labels we use for triage): `bug`, `enhancement`, `documentation`.
@@ -68,7 +64,7 @@ from a clean `main`:
 
 ```bash
 ./release.sh <version> --umbrella <path-to-local-clone-of-Sdaas/claude-plugins>
-# e.g. ./release.sh 1.0.0-beta.2 --umbrella /Users/sdaas/dev/claude-plugins
+# e.g. ./release.sh 0.2.0 --umbrella /Users/sdaas/dev/claude-plugins
 # (--umbrella may be supplied via $UMBRELLA_DIR instead)
 ```
 

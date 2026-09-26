@@ -59,7 +59,7 @@ die() { echo "release.sh: $*" >&2; exit 1; }
 
 [[ -n "$VERSION" ]] || die "usage: ./release.sh <version> [--umbrella <dir>] [--no-push]"
 
-# Semver with optional prerelease (e.g. 1.0.0, 1.0.0-beta.1, 1.0.0-rc.2).
+# Semver with optional prerelease (e.g. 1.0.0, 1.0.0-rc.1, 2.0.0-alpha.2).
 [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]] \
   || die "version '$VERSION' is not semver (MAJOR.MINOR.PATCH[-prerelease])"
 

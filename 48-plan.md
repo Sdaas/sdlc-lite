@@ -1,6 +1,6 @@
 # 48-plan — Repo-local SDLC skills (`/issue`, `/feature`, `/fix`)
 
-**Issue:** [#48](https://github.com/Sdaas/sdlc-lite/issues/48) · **Milestone:** `1.0.0-beta.3`
+**Issue:** [#48](https://github.com/Sdaas/sdlc-lite/issues/48) · **Milestone:** `0.1.0`
 **Branches:** one per child issue, `<NN>-<slug>` (#48 itself has no branch) · **Status:** P1–P4 (#50, #57, #51, #52) done; P5 (#53) next
 
 Branch-scoped working plan. `git rm` this file in the merge/close commit.

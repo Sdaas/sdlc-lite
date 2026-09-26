@@ -39,10 +39,10 @@ returned nothing".
 |---|---|---|---|---|
 | **A — directory marketplace** (container sessions) | SUPPRESSED (9.5 KB) | SUPPRESSED (9.5 KB) | **loaded** (51.3 KB) | **loaded** (48.1 KB) |
 | **B — `--plugin-dir`** (what `claude plugin eval` uses) | SUPPRESSED (10.3 KB) | SUPPRESSED (10.4 KB) | **loaded** (50.2 KB) | **loaded** (48.1 KB) |
-| **C — installed from umbrella** (`sdlc-lite@sdaas`, 1.0.0-beta.2) | SUPPRESSED (9.6 KB) | SUPPRESSED (9.4 KB) | **loaded** (48.5 KB) | **loaded** (48.1 KB) |
+| **C — installed from umbrella** (`sdlc-lite@sdaas`, 0.1.0) | SUPPRESSED (9.6 KB) | SUPPRESSED (9.4 KB) | **loaded** (48.5 KB) | **loaded** (48.1 KB) |
 
 Path C's arm-b was produced by deleting the shim from the **installed** copy
-(`~/.claude/plugins/cache/sdaas/sdlc-lite/1.0.0-beta.2/commands/implement-feature.md`), so it is a
+(`~/.claude/plugins/cache/sdaas/sdlc-lite/0.1.0/commands/implement-feature.md`), so it is a
 real measurement of the installed path, not a stand-in.
 
 ## Root cause — what actually gets injected
@@ -174,18 +174,18 @@ slash now expands `SKILL.md` (`Base directory for this skill: …`) and the shim
 
 | Arm | Load path | Runs | Result |
 |---|---|---|---|
-| beta.2 as installed | installed from umbrella | 3/3 | body loaded |
-| beta.2 cache, verbatim | `--plugin-dir` | 2/2 | body loaded |
+| 0.1.0 as installed | installed from umbrella | 3/3 | body loaded |
+| 0.1.0 cache, verbatim | `--plugin-dir` | 2/2 | body loaded |
 | current plugin + shim restored | `--plugin-dir` | 1/1 | body loaded |
 
-Copying beta.2's as-shipped bytes rules out the fix's `SKILL.md` frontmatter changes as the cause;
+Copying 0.1.0's as-shipped bytes rules out the fix's `SKILL.md` frontmatter changes as the cause;
 the resolution behaviour of the typed slash itself is what differs. The cause was not investigated
 further — the fix (delete the shim) is correct either way, and the `Skill`-tool shadowing it was
 filed for is still live.
 
 **Consequence:** `release-verify.sh`'s body canary cannot true-positive against a shim-shipping
 release on this CLI. The #55 regression coverage on the release path is the **install assertion**
-(`absent (correctly): commands/implement-feature.md`, verified red against beta.2) plus the host
+(`absent (correctly): commands/implement-feature.md`, verified red against 0.1.0) plus the host
 test `sdlc-lite-plugin/tests/test_entry_points.py`.
 
 ## The entry-point contract, measured post-fix (2026-09-24)

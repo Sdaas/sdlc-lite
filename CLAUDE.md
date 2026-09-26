@@ -29,7 +29,7 @@ This file provides guidance to Claude Code when working in this repository.
 - **Bar:** *genuinely usable* — a stranger can install from GitHub and run it against their own
   Python repo. "Done" = a **green end-to-end dry run in the dev container** (see
   `dev-docs/DEVCONTAINER.md`), not "docs exist."
-- **Issue triage:** releases are GitHub **milestones** (`1.0.0-beta.1`, `1.0.0`, …); label issues by
+- **Issue triage:** releases are GitHub **milestones** (`0.1.0`, `1.0.0`, …); label issues by
   **type only** (`bug`/`enhancement`/`documentation`); **no milestone = backlog**. **Every issue you
   file must follow `dev-docs/issue-template.md`** (required structure, ~300-word cap, no
   transcripts). Full conventions + release procedure: `dev-docs/RELEASING.md`.

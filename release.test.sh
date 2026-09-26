@@ -55,12 +55,12 @@ getf() { python3 -c "import json,sys; d=json.load(open(sys.argv[1])); print(eval
 
 echo "== T1: happy path with --umbrella (--no-push) =="
 P="$SBX/prod1"; U="$SBX/umb1"; mk_product "$P" "0.1.0"; mk_umbrella "$U"
-( cd "$P" && ./release.sh 1.0.0-beta.1 --umbrella "$U" --no-push >"$SBX/t1.out" 2>&1 ) \
+( cd "$P" && ./release.sh 1.0.0-rc.1 --umbrella "$U" --no-push >"$SBX/t1.out" 2>&1 ) \
   && ok "script exit 0" || { no "script nonzero"; cat "$SBX/t1.out"; }
-[[ "$(getf "$P/sdlc-lite-plugin/.claude-plugin/plugin.json" 'd["version"]')" == "1.0.0-beta.1" ]] && ok "plugin.json bumped" || no "plugin.json not bumped"
-git -C "$P" rev-parse -q --verify refs/tags/v1.0.0-beta.1 >/dev/null && ok "tag created" || no "tag missing"
-TAGSHA="$(git -C "$P" rev-parse 'v1.0.0-beta.1^{commit}')"
-[[ "$(getf "$U/.claude-plugin/marketplace.json" 'd["plugins"][0]["source"]["ref"]')" == "v1.0.0-beta.1" ]] && ok "umbrella ref set" || no "umbrella ref wrong"
+[[ "$(getf "$P/sdlc-lite-plugin/.claude-plugin/plugin.json" 'd["version"]')" == "1.0.0-rc.1" ]] && ok "plugin.json bumped" || no "plugin.json not bumped"
+git -C "$P" rev-parse -q --verify refs/tags/v1.0.0-rc.1 >/dev/null && ok "tag created" || no "tag missing"
+TAGSHA="$(git -C "$P" rev-parse 'v1.0.0-rc.1^{commit}')"
+[[ "$(getf "$U/.claude-plugin/marketplace.json" 'd["plugins"][0]["source"]["ref"]')" == "v1.0.0-rc.1" ]] && ok "umbrella ref set" || no "umbrella ref wrong"
 [[ "$(getf "$U/.claude-plugin/marketplace.json" 'd["plugins"][0]["source"]["sha"]')" == "$TAGSHA" ]] && ok "umbrella sha == tag sha" || no "umbrella sha wrong"
 git -C "$U" diff --quiet && ok "umbrella committed (clean tree)" || no "umbrella left uncommitted"
 [[ "$(git -C "$U" log --oneline | wc -l | tr -d ' ')" == "2" ]] && ok "umbrella has release commit" || no "umbrella commit count off"
