@@ -4,12 +4,14 @@
 # /implement-feature product generates and tests.
 FROM mcr.microsoft.com/devcontainers/python:3.12
 
-# A few shell niceties (git/curl are already in the base image).
+# A few shell niceties (git/curl are already in the base image). tmux hosts the
+# hands-off T3 session the human attaches to (#66, dev-docs/t3-runs.md).
 RUN apt-get update \
     && export DEBIAN_FRONTEND=noninteractive \
     && apt-get install -y --no-install-recommends \
         bash-completion \
         jq \
+        tmux \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 

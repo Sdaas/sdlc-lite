@@ -29,6 +29,12 @@ container ([`DEVCONTAINER.md`](../dev-docs/DEVCONTAINER.md)). Tier context:
 
 ## Run one
 
+**Hands-off (the default):** on the Mac, from the repo root, `make t3-start SLUG=roman-numeral`,
+then `make t3-attach` and answer the STOPs. It does steps 1–3 below for you, and an agent can watch
+the run and report progress. See [`t3-runs.md`](../dev-docs/t3-runs.md).
+
+**By hand:**
+
 1. On the Mac, from the repo root:
    ```bash
    make clean-run ARGS="roman-numeral"

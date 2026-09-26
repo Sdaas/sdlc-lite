@@ -110,7 +110,8 @@ echo "  building/starting (log: $up_log) …"
 # every layer from its cache and "rebuilds" the same old image in seconds.
 up_flags=()
 [[ "$REBUILD" -eq 1 ]] && up_flags+=(--build-no-cache)
-if ! devcontainer up --workspace-folder . "${up_flags[@]}" >"$up_log" 2>&1; then
+# ${a[@]+"${a[@]}"}: macOS's bash 3.2 treats an empty array as unbound under set -u.
+if ! devcontainer up --workspace-folder . ${up_flags[@]+"${up_flags[@]}"} >"$up_log" 2>&1; then
   tail -20 "$up_log" >&2
   die "devcontainer up failed — full log kept at $up_log. A postCreate failure means the pinned toolchain did not install."
 fi
@@ -186,10 +187,10 @@ fi
 
 # Same tools postCreate installs and checks; mutmut via metadata (it fails outside a project).
 # shellcheck disable=SC2016  # expands inside the container
-tool_check='printf "%s | %s | %s | mutmut %s | claude %s" \
+tool_check='printf "%s | %s | %s | mutmut %s | claude %s | %s" \
   "$(ruff --version)" "$(mypy --version | cut -d" " -f1-2)" "$(pytest --version 2>&1)" \
   "$(python -c "import importlib.metadata as m; print(m.version(\"mutmut\"))")" \
-  "$(claude --version | cut -d" " -f1)"'
+  "$(claude --version | cut -d" " -f1)" "$(tmux -V)"'
 if msg="$(cexec "$tool_check" 2>&1)"; then
   row "Toolchain" 0 "$msg"
 else

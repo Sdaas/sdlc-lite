@@ -21,6 +21,8 @@ here — the root [`README.md`](../README.md) is the complete user-facing doc. E
 - **[`eval-tutorial.md`](eval-tutorial.md)** — how to author and run a `claude plugin eval` case
   (T1 on that ladder): case format, graders, the ablation delta, and the environment gotchas.
 - **[`DEVCONTAINER.md`](DEVCONTAINER.md)** — the dev-container test harness lifecycle.
+- **[`t3-runs.md`](t3-runs.md)** — hands-off T3 dry runs: the agent launches and watches the session
+  in tmux, you attach and answer the STOPs. Includes a short tmux primer.
 - **[`RELEASING.md`](RELEASING.md)** — versioning, issue triage, and how a release is cut and
   consumed.
 - **[`release-plan.md`](release-plan.md)** — the current + next release roadmap (narrative +

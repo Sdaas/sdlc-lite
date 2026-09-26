@@ -37,7 +37,7 @@ Theme: **get the house in order before GA.** Groundwork that does not change the
 plugin's runtime behavior: a documentation restructure that gives the repo one discoverable shape,
 and the repo-local SDLC skills that give *this repo* the requirements → design → test discipline the
 `sdlc-lite` plugin gives a Python repo. Added 2026-09-26: **hands-off dev-container
-test runs** (#45 → #21 → #66; #45 and #21 done), so every later dry run — #53's proof, #58, #61 — is cheap to repeat.
+test runs** (#45 → #21 → #66, all done), so every later dry run — #53's proof, #58, #61 — is cheap to repeat.
 
 **Why before GA, and why it is a beta and not GA.** The `1.0.0` issues are real behavior changes
 to a product whose source is prose, and today they would be verified only by ad-hoc dry runs and
@@ -53,20 +53,16 @@ its children (#50, #57, #51, #52, #53) and closes when #53 closes.
 
 ### Open — in execution order
 
-1. **#66** — `feat(toolchain): hands-off dev-container test runs — fresh state, auto-auth, tmux, live progress`
-   *Next. The agent practice on top of #21's `make clean-run`: launch in `tmux`, the human only
-   attaches and answers STOPs, live progress reports, teardown. Proof: one full hands-off
-   `roman-numeral` run.*
-2. **#53** — `feat(repo): /fix skill — REPRODUCE + DEPOSIT gates`
-   *Reuses #52's 12-gate spine and adds the two gates that close the regression-safety gap; its T3
+1. **#53** — `feat(repo): /fix skill — REPRODUCE + DEPOSIT gates`
+   *Next. Reuses #52's 12-gate spine and adds the two gates that close the regression-safety gap; its T3
    proof uses #66. Also carries #48's close-out: repo-local SDLC docs in `dev-docs/`, this file's
    update, removing `48-plan.md`, and deciding whether the root scripts move (#60, Q14). **#48**
    closes with it.*
-3. **#58** — `fix(skill): conductor sometimes skips the lock STOP and the explicit-entry redirect`
+2. **#58** — `fix(skill): conductor sometimes skips the lock STOP and the explicit-entry redirect`
    *Must land before the cut: `release-verify.sh` gates it on the eval suite at 0.8, and the
    opus-5-5 baseline is 5/7 because of this bug. Still live: `gate-0-lock-stop` failed 1 of 3 runs
    in #60's close-out eval.*
-4. **#61** — `fix(skill): agent inboxes and quality-standards disagree with SKILL.md`
+3. **#61** — `fix(skill): agent inboxes and quality-standards disagree with SKILL.md`
    *Found by #60. Share #58's container session; proof is a `roman-numeral` dry run to Gate 7.*
 
 ### Closed
@@ -84,6 +80,7 @@ its children (#50, #57, #51, #52, #53) and closes when #53 closes.
 | **#52** `feat(repo): /feature skill — 12 gates, 4 STOPs` | 2026-09-26 (`fc05474`) | Spine reworked to 12 gates / 4 STOPs (scope, design, tests, implementation), both reviews before any eval spend; proven by driving #37 end to end. Filed #65, #66. |
 | **#45** `fix(toolchain): dev container never runs "claude plugin install"; live-workspace load path unverified` | 2026-09-26 (`574c15d`) | Fresh volume boots with the plugin live-loaded from the workspace (no install) and no onboarding/login/trust prompt; `~/.claude.json` keys are merged each start. |
 | **#21** `feat(toolchain): add a clean-run harness that rebuilds the dev container per dry run` | 2026-09-26 (`5f61943`) | `make clean-run` resets to a known dry-run state in ~20 s (container reset, volume kept, `settings.json` re-seeded, fixtures, status table); `--rebuild` = no-cache image rebuild. #66 builds on it. |
+| **#66** `feat(toolchain): hands-off dev-container test runs — fresh state, auto-auth, tmux, live progress` | 2026-09-26 (`d3ecef8`) | `make t3-start / t3-attach / t3-peek / t3-watch / t3-stop` (`dev-docs/t3-runs.md`): the agent launches and watches, the human only attaches, answers STOPs and attests; proven by a hands-off `roman-numeral` run. Filed #68, #69; moved #40 to `1.0.0`. |
 
 ## Next release — `1.0.0` (GA)
 
