@@ -1,7 +1,8 @@
 # The repo-local SDLC spine
 
 Shared by this repo's own skills — `/issue`, `/feature` (#52), `/fix` (#53). A skill **executes**
-this spine; it never restates it. Change a gate here, once.
+this spine; it never restates it. Change a gate here, once. How to execute each gate:
+[`runbook.md`](runbook.md).
 
 **Scope:** work on *this* repo — the plugin's prose (`SKILL.md`, `agents/*.md`, `references/*`,
 `hooks.json`) and its small code surface (`guard.py`, `policy.py`, `agentdefs.py`, `analyzer/`).

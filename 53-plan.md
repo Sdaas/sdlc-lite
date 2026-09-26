@@ -1,7 +1,7 @@
 # 53-plan — `/fix` skill (REPRODUCE + DEPOSIT) and the #48 close-out
 
 **Issue:** [#53](https://github.com/Sdaas/sdlc-lite/issues/53) · **Parent:** #48 (`48-plan.md` P5) ·
-**Milestone:** `0.1.0` · **Branch:** `53-fix-skill` · **Status:** plan approved; P1 next
+**Milestone:** `0.1.0` · **Branch:** `53-fix-skill` · **Status:** P1 done; P2 next
 
 Branch-scoped working plan. `git rm` this file (and `48-plan.md`) in the close-out commit (P5).
 GitHub #53 is the spec; this file holds only the locked decisions, the phases and the tracker.
@@ -27,7 +27,7 @@ GitHub #53 is the spec; this file holds only the locked decisions, the phases an
 ```
 .claude/sdlc/gates.md          # + 1b REPRODUCE, 8b DEPOSIT, their STOP-① budget note, mapping rows
 .claude/sdlc/runbook.md        # NEW — per-gate how-to, extracted from feature/SKILL.md
-.claude/skills/feature/SKILL.md  # slimmed: entry conditions + hard rules + "execute runbook.md"
+.claude/skills/feature/SKILL.md  # slimmed: "execute runbook.md" + its Entry check (hard rules are shared → runbook)
 .claude/skills/fix/SKILL.md      # NEW — entry (bug only) + runbook + 1b + 8b
 dev-docs/repo-local-skills.md    # NEW (P5)
 ```
@@ -36,7 +36,7 @@ dev-docs/repo-local-skills.md    # NEW (P5)
 
 | P | Deliverable | Verification |
 |---|---|---|
-| **P1** | Extract `/feature`'s per-gate how-to into `.claude/sdlc/runbook.md`; `feature/SKILL.md` keeps entry conditions + hard rules and points at it. **No behavior change.** | Cold read by an `opus` subagent: given only the new `feature/SKILL.md` + `runbook.md` + `gates.md`, it reconstructs the same gate sequence, STOPs and commands as the old `SKILL.md` (diff of the two answers). `./release-verify.sh --links-only`. |
+| **P1** | Extract `/feature`'s per-gate how-to into `.claude/sdlc/runbook.md`; `feature/SKILL.md` keeps only its Entry check and points at it (the hard rules are shared, so they move too). **No behavior change.** | Cold read by an `opus` subagent: given only the new `feature/SKILL.md` + `runbook.md` + `gates.md`, it reconstructs the same gate sequence, STOPs and commands as the old `SKILL.md` (diff of the two answers). `./release-verify.sh --links-only`. |
 | **P2** | `gates.md`: define `1b REPRODUCE` and `8b DEPOSIT` (F1–F4), STOP ① budget note, mapping-table rows; runbook sections for 1b / 8b. | Links check; `opus` cold review against the six review dimensions (consistency with the spine's "no eval money before STOP ③" and "never renumber"). |
 | **P3** | `.claude/skills/fix/SKILL.md` (F5); `/feature` Gate 0 routes `bug` → `/fix` (drop "(#53)"); developer-guide §4 marks `/fix` available. **Commit + merge to `main`** (F8). | `/fix` appears in a fresh session's skill list and is not model-invocable (`disable-model-invocation: true`); `opus` cold review; `python3 -m pytest sdlc-lite-plugin -q`; links check. |
 | **P4** | **Proof:** fresh session, `/fix #61` on branch `61-<slug>` — REPRODUCE at T2, DEPOSIT a `pytest`, fix, T3 `roman-numeral` to Gate 7 per #61. | Deposited case red before, green after; #61's own verification (incl. `claude plugin eval sdlc-lite-plugin --ablation none`, cap approved at that run's STOP ②). Lessons fed back into `/fix` here (on `53-fix-skill`). |
@@ -46,7 +46,7 @@ dev-docs/repo-local-skills.md    # NEW (P5)
 
 ## 4. Progress tracker
 
-- [ ] P1 — runbook extracted, `/feature` slimmed, cold-read parity
+- [x] P1 — runbook extracted, `/feature` slimmed, cold-read parity (before/after `opus` reads match)
 - [ ] P2 — `1b REPRODUCE` / `8b DEPOSIT` in `gates.md` + runbook
 - [ ] P3 — `fix/SKILL.md`; `/feature` routes bugs; committed + merged to `main`
 - [ ] P4 — `/fix #61` green (deposited case red → green)
