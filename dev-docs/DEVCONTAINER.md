@@ -47,8 +47,37 @@ the repo is cloned to. `docker ps -a --filter name=sdlc-lite-test` shows it.
 3. Confirm the pinned toolchain installed cleanly:
    `devcontainer exec --workspace-folder . bash -c "ruff --version && mypy --version && pytest --version && claude --version"`.
 4. Set up auth once (see **Authentication** below).
-5. Start `claude` in the container and confirm `/implement-feature` resolves (see **How the plugin
-   loads** below; a fresh volume may need a one-time manual install — #45).
+5. Start `claude` in the container and confirm `/implement-feature` resolves. No install is needed;
+   the plugin loads live from the workspace (see **How the plugin loads** below).
+
+Steps 2, 3 and 5 are also what `make clean-run` does and checks (next section).
+
+### Clean run — `make clean-run` (before every dry run)
+One command takes the machine to a known-good dry-run state and ends in a status table:
+```bash
+make clean-run                                  # reset + every fixture in test-fixtures/python-starter/
+make clean-run ARGS="roman-numeral"             # reset + only the named fixture(s)
+make clean-run ARGS="--rebuild"                 # also rebuild the image, no cache (~2 min)
+```
+It runs `./clean-run.sh` (the header comment is the full spec):
+
+1. **Preflight:** Docker running, `devcontainer` CLI present, `.env` has a token.
+2. **Reset:** `docker rm -f sdlc-lite-test`. The volume is kept, so the login survives. The image is
+   kept too unless `--rebuild`.
+3. **Up:** `devcontainer up`. A new container re-runs postCreate (toolchain) and `post-start.sh`.
+4. **Settings:** `~/.claude/settings.json` is deleted and re-seeded from the template, so in-session
+   `/config` and plugin toggles do not leak into the run.
+5. **Fixtures:** `test-fixtures/setup-fixture.sh <slug>` for each.
+6. **Status table:** Docker · volume · container · settings == template · plugin (a one-turn headless
+   session loads `sdlc-lite:implement-feature` from the workspace — this also proves `.env` auth) ·
+   toolchain versions · each fixture (on `main`, baseline intact, importable). Any ❌ row → exit 1
+   with the fix on the row.
+
+Removing the container is enough to reset: fixture run dirs and `~/.claude.json` live in the
+container's own filesystem, and the plugin loads live, so nothing stale survives. Use `--rebuild`
+only after a `Dockerfile` change or when the build cache is suspect. Re-running is idempotent
+(~20 s). **Anything you left in the container — e.g. an in-progress `/workspaces/<slug>-run` — is
+deleted.**
 
 ### Stop / remove / teardown — four levels, shallowest first
 ```bash
@@ -66,6 +95,7 @@ but deletes nothing.
 | `docker stop` | ✅ | stopped | ✅ | ✅ |
 | Quit Docker Desktop | ✅ | stopped | ✅ | ✅ |
 | `docker rm -f` | ✅ | ❌ | ✅ | ✅ |
+| `make clean-run` | ✅ | new | ✅ (`settings.json` re-seeded) | ✅ (`--rebuild`: new) |
 | `docker volume rm` | ✅ | (must be gone first) | ❌ | ✅ |
 | `docker rmi` | ✅ | (must be gone first) | ✅ | ❌ |
 

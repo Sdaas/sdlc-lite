@@ -16,7 +16,7 @@ To *run* the plugin, see the [README](../README.md).
 | How much proof a change needs | [`verification-ladder.md`](verification-ladder.md) |
 | Writing an eval case | [`eval-tutorial.md`](eval-tutorial.md) |
 | Container, auth, entry-point check | [`DEVCONTAINER.md`](DEVCONTAINER.md) |
-| Dry-run fixtures | [`test-fixtures/README.md`](../test-fixtures/README.md) |
+| Dry-run fixtures; reset for a run: `make clean-run` | [`test-fixtures/README.md`](../test-fixtures/README.md) |
 | Channels, releases, issue triage | [`RELEASING.md`](RELEASING.md) |
 | Evidence behind decisions | [`findings/`](findings/) |
 

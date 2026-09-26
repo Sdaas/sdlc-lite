@@ -82,6 +82,8 @@ loads at all — because it is the only one that runs the real thing end to end.
 One slice of T3 *is* scripted: **`verify-entry-points.py`** (#57) proves the entry points — the slash
 command loads the body, and the model cannot start the workflow itself — on both load paths, with no
 human in the loop. See [`DEVCONTAINER.md`](DEVCONTAINER.md#entry-point-check--verify-entry-pointspy).
+The setup is scripted too: **`make clean-run`** (#21) resets the container and fixtures to a known
+state and checks it ([`DEVCONTAINER.md`](DEVCONTAINER.md#clean-run--make-clean-run-before-every-dry-run)).
 
 **The rest of T3 cannot be automated, and that is a design fact, not a gap.** A full dry run *is*
 another Claude session with a human at the approval gates; past the entry points there is nothing

@@ -31,11 +31,13 @@ container ([`DEVCONTAINER.md`](../dev-docs/DEVCONTAINER.md)). Tier context:
 
 1. On the Mac, from the repo root:
    ```bash
-   test-fixtures/setup-fixture.sh roman-numeral
+   make clean-run ARGS="roman-numeral"
    ```
-   It creates `/workspaces/<slug>-run/` in the container: copy → `git init` on `main` + baseline commit
-   (forces the run onto a feature branch, ADR-7) → `pip install -e .` (Gate 0 import check). It
-   refuses if the dir exists; remove a stale one by hand.
+   It resets the container and calls `test-fixtures/setup-fixture.sh roman-numeral`, then checks
+   the result ([`DEVCONTAINER.md` → Clean run](../dev-docs/DEVCONTAINER.md#clean-run--make-clean-run-before-every-dry-run)).
+   `setup-fixture.sh` alone creates `/workspaces/<slug>-run/` in the container: copy → `git init` on
+   `main` + baseline commit (forces the run onto a feature branch, ADR-7) → `pip install -e .` (Gate 0
+   import check). It refuses if the dir exists; `make clean-run` removes it with the container.
 2. Start Claude in the scratch repo:
    ```bash
    devcontainer exec --workspace-folder . bash -c "cd /workspaces/roman-numeral-run && claude --model opus"
@@ -46,5 +48,4 @@ container ([`DEVCONTAINER.md`](../dev-docs/DEVCONTAINER.md)). Tier context:
 
 ## Planned
 
-- **#21** — rebuild the container fresh per run; wraps `setup-fixture.sh`.
 - **#34** — an agent drives the gates unattended, judged by the receipt, using `BRIEF.md` as its prompt.
