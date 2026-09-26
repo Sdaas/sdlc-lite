@@ -33,10 +33,11 @@ _Last updated: 2026-09-26._
 
 ## Current release — `1.0.0-beta.3` (process & tooling)
 
-Theme: **get the house in order before GA.** Two pieces of groundwork, neither of which changes the
+Theme: **get the house in order before GA.** Groundwork that does not change the
 plugin's runtime behavior: a documentation restructure that gives the repo one discoverable shape,
 and the repo-local SDLC skills that give *this repo* the requirements → design → test discipline the
-`sdlc-lite` plugin gives a Python repo.
+`sdlc-lite` plugin gives a Python repo. Added 2026-09-26: **hands-off dev-container
+test runs** (#45 → #21 → #66), so every later dry run — #53's proof, #58, #61 — is cheap to repeat.
 
 **Why before GA, and why it is a beta and not GA.** The `1.0.0` issues are real behavior changes
 to a product whose source is prose, and today they would be verified only by ad-hoc dry runs and
@@ -52,15 +53,27 @@ its children (#50, #57, #51, #52, #53) and closes when #53 closes.
 
 ### Open — in execution order
 
-1. **#53** — `feat(repo): /fix skill — REPRODUCE + DEPOSIT gates`
-   *Next — discuss before starting. Reuses #52's 12-gate spine and adds the two gates that close
-   the regression-safety gap. Also carries #48's close-out: repo-local SDLC docs in `dev-docs/`, this file's update, removing `48-plan.md`,
-   and deciding whether the root scripts move (#60, Q14).*
-2. **#58** — `fix(skill): conductor sometimes skips the lock STOP and the explicit-entry redirect`
+1. **#45** — `fix(toolchain): dev container never runs "claude plugin install"; live-workspace load path unverified`
+   *Next. Boot correctness: a fresh container/volume boots with the plugin registered and **no
+   onboarding, login or trust prompt** (auth from `.env` alone — the `~/.claude.json` seeding bug).
+   Its live-load answer decides whether #21 must rebuild or can just reset. Proof destroys the
+   `sdlc-lite-claude` volume.*
+2. **#21** — `feat(toolchain): add a clean-run harness that rebuilds the dev container per dry run`
+   *The deterministic, no-AI command that takes the machine to a known dry-run state. Rebuild vs
+   reset is decided at its interview, from #45's result.*
+3. **#66** — `feat(toolchain): hands-off dev-container test runs — fresh state, auto-auth, tmux, live progress`
+   *The agent practice on top of #21: launch in `tmux`, the human only attaches and answers STOPs,
+   live progress reports, teardown. Proof: one full hands-off `roman-numeral` run.*
+4. **#53** — `feat(repo): /fix skill — REPRODUCE + DEPOSIT gates`
+   *Reuses #52's 12-gate spine and adds the two gates that close the regression-safety gap; its T3
+   proof uses #66. Also carries #48's close-out: repo-local SDLC docs in `dev-docs/`, this file's
+   update, removing `48-plan.md`, and deciding whether the root scripts move (#60, Q14). **#48**
+   closes with it.*
+5. **#58** — `fix(skill): conductor sometimes skips the lock STOP and the explicit-entry redirect`
    *Must land before the cut: `release-verify.sh` gates it on the eval suite at 0.8, and the
    opus-5-5 baseline is 5/7 because of this bug. Still live: `gate-0-lock-stop` failed 1 of 3 runs
    in #60's close-out eval.*
-3. **#61** — `fix(skill): agent inboxes and quality-standards disagree with SKILL.md`
+6. **#61** — `fix(skill): agent inboxes and quality-standards disagree with SKILL.md`
    *Found by #60. Share #58's container session; proof is a `roman-numeral` dry run to Gate 7.*
 
 ### Closed
@@ -87,26 +100,21 @@ section becomes the current release.
 
 **Execution order** (verified with the ladder and eval corpus from #48):
 
-1. **#45** — `fix(toolchain): dev container never runs "claude plugin install"; live-workspace load path unverified`
-   *First: every other issue's "Done" bar is a green dry run in the dev container — this is what
-   makes a fresh container boot reliably testable at all, and it also settles whether workspace
-   edits load live or need a reinstall, which the remaining issues' verification depends on.*
-2. **#62** — `feat(skill): simplify SKILL.md prose for a cold reader, verified by the eval suite`
+1. **#62** — `feat(skill): simplify SKILL.md prose for a cold reader, verified by the eval suite`
    *After #58 (beta.3) — same prose, same eval proof; land the behavior fix before the rewrite.*
-3. **#63** — `chore(skill): re-evaluate the dated reviewer pin claude-opus-4-8`
+2. **#63** — `chore(skill): re-evaluate the dated reviewer pin claude-opus-4-8`
    *After #62 — both touch SKILL.md's model table. GA should not ship a reviewer pin that was never
    re-checked against the current Opus; the decision is recorded in ADR-2.*
-4. **#43** — `fix(guard-hook): bash_write_targets misreads scratch writes as product-tree writes`
+3. **#43** — `fix(guard-hook): bash_write_targets misreads scratch writes as product-tree writes`
    *Self-contained, unit-testable on the host, and it removes the false denials that make the
    other issues harder to verify in a dry run.*
-5. **#44** — `feat(gate-7): pre-configure [tool.mutmut] in the python-starter fixtures`
+4. **#44** — `feat(gate-7): pre-configure [tool.mutmut] in the python-starter fixtures`
    *After #43 — its verification is a clean Gate 7 mutmut run, which #43 stops the guard from blocking.*
-6. **#19** — `feat(toolchain): add a setup command that installs the pinned toolchain`
+5. **#19** — `feat(toolchain): add a setup command that installs the pinned toolchain`
    *A new command with a **blocking Open Question** (the command's name) that must be answered
    before work starts.*
-7. **#21** — `feat(toolchain): add a clean-run harness that rebuilds the dev container per dry run`
-   *Last: automates the exact clean-boot verification loop the other issues rely on, so it
-   should land once the boot path (#45) and the changes it will exercise (#43/#44/#19) exist.*
+
+**Moved to beta.3:** #45 and #21 (2026-09-26), as the base for hands-off testing.
 
 **Closed early:** **#37** `feat(skill): add a mechanical pytest.raises match= check at gates 3 and 4`
 — 2026-09-26 (`e2a33e7`), as the `/feature` proof run; its T3 reached Gate 7 with no loop.
