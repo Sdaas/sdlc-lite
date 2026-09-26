@@ -8,11 +8,11 @@ This file provides guidance to Claude Code when working in this repository.
   reviewed, tested, committed Python change through an interview-driven, test-first,
   human-in-the-loop workflow. The slash command is registered by the skill itself (ADR-14).
 - **`README.md`** — the single user-facing doc (install, setup, run, FAQ) for a real user on their
-  own machine and repo. It routes developers to `dev-docs/` in one line.
+  own machine and repo. Developers are routed to `dev-docs/`.
 - **`dev-docs/`** — for someone improving the plugin. See `dev-docs/README.md` for the map:
+  - `tutorial.md` — concepts + subagent isolation, with `toy-greet-plugin/` as the runnable example.
   - `developer-guide.md` — the hub: change → edit → verify table, review checklist, repo-local skills.
   - `architecture.md` — gates, handoff, model pins, guard rules, analyzer. `adr/` — the ADRs.
-  - `tutorial.md` — concepts + subagent isolation, with `toy-greet-plugin/` as the runnable example.
   - `DEVCONTAINER.md`, `verification-ladder.md`, `RELEASING.md`, `release-plan.md`,
     `issue-template.md`; `findings/` (settled investigations) and `proposals/` (unbuilt sketches).
 - **Two channels (ADR-13):** this repo's root `.claude-plugin/marketplace.json` is the **dev**
