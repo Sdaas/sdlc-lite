@@ -35,7 +35,9 @@ Announce each gate as you enter it (`Gate N — NAME`), so the human always know
    one exception — a doc path the shipped `SKILL.md` prints).
 4. Take the minimum tier from [`dev-docs/verification-ladder.md`](../../../dev-docs/verification-ladder.md)
    §3 (union across rows).
-5. `git status` must be clean. Create `<NN>-<slug>` from `main`, or switch to it if it exists.
+5. `git status` must be clean. Create `<NN>-<slug>` from the **base** — `main` unless the human
+   names another (e.g. an unmerged branch the work builds on) — or switch to it if it exists.
+   Gates 6 and 9 diff against that base.
 6. Plan file: warranted only if the work is multi-session, multi-phase or structurally complex.
 
 ## Gate 1 — INTERVIEW
@@ -83,7 +85,7 @@ line per check per case. Fix findings (Gate 3), re-review — at most twice.
 
 ## Gate 6 — CODE-REVIEW
 
-Spawn an ad-hoc subagent with **`model: opus`**. Brief: `git diff main...HEAD` plus the
+Spawn an ad-hoc subagent with **`model: opus`**. Brief: `git diff <base>...HEAD` plus the
 working-tree diff, the issue body, and the six dimensions and routing rules copied from `gates.md` —
 **not** your reasoning or the answer you expect. It returns one line per dimension (`OK` · finding
 with its `→ IMPLEMENT` / `→ WRITE-EVALS` target · `N/A — why`); a missing dimension → send it back
@@ -93,8 +95,11 @@ once. Route findings per `gates.md`; fast checks after every fix; re-review at m
 
 - **T1** — this change's new cases, in design order, fail-fast, one run each.
 - **T2** — `python3 -m pytest sdlc-lite-plugin -q` (host).
-- **T3** — give the human the exact dry-run steps (`dev-docs/DEVCONTAINER.md`) and what to look
-  for. Collect the attestation at STOP ④; never mark it satisfied yourself.
+- **T3** — do every step you can yourself: set up the fixture and start the session
+  (`test-fixtures/README.md`), then read the run's handoff files and `run-log.jsonl` via
+  `devcontainer exec` and report progress. Ask the human only for what you cannot do — typing into
+  the interactive session, approvals — and never to check something you can read (#66). Collect the
+  attestation at STOP ④; never mark it satisfied yourself.
 
 A failure stops here: show it; the human decides re-run, repair (→ Gate 5), or abandon.
 
@@ -107,7 +112,7 @@ labelled `flaky`. Code changed → pytest again. Never the full suite (`/regress
 
 ## Gate 9 — REVIEW-GUIDE
 
-`git status` + `git diff --stat main...`, then the items Gate 9 lists in `gates.md`.
+`git status` + `git diff --stat <base>...`, then the items Gate 9 lists in `gates.md`.
 
 ## Gate 10 — HUMAN REVIEW
 

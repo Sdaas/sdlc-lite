@@ -101,6 +101,7 @@ rows, take the union.
 | Gate wording, human-facing output, a `references/*` template | **T1** |
 | Gate behavior: routing, loop bounds, a new or removed gate | **T1 + T3** |
 | `agents/*.md` inbox, model/effort, or tool permission | **T1 + T2**, and **T3** if the flow changes |
+| `agents/*.md` procedure (the steps an agent follows) | **T1** — a case that gives the agent its real conductor brief — and **T3** if the gate's outcome changes |
 | `guard.py` / `analyzer/` | **T2** (+ **T1** if the paired prose changed too) |
 | `hooks.json` registration | **T3** — nothing else proves a hook fires |
 | Docs only (`README.md`, `dev-docs/**`) | none — see below |
