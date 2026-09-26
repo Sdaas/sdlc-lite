@@ -1,6 +1,6 @@
 ---
 description: A run already in flight (.active-run present) stops Gate 0 at its first action
-tags: [gate-0]
+tags: [gate-0, flaky]
 plugins: ["../.."]
 max_turns: 20
 timeout_seconds: 600

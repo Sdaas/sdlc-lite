@@ -1,7 +1,7 @@
 # 48-plan — Repo-local SDLC skills (`/issue`, `/feature`, `/fix`)
 
 **Issue:** [#48](https://github.com/Sdaas/sdlc-lite/issues/48) · **Milestone:** `1.0.0-beta.3`
-**Branches:** one per child issue, `<NN>-<slug>` (#48 itself has no branch) · **Status:** P1–P3 (#50, #57, #51) done; P4 (#52) next
+**Branches:** one per child issue, `<NN>-<slug>` (#48 itself has no branch) · **Status:** P1–P4 (#50, #57, #51, #52) done; P5 (#53) next
 
 Branch-scoped working plan. `git rm` this file in the merge/close commit.
 
@@ -72,7 +72,7 @@ implementation.
 
 ```
 .claude/skills/issue/SKILL.md       # triage-grade capture → files a GitHub issue
-.claude/skills/feature/SKILL.md     # 9 gates, 4 STOPs
+.claude/skills/feature/SKILL.md     # 12 gates, 4 STOPs
 .claude/skills/fix/SKILL.md         # same spine + REPRODUCE + DEPOSIT
 .claude/sdlc/gates.md               # shared spine: gates, STOPs, review dimensions
 dev-docs/verification-ladder.md         # SSOT for T1/T2/T3 (NEW)
@@ -86,23 +86,16 @@ as a skill, and a directory with no `SKILL.md` is noise.
 
 ### 4.1 The `/feature` spine
 
-| Gate | Mode | What | STOP |
-|---|---|---|---|
-| **0 CLASSIFY** | [C]↔H | Resolve `#NN` via `gh issue view`; missing/malformed → hand off to `/issue`. Classify surface (prose / hook / `guard.py`+`analyzer` / docs-only). Docs-only or shell-only → **decline and exit**. Pick the verification tier. Branch (never on `main`). Decide if a plan file is warranted. | **① scope · tier · branch** |
-| **1 DESIGN** | [C]↔H | What changes in which files, the behavior delta a cold reader should show, and the eval cases that will prove it. Writes `<NN>-plan.md` if plan-worthy. | **② plan** |
-| **2 EXPECTATIONS** | [C] | **Write the eval cases before editing any prose.** Run them; they fail or show the wrong behavior. The honest analogue of "red". | |
-| **3 IMPLEMENT** | [C]/[I] | Edit the Markdown / code. Per D9. | |
-| **4 VERIFY** | [C]+[I] | Run the declared tier (§5). Present evidence. | **③ evidence** |
-| **5 REVIEW** | [I] opus | Cold whole-diff review against the six dimensions (§4.4). | |
-| **6 REGRESSION** | [C] | Replay existing eval cases tagged by the files the diff touched. | |
-| **7 REVIEW-GUIDE** | [C]↔H | Changed files, review order, one line each, pointers to the eval report and findings. | **④ pre-commit** |
-| **8 COMMIT** | [C] | Commit per logical unit referencing `#NN`; `git rm <NN>-plan.md` at close. | |
+Superseded by the SSOT, [`.claude/sdlc/gates.md`](.claude/sdlc/gates.md): 12 gates (0 CLASSIFY …
+11 COMMIT), 4 STOPs — scope, design, tests, implementation — with EVAL-REVIEW and CODE-REVIEW
+both on opus **before** any eval spend, and a mapping table to `implement-feature`'s gates.
+Reworked during #52 (2026-09-26).
 
 ### 4.2 `/fix` — two added gates
 
-- **0.5 REPRODUCE** (before DESIGN) — reproduce at a named tier and record it.
+- **REPRODUCE** (before DESIGN) — reproduce at a named tier and record it.
   **Cannot claim "fixed" at a weaker tier than the bug was reproduced at.**
-- **6.5 DEPOSIT** — the eval case that reproduces the bug is committed and must now pass.
+- **DEPOSIT** (after REGRESSION) — the eval case that reproduces the bug is committed and must now pass.
   *A bug fix ships with a test.*
 
 ### 4.3 `/issue` — one STOP
@@ -114,14 +107,7 @@ drafts per `dev-docs/issue-template.md` under the ~300-word cap → type-only la
 
 ### 4.4 The six review dimensions
 
-Replacing `sdlc-lite`'s Python six. State `N/A — why`; never silently drop one.
-
-1. **Unambiguity** — would a cold agent read this exactly one way?
-2. **Consistency** — contradicts another gate, an `agents/*.md`, the guard, or the docs?
-3. **Enforcement parity** — a new prose rule has a matching `guard.py` denial.
-4. **Context cost** — `SKILL.md` is already 636 lines. Does this edit earn its tokens?
-5. **Isolation integrity** — does it leak a withheld artifact into a gate's inbox?
-6. **Doc parity** — README / developer-guide / ADR updates needed?
+SSOT: [`.claude/sdlc/gates.md`](.claude/sdlc/gates.md) → *The six review dimensions*.
 
 ## 5. Verification ladder (summary — SSOT is `dev-docs/verification-ladder.md`)
 
@@ -171,7 +157,7 @@ order and the per-phase verification. Each phase is its own branch (`<NN>-<slug>
 | **P1** | **#50** | `dev-docs/verification-ladder.md` (SSOT for T1/T2/T3) · `dev-docs/eval-tutorial.md` · `sdlc-lite-plugin/evals/` seeded with ≥6 cases incl. one should-not-fire · `release-verify.sh` milestone-tier hook · README routing to both docs | `claude plugin eval sdlc-lite-plugin --ablation none` (validate graders), then a baseline Δ run; `./release-verify.sh` fails when a seeded case is deliberately broken |
 | **P2** | **#57** | `verify-entry-points.py` — the 8-cell entry-point matrix, deterministic transcript signatures, both load paths; ADR-14 conformance table; `dev-docs/DEVCONTAINER.md` says when to run it | Green run in the dev container; reverting the #55 fix turns the matrix red |
 | **P3** | **#51** | `.claude/sdlc/gates.md` — shared spine, 4 STOPs, six review dimensions, eval budget · `.claude/skills/issue/SKILL.md` · developer-guide §10 (repo-local skills) | File one real backlog issue with it (#64); output conforms to `dev-docs/issue-template.md`. No `/issue` eval cases (D13) |
-| **P4** | **#52** | `.claude/skills/feature/SKILL.md` — 9 gates, 4 STOPs | Drive a small real enhancement through all 9 gates; `python3 -m pytest sdlc-lite-plugin -q` |
+| **P4** | **#52** | `.claude/skills/feature/SKILL.md` — 12 gates, 4 STOPs (spine reworked in `gates.md`) · `smoke`/`flaky` eval tags | Drive #37 through all 12 gates; `python3 -m pytest sdlc-lite-plugin -q` |
 | **P5** | **#53** | `.claude/skills/fix/SKILL.md` + REPRODUCE + DEPOSIT · Developer Guide rationale for all three skills · README routing · `dev-docs/release-plan.md` updated · `git rm 48-plan.md` | Fix a real prose bug end-to-end; the deposited case red before, green after |
 
 **Ordering rationale (why P1 is the evals, not the spine).** An earlier draft of this plan put the
@@ -187,7 +173,7 @@ list presented before each commit; nothing commits without approval.
 - [x] P1 #50 — verification ladder · eval tutorial · eval seed suite · release-verify hook (green run on claude-opus-5-5 → #59)
 - [x] P2 #57 — 8-cell entry-point checker (`verify-entry-points.py`; 16/16 green, shim restored → red)
 - [x] P3 #51 — shared spine + `/issue` (filed #64 with it)
-- [ ] P4 #52 — `/feature`
+- [x] P4 #52 — `/feature` (proven on #37)
 - [ ] P5 #53 — `/fix` + docs close-out
 - [ ] `git rm 48-plan.md` in the close commit (P5)
 - [ ] Close #48 when #50, #51, #52, #53 are all closed

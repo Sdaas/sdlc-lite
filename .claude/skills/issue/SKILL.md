@@ -11,7 +11,7 @@ Turn `$ARGUMENTS` (or, if empty, the human's next message) into **one** GitHub i
 to [`dev-docs/issue-template.md`](../../../dev-docs/issue-template.md). Read that file first — it is
 the spec for title, sections, labels and the word cap. This skill only adds *how to get there*.
 
-This skill runs **none** of the spine's gates 0–8 ([`.claude/sdlc/gates.md`](../../sdlc/gates.md)).
+This skill runs **none** of the spine's gates 0–11 ([`.claude/sdlc/gates.md`](../../sdlc/gates.md)).
 Its one STOP is approving the draft.
 
 ## Hard rules

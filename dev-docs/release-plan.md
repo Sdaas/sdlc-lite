@@ -52,7 +52,7 @@ its children (#50, #57, #51, #52, #53) and closes when #53 closes.
 
 ### Open — in execution order
 
-1. **#52** — `feat(repo): /feature skill — 9 gates, 4 STOPs`
+1. **#52** — `feat(repo): /feature skill — 12 gates, 4 STOPs`
    *Next — it executes the spine in `.claude/sdlc/gates.md`. Its Open Question (does `/feature`
    also update this file) is settled: **no** — roadmap ordering stays a human call.*
 2. **#53** — `feat(repo): /fix skill — REPRODUCE + DEPOSIT gates`
