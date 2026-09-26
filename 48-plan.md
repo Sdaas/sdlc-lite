@@ -1,7 +1,7 @@
 # 48-plan — Repo-local SDLC skills (`/issue`, `/feature`, `/fix`)
 
 **Issue:** [#48](https://github.com/Sdaas/sdlc-lite/issues/48) · **Milestone:** `1.0.0-beta.3`
-**Branches:** one per child issue, `<NN>-<slug>` (#48 itself has no branch) · **Status:** P1–P3 (#50, #57, #51) done; P4 (#52) next
+**Branches:** one per child issue, `<NN>-<slug>` (#48 itself has no branch) · **Status:** P1–P4 (#50, #57, #51, #52) done; P5 (#53) next
 
 Branch-scoped working plan. `git rm` this file in the merge/close commit.
 
@@ -173,7 +173,7 @@ list presented before each commit; nothing commits without approval.
 - [x] P1 #50 — verification ladder · eval tutorial · eval seed suite · release-verify hook (green run on claude-opus-5-5 → #59)
 - [x] P2 #57 — 8-cell entry-point checker (`verify-entry-points.py`; 16/16 green, shim restored → red)
 - [x] P3 #51 — shared spine + `/issue` (filed #64 with it)
-- [ ] P4 #52 — `/feature`
+- [x] P4 #52 — `/feature` (proven on #37)
 - [ ] P5 #53 — `/fix` + docs close-out
 - [ ] `git rm 48-plan.md` in the close commit (P5)
 - [ ] Close #48 when #50, #51, #52, #53 are all closed
