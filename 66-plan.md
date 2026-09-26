@@ -1,7 +1,7 @@
 # 66-plan — Hands-off dev-container T3 runs
 
 **Issue:** [#66](https://github.com/Sdaas/sdlc-lite/issues/66) · **Milestone:** `1.0.0-beta.3`
-**Branch:** `66-hands-off-t3` · **Status:** P1–P4 done; P5 (proof run, fresh session) next
+**Branch:** `66-hands-off-t3` · **Status:** P1–P5 done; P6 (close) next
 
 Branch-scoped working plan. `git rm` this file in the merge/close commit. Resume a fresh session
 with **"read 66-plan.md and continue"**: check §6 for the next unticked phase.
@@ -82,12 +82,26 @@ Every commit waits for the human's review and approval.
 - [x] P2 start / attach / peek / stop — live: no trust/login/onboarding dialog; `capture-pane` of a live claude allowed; human attach + Shift+Enter newline + detach verified. Found + fixed: `clean-run.sh` failed without `--rebuild` on macOS bash 3.2 (empty array under `set -u`)
 - [x] P3 watch — live through Gate 0 → Gate 1 STOP: GATE, WORKING, WAITING (quotes the ask), ENDED; AGENT / DENY / ERROR parsers checked on synthetic records (live in P5). Changed from the plan: "esc to interrupt" never matched, so working/waiting now comes from the conductor transcript (`system/turn_duration` = turn ended); a dialog on screen still wins. The ask comes from the transcript too
 - [x] P4 docs — `dev-docs/t3-runs.md` (journey, commands, watch events + limits, tmux primer, troubleshooting); pointers in `dev-docs/README.md`, `DEVCONTAINER.md`, `developer-guide.md`, `verification-ladder.md`, `test-fixtures/README.md`, `/feature` Gate 7; `tmux.conf` gained `set-clipboard on` (applies from the next container). Links green
-- [ ] P5 proof run
+- [x] P5 proof run — 2026-09-26, gates 0–10 green, human attested; 6 deltas in §7, none blocking: 1–4 fixed, 5 → #69, 6 → #68 / #40
 - [ ] P6 close
 
 ## 7. Journey vs reality (filled in P5)
 
-_Filled by the proof run. Early notes from the P2/P3 live checks:_
+Proof run 2026-09-26, `roman-numeral`, 10:18–10:41: gates 0–10 green, committed on
+`feature/00-roman-numeral-convert`. The human attested that they only attached and answered STOPs
+(inputs: Gate 0 confirm, "all recommended", APPROVED ×3, plus one `! pip install -e .` for the
+plugin bug below). Every GATE / AGENT / DENY / ERROR / WAITING / WORKING event appeared live.
+
+| # | Delta | Blocking? | Action |
+|---|---|---|---|
+| 1 | **False `WAITING`** each time the conductor dispatches an isolated agent and ends its turn ("The implementer is running…"). Four times this run. | No | Fixed: `pending_agents` in `t3-run.sh` — a turn end with a launched agent not yet reported back stays `WORKING`. Checked on this run's transcript (1 after each launch, 0 after each finish); live on the next T3 run. |
+| 2 | Claude Code shows `tmux focus-events off · add 'set -g focus-events on'`. | No | Fixed: `set -g focus-events on` in `.devcontainer/tmux.conf` (applies from the next container). |
+| 3 | §3 step 8 "agent runs the analyzer receipt": the conductor already runs it at Gate 9. | No | Fixed: `t3-runs.md` §1 step 8. |
+| 4 | The human's pane was on the agent picker ("Message @sdlc-lite:code-revi…") at a STOP; input would go to the subagent. | No | Fixed: tip in `t3-runs.md` §4. |
+| 5 | The watcher shows only an agent's first call; the human asked what the test-writer was doing. The agent answered from the run-log. | No | Deferred: #69 (backlog). |
+| 6 | Plugin, not #66: code-reviewer ran `pip install -e .` in a scratch copy to make mutmut work, which repointed the fixture's package to `/tmp`; the conductor caught it and asked the human to reinstall. | No (for #66) | Filed #68 (1.0.0); evidence on #40, moved to 1.0.0. |
+
+_Earlier notes from the P2/P3 live checks:_
 
 - Gate 1 asked all its interview questions in one message, not one at a time: fine, no change.
 - The watcher replays the run's history when it (re)starts, so a restart mid-run repeats earlier GATE lines.
