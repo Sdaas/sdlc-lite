@@ -186,10 +186,10 @@ fi
 
 # Same tools postCreate installs and checks; mutmut via metadata (it fails outside a project).
 # shellcheck disable=SC2016  # expands inside the container
-tool_check='printf "%s | %s | %s | mutmut %s | claude %s" \
+tool_check='printf "%s | %s | %s | mutmut %s | claude %s | %s" \
   "$(ruff --version)" "$(mypy --version | cut -d" " -f1-2)" "$(pytest --version 2>&1)" \
   "$(python -c "import importlib.metadata as m; print(m.version(\"mutmut\"))")" \
-  "$(claude --version | cut -d" " -f1)"'
+  "$(claude --version | cut -d" " -f1)" "$(tmux -V)"'
 if msg="$(cexec "$tool_check" 2>&1)"; then
   row "Toolchain" 0 "$msg"
 else

@@ -41,6 +41,8 @@ install -m 755 \
   "$TEMPLATES/statusline-command.sh" \
   "$TEMPLATES/smart_rm_hook.sh" \
   "$CLAUDE_DIR/"
+# The tmux config for hands-off T3 runs (#66). Same rule: ours, so always refreshed.
+install -m 644 .devcontainer/tmux.conf "$HOME/.tmux.conf"
 
 # --- SEED: settings.json, only if absent --------------------------------------
 # Ships permissive sandbox permissions (Bash(*), defaultMode: auto), the status
