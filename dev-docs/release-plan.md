@@ -38,6 +38,7 @@ plugin's runtime behavior: a documentation restructure that gives the repo one d
 and the repo-local SDLC skills that give *this repo* the requirements → design → test discipline the
 `sdlc-lite` plugin gives a Python repo. Added 2026-09-26: **hands-off dev-container
 test runs** (#45 → #21 → #66, all done), so every later dry run — #53's proof, #58, #61 — is cheap to repeat.
+Added 2026-09-26: **#70**, so the repo's tooling issues run through the same skills.
 
 **Why before GA, and why it is `0.1.0` and not GA.** The `0.2.0` issues are real behavior changes
 to a product whose source is prose, and today they would be verified only by ad-hoc dry runs and
@@ -54,16 +55,21 @@ its children (#50, #57, #51, #52, #53) and closes when #53 closes.
 ### Open — in execution order
 
 1. **#53** — `feat(repo): /fix skill — REPRODUCE + DEPOSIT gates`
-   *Next. Reuses #52's 12-gate spine and adds the two gates that close the regression-safety gap; its T3
-   proof uses #66. Also carries #48's close-out: repo-local SDLC docs in `dev-docs/`, this file's
-   update, removing `48-plan.md`, and deciding whether the root scripts move (#60, Q14). **#48**
-   closes with it.*
-2. **#58** — `fix(skill): conductor sometimes skips the lock STOP and the explicit-entry redirect`
-   *Must land before the cut: `release-verify.sh` gates it on the eval suite at 0.8, and the
-   opus-5-5 baseline is 5/7 because of this bug. Still live: `gate-0-lock-stop` failed 1 of 3 runs
-   in #60's close-out eval.*
-3. **#61** — `fix(skill): agent inboxes and quality-standards disagree with SKILL.md`
-   *Found by #60. Share #58's container session; proof is a `roman-numeral` dry run to Gate 7.*
+   *Next. Built by hand (plan mode + `48-plan.md`), not via `/feature`: a repo-local skill is
+   invisible to `claude plugin eval`. `/fix` reuses `/feature`'s gates — the per-gate how-to moves
+   to a shared runbook in `.claude/sdlc/`, REPRODUCE and DEPOSIT are defined in `gates.md`. Its proof
+   is driving #61. Also carries #48's close-out: repo-local SDLC docs in `dev-docs/`, removing
+   `48-plan.md`, and deciding whether the root scripts move (#60, Q14). **#48** closes with it.*
+2. **#61** — `fix(skill): agent inboxes and quality-standards disagree with SKILL.md`
+   *First `/fix` run — #53's proof (deterministic, unlike #58). Found by #60; proof is a
+   `roman-numeral` dry run to Gate 7.*
+3. **#58** — `fix(skill): conductor sometimes skips the lock STOP and the explicit-entry redirect`
+   *Second `/fix` run. Must land before the cut: `release-verify.sh` gates it on the eval suite at
+   0.8, and the opus-5-5 baseline is 5/7 because of this bug. Still live: `gate-0-lock-stop` failed
+   1 of 3 runs in #60's close-out eval.*
+4. **#70** — `feat(repo): widen /feature Gate 0 to accept tooling issues`
+   *After #58. Gives shell, `Makefile`, dev-container, fixture, CI and repo-local-skill issues an
+   explicit tooling lane; from then on every non-docs issue goes through `/feature` or `/fix`.*
 
 ### Closed
 
