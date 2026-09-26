@@ -1,7 +1,7 @@
 # 66-plan — Hands-off dev-container T3 runs
 
 **Issue:** [#66](https://github.com/Sdaas/sdlc-lite/issues/66) · **Milestone:** `1.0.0-beta.3`
-**Branch:** `66-hands-off-t3` · **Status:** P1–P3 done; P4 (docs) next
+**Branch:** `66-hands-off-t3` · **Status:** P1–P4 done; P5 (proof run, fresh session) next
 
 Branch-scoped working plan. `git rm` this file in the merge/close commit. Resume a fresh session
 with **"read 66-plan.md and continue"**: check §6 for the next unticked phase.
@@ -81,7 +81,7 @@ Every commit waits for the human's review and approval.
 - [x] P1 container tmux — tmux 3.5a; `docker exec` new-session + capture-pane allowed (shell only; a live `claude` pane is re-checked in P2); `clean-run` Toolchain row now shows tmux
 - [x] P2 start / attach / peek / stop — live: no trust/login/onboarding dialog; `capture-pane` of a live claude allowed; human attach + Shift+Enter newline + detach verified. Found + fixed: `clean-run.sh` failed without `--rebuild` on macOS bash 3.2 (empty array under `set -u`)
 - [x] P3 watch — live through Gate 0 → Gate 1 STOP: GATE, WORKING, WAITING (quotes the ask), ENDED; AGENT / DENY / ERROR parsers checked on synthetic records (live in P5). Changed from the plan: "esc to interrupt" never matched, so working/waiting now comes from the conductor transcript (`system/turn_duration` = turn ended); a dialog on screen still wins. The ask comes from the transcript too
-- [ ] P4 docs
+- [x] P4 docs — `dev-docs/t3-runs.md` (journey, commands, watch events + limits, tmux primer, troubleshooting); pointers in `dev-docs/README.md`, `DEVCONTAINER.md`, `developer-guide.md`, `verification-ladder.md`, `test-fixtures/README.md`, `/feature` Gate 7; `tmux.conf` gained `set-clipboard on` (applies from the next container). Links green
 - [ ] P5 proof run
 - [ ] P6 close
 
