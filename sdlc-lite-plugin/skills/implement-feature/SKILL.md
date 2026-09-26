@@ -81,7 +81,7 @@ the read-through narrative.
 | Gate | Reads (inbox) | Writes (outbox) |
 |---|---|---|
 | WRITE-TESTS [I] | `01-requirements.md` + `02-design-interface.md` + `04-test-plan.md` (**never** `03-design-internal.md`) | `<tests_root>/…` + `05-test-intent.md` |
-| TEST-REVIEW [I] | `01-requirements.md` + full design + tests + `05-test-intent.md` | `06-test-review-findings.md` |
+| TEST-REVIEW [I] | `01-requirements.md` + full design + `04-test-plan.md` + tests + `05-test-intent.md` | `06-test-review-findings.md` |
 | IMPLEMENT [I] | `01-requirements.md` + tests + full design | `<code_root>/…` |
 | VERIFY [I] | `01-requirements.md` (ACs + boundary inventory) + `<code_root>/` | `07-verify-report.md` |
 | CODE-REVIEW [I] | `01-requirements.md` + full design + whole diff | `08-code-review-findings.md` |

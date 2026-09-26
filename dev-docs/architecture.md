@@ -82,7 +82,7 @@ behavior; this file is the map.
 | Gate | Reads | Writes |
 |---|---|---|
 | WRITE-TESTS | `01` + `02-design-interface` + `04-test-plan` — **never `03-design-internal`** | tests + `05-test-intent` |
-| TEST-REVIEW | `01` + full design + tests + `05` | `06-test-review-findings` |
+| TEST-REVIEW | `01` + full design + `04` + tests + `05` | `06-test-review-findings` |
 | IMPLEMENT | `01` + tests + full design | `<code_root>/…` |
 | VERIFY | `01` (ACs + boundary inventory) + `<code_root>/` | `07-verify-report` |
 | CODE-REVIEW | `01` + full design + whole diff | `08-code-review-findings` |
