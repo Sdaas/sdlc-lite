@@ -1,7 +1,7 @@
 # 48-plan — Repo-local SDLC skills (`/issue`, `/feature`, `/fix`)
 
 **Issue:** [#48](https://github.com/Sdaas/sdlc-lite/issues/48) · **Milestone:** `0.1.0`
-**Branches:** one per child issue, `<NN>-<slug>` (#48 itself has no branch) · **Status:** P1–P4 (#50, #57, #51, #52) done; P5 (#53) next
+**Branches:** one per child issue, `<NN>-<slug>` (#48 itself has no branch) · **Status:** P1–P4 (#50, #57, #51, #52) done; P5 (#53) in progress — detail in `53-plan.md`
 
 Branch-scoped working plan. `git rm` this file in the merge/close commit.
 
@@ -19,7 +19,7 @@ themselves; automating the dev-container dry run.
 ## 2. Why `sdlc-lite` cannot serve this repo
 
 Its spine rests on three assumptions, and all three fail here. *(This section is the source
-for the Developer Guide rationale in P5 / #53.)*
+for the rationale in `dev-docs/repo-local-skills.md`, P5 / #53.)*
 
 | Assumption in `sdlc-lite` | Reality in this repo |
 |---|---|
@@ -73,11 +73,12 @@ implementation.
 ```
 .claude/skills/issue/SKILL.md       # triage-grade capture → files a GitHub issue
 .claude/skills/feature/SKILL.md     # 12 gates, 4 STOPs
-.claude/skills/fix/SKILL.md         # same spine + REPRODUCE + DEPOSIT
-.claude/sdlc/gates.md               # shared spine: gates, STOPs, review dimensions
+.claude/skills/fix/SKILL.md         # same spine + 1b REPRODUCE + 8b DEPOSIT (bug-only)
+.claude/sdlc/gates.md               # shared spine: gates, STOPs, review dimensions (the *what*)
+.claude/sdlc/runbook.md             # per-gate how-to shared by /feature and /fix (#53)
 dev-docs/verification-ladder.md         # SSOT for T1/T2/T3 (NEW)
 dev-docs/eval-tutorial.md               # teaches `claude plugin eval` (NEW)
-dev-docs/developer-guide.md             # + section: why this repo has its own SDLC
+dev-docs/repo-local-skills.md           # all three skills + why they diverge (#53)
 sdlc-lite-plugin/evals/             # shipped eval suite = the T1 corpus
 ```
 
@@ -93,10 +94,13 @@ Reworked during #52 (2026-09-26).
 
 ### 4.2 `/fix` — two added gates
 
-- **REPRODUCE** (before DESIGN) — reproduce at a named tier and record it.
+- **1b REPRODUCE** (before DESIGN) — reproduce at a named tier and record it.
   **Cannot claim "fixed" at a weaker tier than the bug was reproduced at.**
-- **DEPOSIT** (after REGRESSION) — the eval case that reproduces the bug is committed and must now pass.
-  *A bug fix ships with a test.*
+- **8b DEPOSIT** (after REGRESSION) — the case that reproduces the bug is committed and must now pass.
+  *A bug fix ships with a test.* The case lives at the reproduction tier (eval case for T1,
+  `pytest` for T2; T3-only → recorded recipe + follow-up issue).
+
+Locked decisions F1–F9: `53-plan.md` §1.
 
 ### 4.3 `/issue` — one STOP
 
@@ -158,7 +162,7 @@ order and the per-phase verification. Each phase is its own branch (`<NN>-<slug>
 | **P2** | **#57** | `verify-entry-points.py` — the 8-cell entry-point matrix, deterministic transcript signatures, both load paths; ADR-14 conformance table; `dev-docs/DEVCONTAINER.md` says when to run it | Green run in the dev container; reverting the #55 fix turns the matrix red |
 | **P3** | **#51** | `.claude/sdlc/gates.md` — shared spine, 4 STOPs, six review dimensions, eval budget · `.claude/skills/issue/SKILL.md` · developer-guide §10 (repo-local skills) | File one real backlog issue with it (#64); output conforms to `dev-docs/issue-template.md`. No `/issue` eval cases (D13) |
 | **P4** | **#52** | `.claude/skills/feature/SKILL.md` — 12 gates, 4 STOPs (spine reworked in `gates.md`) · `smoke`/`flaky` eval tags | Drive #37 through all 12 gates; `python3 -m pytest sdlc-lite-plugin -q` |
-| **P5** | **#53** | `.claude/skills/fix/SKILL.md` + REPRODUCE + DEPOSIT · Developer Guide rationale for all three skills · README routing · `dev-docs/release-plan.md` updated · `git rm 48-plan.md` | Fix a real prose bug end-to-end; the deposited case red before, green after |
+| **P5** | **#53** | `.claude/sdlc/runbook.md` · `.claude/skills/fix/SKILL.md` + 1b REPRODUCE + 8b DEPOSIT · `dev-docs/repo-local-skills.md` for all three skills · `dev-docs/README.md` + `CLAUDE.md` routing · `dev-docs/release-plan.md` updated · `git rm 48-plan.md 53-plan.md` | `/fix #61` end to end; the deposited case red before, green after. Sub-phases and tracker: `53-plan.md` |
 
 **Ordering rationale (why P1 is the evals, not the spine).** An earlier draft of this plan put the
 shared spine and `/issue` first. That is wrong: #50 is every later child's quality signal, so a
@@ -174,8 +178,8 @@ list presented before each commit; nothing commits without approval.
 - [x] P2 #57 — 8-cell entry-point checker (`verify-entry-points.py`; 16/16 green, shim restored → red)
 - [x] P3 #51 — shared spine + `/issue` (filed #64 with it)
 - [x] P4 #52 — `/feature` (proven on #37)
-- [ ] P5 #53 — `/fix` + docs close-out
-- [ ] `git rm 48-plan.md` in the close commit (P5)
+- [ ] P5 #53 — `/fix` + docs close-out (tracker: `53-plan.md` §4)
+- [ ] `git rm 48-plan.md` (with `53-plan.md`) in #53's close-out commit
 - [ ] Close #48 when #50, #51, #52, #53 are all closed
 
 ## 8. Settled questions
@@ -183,3 +187,6 @@ list presented before each commit; nothing commits without approval.
 - **Issue-title area for repo-local tooling?** `repo` — added to `dev-docs/issue-template.md`.
 - **Does `/feature` also update `dev-docs/release-plan.md`?** **No** — confirmed 2026-09-24.
   Roadmap ordering stays a human call. This unblocks #52.
+- **#53's open questions** (deposit tier, REPRODUCE spend, DEPOSIT as a gate, decision-only
+  outcomes, docs home, root scripts, proof order) — settled 2026-09-26 as F1–F9 in `53-plan.md` §1.
+  Root scripts stay at the root.
