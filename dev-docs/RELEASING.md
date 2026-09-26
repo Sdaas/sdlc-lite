@@ -26,7 +26,7 @@ marketplace in a separate repo** (ADR-13):
 | Channel | Repo · catalog name | Audience | Marketplace source | Moves when |
 |---|---|---|---|---|
 | **dev / in-place** | `Sdaas/sdlc-lite` (this repo) · `sdlc-lite-dev` | maintainer + dev container | local **directory** source (`./sdlc-lite-plugin`) | every workspace edit (no release needed) |
-| **release / stable** | `Sdaas/claude-plugins` (umbrella) · `sdaas` | real customers | **git-subdir** source pinned to a tag (explicit https url, `path: sdlc-lite-plugin`, `ref: v0.1.0` + `sha`) | only when a release is cut |
+| **release / stable** | `Sdaas/claude-plugins` (umbrella) · `sdaas` | real customers | **git-subdir** source pinned to a tag (explicit https url, `path: sdlc-lite-plugin`, `ref: v0.0.9` + `sha`) | only when a release is cut |
 
 - The dev container keeps loading the plugin from the workspace directory (see `DEVCONTAINER.md`)
   — unchanged.
