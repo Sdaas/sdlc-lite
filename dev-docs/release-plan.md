@@ -39,12 +39,12 @@ and the repo-local SDLC skills that give *this repo* the requirements → design
 `sdlc-lite` plugin gives a Python repo. Added 2026-09-26: **hands-off dev-container
 test runs** (#45 → #21 → #66, all done), so every later dry run — #53's proof, #58, #61 — is cheap to repeat.
 
-**Why before GA, and why it is `0.1.0` and not GA.** The `1.0.0` issues are real behavior changes
+**Why before GA, and why it is `0.1.0` and not GA.** The `0.2.0` issues are real behavior changes
 to a product whose source is prose, and today they would be verified only by ad-hoc dry runs and
 judgment. #48 supplies the missing verification primitive (`claude plugin eval` over `SKILL.md`, plus
 the T1/T2/T3 ladder). Using new tooling for the first time on release-critical work is a risk, so the
 release it is first exercised on is labeled **`0.1.0`**, not GA — the tooling gets proven on real work
-before `1.0.0` depends on it.
+before later releases depend on it.
 
 ## Execution order (current release)
 
@@ -82,12 +82,12 @@ its children (#50, #57, #51, #52, #53) and closes when #53 closes.
 | **#21** `feat(toolchain): add a clean-run harness that rebuilds the dev container per dry run` | 2026-09-26 (`5f61943`) | `make clean-run` resets to a known dry-run state in ~20 s (container reset, volume kept, `settings.json` re-seeded, fixtures, status table); `--rebuild` = no-cache image rebuild. #66 builds on it. |
 | **#66** `feat(toolchain): hands-off dev-container test runs — fresh state, auto-auth, tmux, live progress` | 2026-09-26 (`d3ecef8`) | `make t3-start / t3-attach / t3-peek / t3-watch / t3-stop` (`dev-docs/t3-runs.md`): the agent launches and watches, the human only attaches, answers STOPs and attests; proven by a hands-off `roman-numeral` run. Filed #68, #69; moved #40 to `1.0.0`. |
 
-## Next release — `1.0.0` (GA)
+## Next release — `0.2.0`
 
-The GA build. Theme: **robustness and real-user UX hardening** — pre-GA validation feedback plus the
-committed follow-ups from v1 acceptance: toolchain auto-install so a stranger can run it unaided, and
-closing the test-quality and isolation-correctness gaps the acceptance runs surfaced. Milestone:
-`1.0.0`. Scope may grow or shrink during the release — that's expected; when 0.1.0 ships, this
+Theme: **toolchain auto-install + the test-quality and isolation-correctness gaps the 0.1.0
+acceptance runs surfaced.** Not GA — GA is whatever release we're confident is feature-complete and
+hardened, and that's not something we can commit to naming or scoping this far out. Milestone:
+`0.2.0`. Scope may grow or shrink during the release — that's expected; when 0.2.0 ships, this
 section becomes the current release.
 
 **Execution order** (verified with the ladder and eval corpus from #48):
@@ -95,7 +95,7 @@ section becomes the current release.
 1. **#62** — `feat(skill): simplify SKILL.md prose for a cold reader, verified by the eval suite`
    *After #58 (0.1.0) — same prose, same eval proof; land the behavior fix before the rewrite.*
 2. **#63** — `chore(skill): re-evaluate the dated reviewer pin claude-opus-4-8`
-   *After #62 — both touch SKILL.md's model table. GA should not ship a reviewer pin that was never
+   *After #62 — both touch SKILL.md's model table. We should not ship a reviewer pin that was never
    re-checked against the current Opus; the decision is recorded in ADR-2.*
 3. **#43** — `fix(guard-hook): bash_write_targets misreads scratch writes as product-tree writes`
    *Self-contained, unit-testable on the host, and it removes the false denials that make the
@@ -113,9 +113,10 @@ section becomes the current release.
 
 ## Backlog
 
-Deferred capability and polish — **open issues with no milestone**. Not tracked here; query GitHub:
-`gh issue list --state open --search "no:milestone"`. Promote an issue into a milestone when it's
-committed to a release.
+Everything else — **open issues with no milestone**, including work that was previously milestoned
+here but isn't part of 0.2.0's committed content (e.g. **#40**, **#68**, moved to backlog
+2026-09-26). Not tracked here; query GitHub: `gh issue list --state open --search "no:milestone"`.
+Promote an issue into a milestone when it's committed to a release.
 
 ---
 
