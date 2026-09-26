@@ -4,12 +4,14 @@
 #
 # Invoked by devcontainer.json's `postStartCommand`, so it runs on EVERY container
 # start (create, restart, rebuild) with the workspace folder as the cwd. It must
-# therefore be IDEMPOTENT — and it is, via two deliberate rules:
+# therefore be IDEMPOTENT — and it is, via three deliberate rules:
 #
 #   REFRESH  static scripts we own outright are overwritten every start, so an edit
 #            in `.devcontainer/claude/` takes effect on the next start.
-#   SEED     files Claude Code itself writes to are installed ONLY IF ABSENT, so a
-#            fresh volume self-heals but nothing you changed in-session is clobbered.
+#   SEED     settings.json is installed ONLY IF ABSENT, so a fresh volume
+#            self-heals but nothing you changed in-session is clobbered.
+#   MERGE    the first-run keys are merged into ~/.claude.json every start; the
+#            rest of that file (which Claude Code writes) is left alone.
 #
 # Two different stores are involved, and the split matters (issue #54):
 #
@@ -17,7 +19,7 @@
 #                     plugins, session history, and the `/login` credential all
 #                     PERSIST across container rebuilds.
 #   ~/.claude.json    at the HOME ROOT, OUTSIDE that volume — so it is recreated
-#                     empty on every rebuild and must be re-seeded here.
+#                     on every rebuild and must be re-provisioned here.
 #
 # macOS-only alerting (the Mac's Stop / Notification osascript hooks) is
 # intentionally NOT ported — it is meaningless in a headless container.
@@ -50,15 +52,23 @@ if [[ ! -f "$CLAUDE_DIR/settings.json" ]]; then
   install -m 644 "$TEMPLATES/settings.json" "$CLAUDE_DIR/settings.json"
 fi
 
-# --- SEED: ~/.claude.json, only if absent (issue #54) -------------------------
+# --- MERGE: first-run keys into ~/.claude.json (issues #54, #45) --------------
 # Holds Claude Code's FIRST-RUN state: hasCompletedOnboarding, theme, and
 # per-project trust. Because it lives outside the volume (see header), a bare
 # interactive `claude` otherwise stops at the theme wizard and the folder-trust
 # dialog on every rebuild. That looks like an auth prompt but is NOT: auth comes
 # from .env's CLAUDE_CODE_OAUTH_TOKEN and works headlessly either way.
-# Mode 600 matches what Claude Code writes. To re-run onboarding:
-# rm ~/.claude.json and restart.
-if [[ ! -f "$HOME/.claude.json" ]]; then
+#
+# MERGED, not seeded-if-absent (#45): the Dockerfile's `claude --version` already
+# creates ~/.claude.json in the image, so an "only if absent" seed never applied.
+# jq's deep merge (`*`) sets just the template's keys and keeps everything else
+# Claude Code wrote. Mode 600 matches what Claude Code writes.
+if [[ -f "$HOME/.claude.json" ]]; then
+  merged="$(mktemp /tmp/claude-json.XXXXXX)"
+  jq -s '.[0] * .[1]' "$HOME/.claude.json" "$TEMPLATES/claude.json" > "$merged"
+  install -m 600 "$merged" "$HOME/.claude.json"
+  rm -f "$merged"
+else
   install -m 600 "$TEMPLATES/claude.json" "$HOME/.claude.json"
 fi
 
