@@ -1,7 +1,8 @@
 # The repo-local SDLC spine
 
 Shared by this repo's own skills — `/issue`, `/feature` (#52), `/fix` (#53). A skill **executes**
-this spine; it never restates it. Change a gate here, once.
+this spine; it never restates it. Change a gate here, once. How to execute each gate:
+[`runbook.md`](runbook.md).
 
 **Scope:** work on *this* repo — the plugin's prose (`SKILL.md`, `agents/*.md`, `references/*`,
 `hooks.json`) and its small code surface (`guard.py`, `policy.py`, `agentdefs.py`, `analyzer/`).
@@ -49,15 +50,36 @@ A skill may **add** gates between these (e.g. `/fix`'s REPRODUCE, DEPOSIT) or **
 
 ---
 
+## Gates added by `/fix`
+
+A bug fix must leave a case behind that proves it stays fixed. Added gates take a letter suffix, so
+nothing is renumbered, and add no STOP.
+
+| Gate | Mode | What | STOP |
+|---|---|---|---|
+| **1b REPRODUCE** | [C]↔H | After STOP ①, before DESIGN. Reproduce the bug at the **cheapest tier that shows it** — T2 `pytest`, else T1 eval case, else T3 (the human attests a dry run). Below T3, the reproduction **is** the reproducing case: written now, shown red. The route is approved at STOP ①; a costlier one never runs unapproved. Record the tier, the case (or T3 recipe), the red evidence and the case's fingerprint; they open STOP ②. Not reproduced → **halt**, like a Gate 7 failure (not an approval STOP); no design for an unreproduced bug. | |
+| **8b DEPOSIT** | [C] | After REGRESSION. The reproducing case — red before the fix, green at Gate 7 — goes in the fix's commit and stays: T1 tagged so Gate 8 replays it, T2 collected by the fast checks. T3-only → the recipe is posted on the issue and a follow-up issue asks for a cheaper case. | |
+
+**The reproduction tier is a floor.** Gate 7 always runs the tier the bug was reproduced at, on top
+of the ladder's minimum; nothing claims "fixed" at a weaker tier than that. A reproducing case
+edited after its last red run is re-run red before it counts (Gate 5, or 8b with the fix stashed).
+
+**Two carve-outs, both approved at STOP ①:** the reproducing case is written before STOP ②, and a
+T1 repro run may spend eval money before STOP ③, within its own cap.
+
+---
+
 ## The four STOPs
 
 The human approves **scope, design, tests and implementation** — nothing else. More STOPs than
 this produce rubber-stamping, which is worse than no gate.
 
-1. **Scope** (Gate 1) — what is in and out, the tier the change owes, the branch.
+1. **Scope** (Gate 1) — what is in and out, the tier the change owes, the branch; for `/fix`, how
+   the bug will be reproduced and any T1 repro cap.
 2. **Design** (Gate 2) — the plan, the eval cases in run order, the cost cap. Nothing is written
-   before it.
-3. **Tests** (Gate 4) — the reviewed eval cases. No eval money is spent before it. A case changed
+   before it (except `/fix`'s reproducing case).
+3. **Tests** (Gate 4) — the reviewed eval cases. No eval money is spent before it (except
+   `/fix`'s capped T1 repro run). A case changed
    after this STOP comes back for re-approval (changed cases only).
 4. **Implementation** (Gate 10) — the diff, with the eval evidence and any T3 attestation.
    **Nothing is committed before it.**
@@ -125,8 +147,9 @@ least that still answers the question.
 - **A failure stops the gate.** Show it to the human, who decides whether to re-run. Never re-run
   on your own. A case tagged `flaky` is labelled as such when it fails.
 - **One run is one run.** Evidence says "1 run"; at STOP ④ the human may ask for more.
-- **Hard cap.** Every eval command at Gates 5, 7 and 8 carries the `--max-cost-usd` cap approved
-  at STOP ②. Hitting it stops the gate. There is no default: the design states it.
+- **Hard cap.** Every eval command at Gates 5, 7, 8 and 8b carries the `--max-cost-usd` cap
+  approved at STOP ②; at 1b, the repro cap approved at STOP ①. Hitting it stops the gate. There is
+  no default: the design states it.
 - **Not here:** the 3-runs-per-case pass over the whole suite is `/regression` (#64; before a
   release, or twice a week); the full release gate is `release-verify.sh` (ladder §8).
 
@@ -140,13 +163,15 @@ Same concept, same name; the *how* differs because the product here is prose.
 |---|---|---|
 | 0 CLASSIFY | 0 CLASSIFY + PREFLIGHT | No toolchain preflight or run lock; declines docs/shell-only |
 | 1 INTERVIEW | 1 INTERVIEW | Settled scope goes to the GitHub issue, not a requirements file |
+| 1b REPRODUCE (`/fix`) | — | `implement-feature` has no bug path |
 | 2 DESIGN | 2 DESIGN / SPEC | No interface/internal split; eval cases replace the test plan |
 | 3 WRITE-EVALS | 3 WRITE-TESTS | Eval cases, written in-session; not algorithm-blind |
 | 4 EVAL-REVIEW | 4 TEST-REVIEW | Adds the leak check; human STOP ③ |
 | 5 IMPLEMENT | 5 IMPLEMENT | Opens with the confirm-red run (red is undefined before an eval runs) |
 | 6 CODE-REVIEW | 7 CODE-REVIEW | Runs **before** VERIFY — here VERIFY is the expensive step |
 | 7 VERIFY | 6 VERIFY | Eval runs + T3 attestation instead of driving code un-mocked |
-| 8 REGRESSION | — | Prose leaves no regression tests behind; replay tagged cases |
+| 8 REGRESSION | — | Replays the tagged eval cases a prose change could break |
+| 8b DEPOSIT (`/fix`) | — | A fixed bug leaves its reproducing case behind |
 | 9 REVIEW-GUIDE | 8 REVIEW-GUIDE | — |
 | 10 HUMAN REVIEW | 9 HUMAN REVIEW | — |
 | 11 COMMIT | 10 COMMIT | — |
