@@ -15,7 +15,9 @@
 #                 3. Start tmux session `t3` in the fixture dir, running
 #                    claude --model opus "/implement-feature <BRIEF.md>"
 #                    with .env sourced for auth. The script types the entry prompt; the
-#                    human only answers the plugin's STOPs.
+#                    human only answers the plugin's STOPs. Just before, it touches
+#                    $START_MARKER in the container: `watch` reads only transcripts newer
+#                    than it (#72).
 #                 4. Print the attach command.
 #   attach        Attach this terminal to the session (detach: Ctrl-b d).
 #   peek          Print the session's current screen (what the human would see).
@@ -38,6 +40,9 @@
 #                                               over 2 polls; WAITING quotes the ask (the
 #                                               last paragraph of the conductor's message)
 #                   ENDED                       claude exited or the session is gone; exits 0
+#                 Transcripts: only those newer than $START_MARKER — the projects dir
+#                 is on the volume and keeps earlier runs' sessions, which are not
+#                 replayed (nor deleted). No marker = every transcript, with a warning.
 #                 Logs: the guard writes <fixture>/if-runlog.jsonl until the .active-run
 #                 pointer exists, then .implement-feature/<run>/handoff/run-log.jsonl.
 #   stop          Kill the tmux session. The container stays; the next clean-run removes it.
@@ -55,6 +60,7 @@ SESSION="t3"
 WS="/workspaces/sdlc-lite"
 FIXTURES="test-fixtures/python-starter"
 MODEL="opus"                        # same as test-fixtures/README.md → Run one
+START_MARKER="/tmp/t3-start.marker" # in the container; clean-run recreates the container
 
 die() { echo "t3-run.sh: $*" >&2; exit 1; }
 usage() { sed -n '2,/^set -euo/{/^#/p;}' "$0"; }
@@ -129,9 +135,16 @@ new_lines() {
 watch_loop() {
   tmux has-session -t "$SESSION" 2>/dev/null || { emit "ENDED   no tmux session '$SESSION'"; return 0; }
   local run tdir state="" cand="" hold=0 f where out screen now last main
+  local -a newer=()
   run="$(tmux display -p -t "$SESSION" '#{pane_current_path}')"
   tdir="$HOME/.claude/projects/${run//[^a-zA-Z0-9]/-}"
   emit "WATCH   $run (poll ${POLL}s)"
+  # The projects dir outlives clean-run (it is on the volume): skip earlier runs' sessions.
+  if [[ -f "$START_MARKER" ]]; then
+    newer=(-newer "$START_MARKER")
+  else
+    emit "WATCH   no $START_MARKER (not started by t3-run.sh start?) — reading every transcript"
+  fi
   while :; do
     if ! tmux has-session -t "$SESSION" 2>/dev/null; then emit "ENDED   session gone"; return 0; fi
 
@@ -156,7 +169,7 @@ watch_loop() {
       new_lines "$f"
       out="$(jq -r --arg where "$where" "$JQ_TRANSCRIPT" 2>/dev/null <<<"$BUF")" || true
       while IFS= read -r line; do [[ -n "$line" ]] && emit "$line"; done <<<"$out"
-    done < <(find "$tdir" -name '*.jsonl' -print0 2>/dev/null)
+    done < <(find "$tdir" -name '*.jsonl' "${newer[@]}" -print0 2>/dev/null)
 
     if [[ "$(tmux display -p -t "$SESSION" '#{pane_dead}')" == 1 ]]; then
       emit "ENDED   claude exited — the final screen stays readable (peek)"; return 0
@@ -165,7 +178,8 @@ watch_loop() {
     # A dialog is on screen only (not yet in the transcript), so it wins. Otherwise the
     # conductor transcript decides: a turn ends with a system/turn_duration record. A turn
     # that ends right after launching an isolated agent waits for the agent, not the human.
-    main="$(find "$tdir" -maxdepth 1 -name '*.jsonl' -print0 2>/dev/null | xargs -0 ls -t 2>/dev/null | head -1)"
+    # xargs -r: before this run writes a transcript there is no main (bare `ls` lists the cwd).
+    main="$(find "$tdir" -maxdepth 1 -name '*.jsonl' "${newer[@]}" -print0 2>/dev/null | xargs -0 -r ls -t 2>/dev/null | head -1)"
     if grep -qE 'Do you want to|Would you like to|Enter to select' <<<"$screen"; then
       now="WAITING (dialog)"
     elif [[ -n "$main" ]] && [[ "$(tail -n 300 "$main" | jq -r "$JQ_TURN" 2>/dev/null | tail -1)" == busy ]]; then
@@ -224,6 +238,8 @@ rm -f \"\$tmp\""
 
     echo
     echo "── t3: launch tmux session '$SESSION' ─────────────────────────────"
+    # `watch` reads only transcripts newer than this, i.e. this run's (#72).
+    dexec "touch $START_MARKER"
     # devcontainer exec (not docker exec) so the tmux server — and so claude — gets the
     # container's remoteEnv (DISABLE_AUTOUPDATER). BRIEF.md is read inside the fixture.
     # shellcheck disable=SC2016  # $(cat BRIEF.md) expands inside the tmux pane, on purpose
