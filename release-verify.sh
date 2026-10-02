@@ -61,8 +61,8 @@ VERIFY_CFG="/home/vscode/.claude-verify"
 VERIFY_RUN="/workspaces/${FIXTURE_SLUG}-verify-run"
 ENV_IN_CONTAINER="/workspaces/sdlc-lite/.env"
 # Eval step (T1). Pinned so a model rollout is not misread as a plugin regression. The
-# threshold is below 1.0 on purpose: the graders are strict and gate-0-lock-stop /
-# routing-no-autoinvoke still catch intermittent prose deviations (#58).
+# threshold is below 1.0 on purpose: the graders are strict, and one intermittent prose
+# deviation should not fail a release on its own (#58, #76).
 EVAL_MODEL="claude-opus-5-5"
 EVAL_JUDGE_MODEL="claude-haiku-4-5-20251001"
 EVAL_THRESHOLD="0.8"

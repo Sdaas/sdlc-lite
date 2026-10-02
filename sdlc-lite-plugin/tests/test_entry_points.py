@@ -108,3 +108,35 @@ def test_guard_leaves_other_skills_alone():
     import guard  # noqa: E402
 
     assert guard._deny_reason("Skill", {"skill": "pdf"}, "", "") is None
+
+
+# --- 3. without the slash command, the user is on their own (#76) -----------
+#
+# Explicit entry means the WORKFLOW never starts unasked — not that a plain request is
+# refused. The description must not tell the model to withhold ordinary help, and the
+# routing eval grades only the one thing that matters: no auto-invocation.
+
+def _frontmatter(path: Path) -> dict[str, str]:
+    """Top-level `key: value` lines of a Markdown file's frontmatter (no PyYAML on host)."""
+    lines = path.read_text().splitlines()
+    assert lines[0] == "---", path
+    end = lines.index("---", 1)
+    return {k.strip(): v.strip().strip("'\"") for k, _, v in
+            (ln.partition(":") for ln in lines[1:end] if ":" in ln and not ln.startswith(" "))}
+
+
+def test_the_description_does_not_withhold_ordinary_help():
+    desc = _frontmatter(PLUGIN / "skills/implement-feature/SKILL.md")["description"].lower()
+    assert "explicit entry only" in desc and "never invoke it yourself" in desc
+    for withholding in ("reply only", "do not start the work", "no exploring"):
+        assert withholding not in desc, f"description withholds help: {withholding!r}"
+
+
+def test_the_routing_case_grades_only_auto_invocation():
+    case = PLUGIN / "evals/routing-no-autoinvoke"
+    graders = sorted((case / "graders").glob("*.md"))
+    assert [g.name for g in graders] == ["never-auto-invoked.md"], (
+        "routing-no-autoinvoke must grade only auto-invocation; what the reply says is ungraded")
+    g = _frontmatter(graders[0])
+    assert (g["type"], g["tool"], g["max"]) == ("tool_used", "Skill", "0")
+    assert "flaky" not in _frontmatter(case / "prompt.md")["tags"]
