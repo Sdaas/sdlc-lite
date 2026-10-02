@@ -32,7 +32,9 @@ This file provides guidance to Claude Code when working in this repository.
   Python repo. "Done" = a **green end-to-end dry run in the dev container** (see
   `dev-docs/DEVCONTAINER.md`), not "docs exist."
 - **Issue triage:** releases are GitHub **milestones** (`0.1.0`, `1.0.0`, …); label issues by
-  **type only** (`bug`/`enhancement`/`documentation`); **no milestone = backlog**. **Every issue you
+  **type only** (`bug`/`enhancement`/`documentation`); **no milestone = backlog**. Each release in `release-plan.md` sorts its issues into **four themes**
+(customer features · customer fixes · internal SDLC improvements · internal SDLC fixes; see
+`RELEASING.md` §3). **Every issue you
   file must follow `dev-docs/issue-template.md`** (required structure, ~300-word cap, no
   transcripts). Full conventions + release procedure: `dev-docs/RELEASING.md`.
 - **Planning docs (two kinds):**

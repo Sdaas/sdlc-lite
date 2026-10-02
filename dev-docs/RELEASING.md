@@ -57,6 +57,14 @@ marketplace in a separate repo** (ADR-13):
 **When you file or triage an issue:** give it exactly one type label; assign it to the target
 release milestone if it's committed, otherwise leave it milestone-less (backlog).
 
+**Four themes per release.** Every release's section in `release-plan.md` sorts its issues into
+four themes, so the release's balance is explicit: **customer-visible features**;
+**customer-visible fixes / hardening** (including infra); **internal SDLC improvements** (this
+repo's own process and tooling); **internal SDLC fixes / hardening** (including infra). Themes live
+only in `release-plan.md` — not labels — and backlog issues get none.
+
+**Release stoppers.** A bug that damages the user's repo or environment blocks every release.
+
 ## 4. Cutting a release — procedure
 
 `release.sh` is **cross-repo**: it tags in this repo **and** repoints the umbrella catalog. Run it

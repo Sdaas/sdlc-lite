@@ -129,8 +129,8 @@ pip install -r ~/.claude/plugins/cache/sdaas/sdlc-lite/<version>/toolchain/requi
 pip install ruff mypy pytest pytest-cov mutmut hypothesis pytest-asyncio
 ```
 
-> **Auto-installing the toolchain is planned for `0.2.0`**
-> ([#19](https://github.com/Sdaas/sdlc-lite/issues/19)). Until then, this manual step is expected.
+> **A `/sdlc-init` command that installs the toolchain and configures your repo is planned for
+> `0.1.0`** ([#19](https://github.com/Sdaas/sdlc-lite/issues/19)). Until then, this manual step is expected.
 
 ### 3. Grant the plugin directory a one-time read permission
 

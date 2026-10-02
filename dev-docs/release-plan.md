@@ -24,51 +24,64 @@ _Last updated: 2026-10-02._
    silent on an issue, use judgment. Then follow **How to work an issue**.
 4. **If the current milestone has no open issues**, the release is ready to cut — follow the release
    procedure in `RELEASING.md`.
-5. Only touch this file when the *narrative* or the *execution order* changes (a release ships, an
+5. Each release section states its issues under the **four themes** (`RELEASING.md` §3).
+6. Only touch this file when the *narrative* or the *execution order* changes (a release ships, an
    issue is added/closed/reordered). Reference issues as **`#NN` + title**; never copy an issue's
    *spec* here (that's GitHub's job).
 
 
 --- 
 
-## Current release — `0.1.0` (process & tooling)
+## Current release — `0.1.0` (a usable `/implement-feature`)
 
-Theme: **get the house in order before GA.** Groundwork that does not change the
-plugin's runtime behavior: a documentation restructure that gives the repo one discoverable shape,
-and the repo-local SDLC skills that give *this repo* the requirements → design → test discipline the
-`sdlc-lite` plugin gives a Python repo. Added 2026-09-26: **hands-off dev-container
-test runs** (#45 → #21 → #66, all done), so every later dry run — #53's proof, #58, #61 — is cheap to repeat.
-Added 2026-09-26: **#70**, so the repo's tooling issues run through the same skills; and **#71**,
-so `/feature` and `/fix` read one way before they take on more work. Added 2026-10-02: the lessons
-of the first `/fix` run (#61), as #73, #72, #74 and #75, with #43 moved up from `0.2.0` next to #74; and #76, from #58's close-out.
+Theme: **the first release a stranger can rely on.** `/sdlc-init` sets their Python repo up the
+right way from day one (toolchain, coverage and mutation config), and no `/implement-feature` run
+damages their repo or environment. 0.1.0 began as a process-and-tooling release (the repo-local
+SDLC skills, #48, and the docs restructure, #49 — all closed below). On 2026-10-02 it was re-scoped
+to also carry the customer-visible fixes that bar needs.
 
-**Why before GA, and why it is `0.1.0` and not GA.** The `0.2.0` issues are real behavior changes
-to a product whose source is prose, and today they would be verified only by ad-hoc dry runs and
-judgment. #48 supplies the missing verification primitive (`claude plugin eval` over `SKILL.md`, plus
-the T1/T2/T3 ladder). Using new tooling for the first time on release-critical work is a risk, so the
-release it is first exercised on is labeled **`0.1.0`**, not GA — the tooling gets proven on real work
-before later releases depend on it.
+**Release bar.** A stranger installs the plugin, runs it on their own Python repo and finishes
+without damage to the repo or environment and without undocumented workarounds. A bug that damages
+the user's repo or environment is a release stopper, in every release. A manual step is acceptable
+when its call to action is clear.
+
+**Why `0.1.0` and not GA.** The plugin's source is prose, verified by the T1/T2/T3 ladder and the
+eval corpus from #48. This is the first release to ship product changes verified that way, so it
+proves the tooling before later releases depend on it.
+
+| Theme | Issues |
+|---|---|
+| Customer-visible features | #19 |
+| Customer-visible fixes / hardening | #75, #40, #68, #63 |
+| Internal SDLC improvements | — |
+| Internal SDLC fixes / hardening | #71, #67, #44 |
+
+On 2026-10-02 **#43 and #74 were parked to the backlog**: textual shell parsing in the guard proved
+to be whack-a-mole, and the write policy will be rethought first (rationale on #43).
 
 ## Execution order (current release)
 
-Current milestone: **`0.1.0`**. **#48** (the repo-local SDLC tracking issue) closed with its last
-child, #53.
+Current milestone: **`0.1.0`**.
 
 ### Open — in execution order
 
-1. **#43** — `fix(guard-hook): bash_write_targets misreads scratch writes as product-tree writes`
-   **+ #74** — `fix(guard-hook): Bash write-form check skips commands after &&, ; and |`
-   *`/fix` runs that reproduce at T2, one after the other: both change the same parser in
-   `policy.py`. #43 covers the false positives (`cd`, `$VAR`); #74 covers the false negatives
-   (chained commands).*
-2. **#75** — `fix(guard-hook): critic's pytest --cov writes .coverage into the product tree`
-   *A `/fix` run that reproduces at T3. After #43/#74, so its dry run uses the fixed guard.*
-3. **#71** — `fix(repo): resolve contradictions and gaps in the repo-local spine`
-   *Built by hand like #53. Its before/after `opus` cold read also checks the rules #73 added.
-   Before #70 because #70 edits Gate 0 in the same files.*
-4. **#70** — `feat(repo): widen /feature Gate 0 to accept tooling issues`
-   *Last. Gives shell, `Makefile`, dev-container, fixture, CI and repo-local-skill issues an
-   explicit tooling lane; from then on every non-docs issue goes through `/feature` or `/fix`.*
+1. **#71** — `fix(repo): resolve contradictions and gaps in the repo-local spine`
+   *First, so `/feature` and `/fix` read one way before they build the rest. Built by hand like
+   #53; its before/after `opus` cold read also checks the rules #73 added.*
+2. **#67** — `fix(repo): setup-fixture.sh leaves an untracked *.egg-info in every fixture run`
+   *A clean starting tree, so every later dry run's `git status` evidence is trustworthy.*
+3. **#44** — `feat(repo): ship the python-starter fixtures configured as /sdlc-init would leave them`
+   *Before #40: its dry runs need a fixture where mutmut runs.*
+4. **#40** — `feat(gate-7): the conductor runs coverage and mutmut; the code-reviewer only reads results`
+   **+ #75** — `fix(guard-hook): critic's pytest --cov writes .coverage into the product tree`
+   *One change: moving coverage to the conductor fixes #75, which closes with #40.*
+5. **#68** — `fix(guard-hook): read-only critics can run pip install and repoint the user's environment`
+   *After #40 removes the reviewer's reason to install anything; #68 covers what remains (seen in #61's run).*
+6. **#19** — `feat(skill): /sdlc-init — set a Python repo up for /implement-feature`
+   *Gate 0 then stops with "run `/sdlc-init`" when the toolchain or `[tool.mutmut]` is missing.
+   Proven on a fixture copy with the config removed; the fixtures' config must match its output.*
+7. **#63** — `chore(skill): re-evaluate the dated reviewer pin claude-opus-4-8`
+   *Last, so the reviewer pin is re-checked against the final prose.*
 
 ### Closed
 
@@ -93,29 +106,37 @@ child, #53.
 | **#58** `fix(skill): conductor sometimes skips the lock STOP and the explicit-entry redirect` | 2026-10-02 (`cbcc5e5`) | Second `/fix` run, reproduced from recorded T1 runs: the lock check is the first, sole action (`gate-0-lock-stop` 8/8, `flaky` removed). Routing can't be fixed in prose (the model never reads the skill list when built-in tools suffice) → #76. |
 | **#76** `fix(skill): a plain request should get ordinary help; the routing case grades only auto-invocation` | 2026-10-02 (`072980a`) | Third `/fix` run, reproduced at T2 (`test_entry_points.py` §3): the description forbids only self-invocation, not ordinary help; `routing-no-autoinvoke` grades only auto-invocation (8/8, `flaky` removed); ADR-14 records why the workflow is opt-in. |
 
-## Next release — `0.2.0`
+## Next release — `0.2.0` (the planning suite)
 
-Theme: **toolchain auto-install + the test-quality and isolation-correctness gaps the 0.1.0
-acceptance runs surfaced.** Not GA — GA is whatever release we're confident is feature-complete and
-hardened, and that's not something we can commit to naming or scoping this far out. Milestone:
-`0.2.0`. Scope may grow or shrink during the release — that's expected; when 0.2.0 ships, this
-section becomes the current release.
+Theme: **`/design-system` and `/plan-feature` as customer features**, built by dogfooding `/feature`.
+0.2.0 ships only with **both** skills. #47 and #32 are epics; splitting them into child issues is
+the first task when 0.2.0 starts (not before), and each child then runs through `/feature`. The
+`/implement-feature` quality backlog (#46) stays parked until the suite ships.
 
-**Execution order** (verified with the ladder and eval corpus from #48):
+| Theme | Issues |
+|---|---|
+| Customer-visible features | #47, #32 |
+| Customer-visible fixes / hardening | #78 |
+| Internal SDLC improvements | #70, #64, #77 |
+| Internal SDLC fixes / hardening | — |
 
-1. **#62** — `feat(skill): simplify SKILL.md prose for a cold reader, verified by the eval suite`
-   *After #58 and #76 (0.1.0) — same prose, same eval proof; land the behavior fix before the rewrite.*
-2. **#63** — `chore(skill): re-evaluate the dated reviewer pin claude-opus-4-8`
-   *After #62 — both touch SKILL.md's model table. We should not ship a reviewer pin that was never
-   re-checked against the current Opus; the decision is recorded in ADR-2.*
-3. **#44** — `feat(gate-7): pre-configure [tool.mutmut] in the python-starter fixtures`
-   *After #43 (moved to 0.1.0) — its verification is a clean Gate 7 mutmut run, which #43 stops the guard from blocking.*
-4. **#19** — `feat(toolchain): add a setup command that installs the pinned toolchain`
-   *A new command with a **blocking Open Question** (the command's name) that must be answered
-   before work starts.*
+**Execution order:**
 
-**Moved to 0.1.0:** #45 and #21 (2026-09-26), as the base for hands-off testing; #43 (2026-10-02),
-next to #74.
+1. **#70** — `feat(repo): widen /feature Gate 0 to accept tooling issues`
+   *First, so every non-docs issue in this release — tooling included — runs through `/feature` or `/fix`.*
+2. **#64** — `feat(repo): add a /regression skill that runs the full eval suite, 3 runs per case`
+   *Before the planning-suite prose lands, so regressions in the existing cases show up early.*
+3. **#77** — `chore(skill): drive a large decomposable feature through /implement-feature and record how it fails`
+   *Before #32 is split: its design is pinned to the observed failure, not an imagined one.*
+4. **#47** — `feat(skill): /design-system — model a system into durable capability specs`
+   *Split into child issues, then built child by child through `/feature`.*
+5. **#32** — `feat(skill): /plan-feature — decompose one capability into a buildable A/B/C/Z DAG`
+   *After #47: it decomposes a capability `/design-system` produced. Split, then built the same way.*
+6. **#78** — `feat(skill): every terminal STOP ends with one exact command the user can run`
+   *Covers `/sdlc-init`'s STOPs too, so after #19.*
+
+**Moved on 2026-10-02:** #63, #44 and #19 to 0.1.0; #62 to the backlog (no prose rewrite right
+before a release). Earlier: #45 and #21 to 0.1.0 (2026-09-26).
 
 **Closed early:** **#37** `feat(skill): add a mechanical pytest.raises match= check at gates 3 and 4`
 — 2026-09-26 (`e2a33e7`), as the `/feature` proof run; its T3 reached Gate 7 with no loop.
@@ -123,8 +144,8 @@ next to #74.
 ## Backlog
 
 Everything else — **open issues with no milestone**, including work that was previously milestoned
-here but isn't part of 0.2.0's committed content (e.g. **#40**, **#68**, moved to backlog
-2026-09-26). Not tracked here; query GitHub: `gh issue list --state open --search "no:milestone"`.
+here but isn't committed now (e.g. **#43**, **#74**, parked 2026-10-02; **#62**, moved
+2026-10-02). Not tracked here; query GitHub: `gh issue list --state open --search "no:milestone"`.
 Promote an issue into a milestone when it's committed to a release.
 
 ---
