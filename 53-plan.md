@@ -1,7 +1,7 @@
 # 53-plan — `/fix` skill (REPRODUCE + DEPOSIT) and the #48 close-out
 
 **Issue:** [#53](https://github.com/Sdaas/sdlc-lite/issues/53) · **Parent:** #48 (`48-plan.md` P5) ·
-**Milestone:** `0.1.0` · **Branch:** `53-fix-skill` · **Status:** P1–P3 done (merged); P4 `/fix #61` next, fresh session
+**Milestone:** `0.1.0` · **Branch:** `53-fix-skill` · **Status:** P1–P4 done (#61 merged `e7fdc6c`, 2026-10-02); P4b split out; next: P5
 
 Branch-scoped working plan. `git rm` this file (and `48-plan.md`) in the close-out commit (P5).
 GitHub #53 is the spec; this file holds only the locked decisions, the phases and the tracker.
@@ -49,5 +49,10 @@ dev-docs/repo-local-skills.md    # NEW (P5)
 - [x] P1 — runbook extracted, `/feature` slimmed, cold-read parity (before/after `opus` reads match)
 - [x] P2 — `1b REPRODUCE` / `8b DEPOSIT` in `gates.md` + runbook
 - [x] P3 — `fix/SKILL.md`; `/feature` routes bugs; committed + merged to `main`
-- [ ] P4 — `/fix #61` green (deposited case red → green)
-- [ ] P5 — docs page + routing, F7 comment, release-plan, `git rm` both plans, close #53 and #48
+- [x] P4 — `/fix #61` green: T2 `test_inbox_parity.py` red at 1b/5 → green at 7; T1 cases 1.00; T3 dry run;
+      regression green bar #58 flakes. Merged `e7fdc6c`, #61 closed 2026-10-02.
+- [x] P4b — #61-run lessons split out (2026-10-02), none done in #53: runbook items 1–3 → #73;
+      `watch` replay → #72; guard chained-command miss → #74 (`cd`/`$VAR` false positives = #43);
+      `.coverage` → #75; `pip uninstall` evidence → comment on #68. All in `0.1.0`.
+- [ ] P5 — docs page + routing, F7 comment, release-plan (#53 → Closed, #48 closed; the new order, #61 → Closed
+      and #43 → 0.1.0 were already written on 2026-10-02), `git rm` both plans, close #53 and #48

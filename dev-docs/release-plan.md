@@ -10,7 +10,7 @@ Titles can drift — GitHub wins; re-check with `gh issue list --milestone "<tit
 Decision history lives in the issues and the ADRs (`adr/`);
 release conventions live in `RELEASING.md`._
 
-_Last updated: 2026-09-26._
+_Last updated: 2026-10-02._
 
 ---
 
@@ -39,7 +39,8 @@ and the repo-local SDLC skills that give *this repo* the requirements → design
 `sdlc-lite` plugin gives a Python repo. Added 2026-09-26: **hands-off dev-container
 test runs** (#45 → #21 → #66, all done), so every later dry run — #53's proof, #58, #61 — is cheap to repeat.
 Added 2026-09-26: **#70**, so the repo's tooling issues run through the same skills; and **#71**,
-so `/feature` and `/fix` read one way before they take on more work.
+so `/feature` and `/fix` read one way before they take on more work. Added 2026-10-02: the lessons
+of the first `/fix` run (#61), as #73, #72, #74 and #75, with #43 moved up from `0.2.0` next to #74.
 
 **Why before GA, and why it is `0.1.0` and not GA.** The `0.2.0` issues are real behavior changes
 to a product whose source is prose, and today they would be verified only by ad-hoc dry runs and
@@ -56,25 +57,31 @@ its children (#50, #57, #51, #52, #53) and closes when #53 closes.
 ### Open — in execution order
 
 1. **#53** — `feat(repo): /fix skill — REPRODUCE + DEPOSIT gates`
-   *In progress (`53-plan.md`, branch `53-fix-skill`). Built by hand, not via `/feature`: a repo-local skill is
-   invisible to `claude plugin eval`. `/fix` reuses `/feature`'s gates — the per-gate how-to moves
-   to a shared runbook in `.claude/sdlc/`, REPRODUCE and DEPOSIT are defined in `gates.md`. Its proof
-   is driving #61. Also carries #48's close-out: repo-local SDLC docs in `dev-docs/`, removing
-   `48-plan.md`, and deciding whether the root scripts move (#60, Q14). **#48** closes with it.*
-2. **#61** — `fix(skill): agent inboxes and quality-standards disagree with SKILL.md`
-   *First `/fix` run — #53's proof (deterministic, unlike #58). Found by #60; proof is a
-   `roman-numeral` dry run to Gate 7.*
-3. **#58** — `fix(skill): conductor sometimes skips the lock STOP and the explicit-entry redirect`
+   *P1–P4 done: `/fix` is on `main`, and `/fix #61` was its proof. Left: the P5 close-out
+   (`53-plan.md`): the repo-local SDLC page in `dev-docs/`, routing to it, the root-scripts decision
+   (#60, Q14), and removing `48-plan.md`. **#48** closes with it. The #61 run's lessons were split
+   out into the issues below, not done in #53.*
+2. **#73** — `feat(repo): runbook — T3 evidence, flaky-case handling, --keep-temp on eval failure`
+   *Done by hand. Before #58, because that run would hit the same flake halts and lost sandboxes.*
+3. **#72** — `fix(repo): t3-run.sh watch replays transcripts from earlier runs`
+   *Done by hand, because tooling issues are outside `/fix` until #70. Before #58, which needs
+   trustworthy T3 watching.*
+4. **#58** — `fix(skill): conductor sometimes skips the lock STOP and the explicit-entry redirect`
    *Second `/fix` run. Must land before the cut: `release-verify.sh` gates it on the eval suite at
    0.8, and the opus-5-5 baseline is 5/7 because of this bug. Still live: `gate-0-lock-stop` failed
    1 of 3 runs in #60's close-out eval.*
-4. **#71** — `fix(repo): resolve contradictions and gaps in the repo-local spine`
-   *After #58, before #70. Found by #53's P1 cold reads; #61 and #58 log each gap that actually
-   bites as a comment. Built by hand like #53 (repo-local skills are outside the spine's scope until
-   #70); proof is the same before/after `opus` cold read. Before #70 because #70 edits Gate 0 in
-   the same files.*
-5. **#70** — `feat(repo): widen /feature Gate 0 to accept tooling issues`
-   *After #71. Gives shell, `Makefile`, dev-container, fixture, CI and repo-local-skill issues an
+5. **#43** — `fix(guard-hook): bash_write_targets misreads scratch writes as product-tree writes`
+   **+ #74** — `fix(guard-hook): Bash write-form check skips commands after &&, ; and |`
+   *`/fix` runs that reproduce at T2, one after the other: both change the same parser in
+   `policy.py`. #43 covers the false positives (`cd`, `$VAR`); #74 covers the false negatives
+   (chained commands).*
+6. **#75** — `fix(guard-hook): critic's pytest --cov writes .coverage into the product tree`
+   *A `/fix` run that reproduces at T3. After #43/#74, so its dry run uses the fixed guard.*
+7. **#71** — `fix(repo): resolve contradictions and gaps in the repo-local spine`
+   *Built by hand like #53. Its before/after `opus` cold read also checks the rules #73 added.
+   Before #70 because #70 edits Gate 0 in the same files.*
+8. **#70** — `feat(repo): widen /feature Gate 0 to accept tooling issues`
+   *Last. Gives shell, `Makefile`, dev-container, fixture, CI and repo-local-skill issues an
    explicit tooling lane; from then on every non-docs issue goes through `/feature` or `/fix`.*
 
 ### Closed
@@ -93,6 +100,7 @@ its children (#50, #57, #51, #52, #53) and closes when #53 closes.
 | **#45** `fix(toolchain): dev container never runs "claude plugin install"; live-workspace load path unverified` | 2026-09-26 (`574c15d`) | Fresh volume boots with the plugin live-loaded from the workspace (no install) and no onboarding/login/trust prompt; `~/.claude.json` keys are merged each start. |
 | **#21** `feat(toolchain): add a clean-run harness that rebuilds the dev container per dry run` | 2026-09-26 (`5f61943`) | `make clean-run` resets to a known dry-run state in ~20 s (container reset, volume kept, `settings.json` re-seeded, fixtures, status table); `--rebuild` = no-cache image rebuild. #66 builds on it. |
 | **#66** `feat(toolchain): hands-off dev-container test runs — fresh state, auto-auth, tmux, live progress` | 2026-09-26 (`d3ecef8`) | `make t3-start / t3-attach / t3-peek / t3-watch / t3-stop` (`dev-docs/t3-runs.md`): the agent launches and watches, the human only attaches, answers STOPs and attests; proven by a hands-off `roman-numeral` run. Filed #68, #69; moved #40 to `1.0.0`. |
+| **#61** `fix(skill): agent inboxes and quality-standards disagree with SKILL.md` | 2026-10-02 (`e7fdc6c`) | First `/fix` run, and #53's proof: REPRODUCE at T2 (`test_inbox_parity.py` red, then green), T3 dry run. Its lessons became #72–#75. |
 
 ## Next release — `0.2.0`
 
@@ -109,16 +117,14 @@ section becomes the current release.
 2. **#63** — `chore(skill): re-evaluate the dated reviewer pin claude-opus-4-8`
    *After #62 — both touch SKILL.md's model table. We should not ship a reviewer pin that was never
    re-checked against the current Opus; the decision is recorded in ADR-2.*
-3. **#43** — `fix(guard-hook): bash_write_targets misreads scratch writes as product-tree writes`
-   *Self-contained, unit-testable on the host, and it removes the false denials that make the
-   other issues harder to verify in a dry run.*
-4. **#44** — `feat(gate-7): pre-configure [tool.mutmut] in the python-starter fixtures`
-   *After #43 — its verification is a clean Gate 7 mutmut run, which #43 stops the guard from blocking.*
-5. **#19** — `feat(toolchain): add a setup command that installs the pinned toolchain`
+3. **#44** — `feat(gate-7): pre-configure [tool.mutmut] in the python-starter fixtures`
+   *After #43 (moved to 0.1.0) — its verification is a clean Gate 7 mutmut run, which #43 stops the guard from blocking.*
+4. **#19** — `feat(toolchain): add a setup command that installs the pinned toolchain`
    *A new command with a **blocking Open Question** (the command's name) that must be answered
    before work starts.*
 
-**Moved to 0.1.0:** #45 and #21 (2026-09-26), as the base for hands-off testing.
+**Moved to 0.1.0:** #45 and #21 (2026-09-26), as the base for hands-off testing; #43 (2026-10-02),
+next to #74.
 
 **Closed early:** **#37** `feat(skill): add a mechanical pytest.raises match= check at gates 3 and 4`
 — 2026-09-26 (`e2a33e7`), as the `/feature` proof run; its T3 reached Gate 7 with no loop.
