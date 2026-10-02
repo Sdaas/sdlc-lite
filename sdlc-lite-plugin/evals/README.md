@@ -27,7 +27,7 @@ Results land in `results/<timestamp>/` (`aggregate-result.json`, `report.html`) 
 |---|---|---|
 | `entry-slash-bare` | smoke, entry-point, gate-0 | `/implement-feature` starts the workflow; Gate 0 preflight runs and stops for confirmation |
 | `entry-slash-namespaced` | entry-point, gate-0 | The same for `/sdlc-lite:implement-feature` |
-| `routing-no-autoinvoke` | smoke, routing, entry-point, flaky | A natural request never auto-invokes the skill (should-not-fire) and points at the slash command |
+| `routing-no-autoinvoke` | smoke, routing, entry-point | A natural request never auto-invokes the skill (should-not-fire); the reply itself is ungraded, so one mechanism grader by design (#76) |
 | `gate-0-lock-stop` | gate-0 | An existing `.active-run` stops the run before the preflight |
 | `gate-0-not-importable-stop` | gate-0 | An uninstalled src-layout package is a 🔴 stop; the conductor does not `pip install` it |
 | `gate-1-interview-entry` | gate-1 | Resuming after the Gate 0 STOP opens the interview; no requirements file or subagent yet |

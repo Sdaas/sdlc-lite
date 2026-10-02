@@ -22,6 +22,13 @@ model decides from phrasing  ──►  Skill tool call ──► PreToolUse ─
 
 - `policy.skill_invoke_decision()` denies any `sdlc-lite:`-prefixed id and any bare id in
   `policy.PLUGIN_SKILL_NAMES` (#56). Other bare ids stay allowed.
+- **Without the slash command, the user is on their own** (#76). A plain request gets ordinary help;
+  the description forbids only self-invocation, never the work itself, and does not ask for a
+  redirect (the model may still mention `/implement-feature`). Only the guard's denial names the
+  command — the model has already tried to start the workflow, so there a redirect is the answer.
+  Why: the workflow is opt-in because it is expensive — a branch, Opus reviewers, commits — so only
+  a human who typed the command has chosen that cost.
+  `routing-no-autoinvoke` therefore grades only the absence of auto-invocation.
 
 **Consequences**
 - Plugin-wide: a future skill inherits the rule.

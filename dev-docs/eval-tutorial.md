@@ -367,7 +367,7 @@ raise it once the graders are right, because a single run of a non-deterministic
 | `entry-point` | The explicit-entry contract — slash spellings, no auto-invocation |
 | `guard` | Guard-hook behavior |
 | `smoke` | Cheap cases every change runs first (`/feature` Gate 6) |
-| `flaky` | Known-unreliable; a failure is noted in the evidence and does not halt the gate (e.g. `gate-0-lock-stop`, `routing-no-autoinvoke`, #58) |
+| `flaky` | Known-unreliable; a failure is noted in the evidence and does not halt the gate (none today; see #58, #76) |
 
 **Outputs.** A summary table on stdout, and per run
 `sdlc-lite-plugin/evals/results/<timestamp>/aggregate-result.json` plus `report.html`. `--json`
