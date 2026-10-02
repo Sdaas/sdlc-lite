@@ -7,6 +7,8 @@
 #
 #   roman_handoff gate-3   # 01, 02, 04 — the test-writer's inbox
 #   roman_handoff gate-4   # + 03, 05 and tests/test_roman.py — the test-reviewer's inbox
+#   roman_handoff gate-6   # + romankit/roman.py — the verifier's inbox
+#   roman_handoff gate-7   # + 07-verify-report.md — the code-reviewer's inbox
 set -euo pipefail
 
 roman_handoff() {
@@ -67,7 +69,7 @@ All tests in `tests/test_roman.py`.
 | `test_to_roman_negative_raises_value_error` | AC3 | unit |
 | `test_to_roman_4000_raises_value_error` | AC3 | unit |
 
-Coverage threshold: 100%. Mutation kill-rate: 80%.
+Coverage threshold: 100%. Mutation kill-rate: 85% (raised from the 80% anchor: a small pure function).
 EOF
 
   [ "$gate" = gate-3 ] && return 0
@@ -126,5 +128,53 @@ def test_to_roman_negative_raises_value_error() -> None:
 def test_to_roman_4000_raises_value_error() -> None:
     with pytest.raises(ValueError, match=r"out of range \(1\.\.3999\): 4000"):
         to_roman(4000)
+EOF
+
+  [ "$gate" = gate-4 ] && return 0
+
+  cat > romankit/roman.py <<'EOF'
+"""Integer to Roman numeral conversion."""
+
+_PAIRS = (
+    (1000, "M"), (900, "CM"), (500, "D"), (400, "CD"), (100, "C"), (90, "XC"),
+    (50, "L"), (40, "XL"), (10, "X"), (9, "IX"), (5, "V"), (4, "IV"), (1, "I"),
+)
+
+
+def to_roman(n: int) -> str:
+    """Return the Roman numeral for `n` (1..3999)."""
+    if not isinstance(n, int) or isinstance(n, bool):
+        raise TypeError(f"expected int, got {type(n).__name__}")
+    if not 1 <= n <= 3999:
+        raise ValueError(f"out of range (1..3999): {n}")
+    out = []
+    for value, symbol in _PAIRS:
+        count, n = divmod(n, value)
+        out.append(symbol * count)
+    return "".join(out)
+EOF
+  cat > romankit/__init__.py <<'EOF'
+"""romankit — small helpers for Roman numerals."""
+
+from romankit.roman import to_roman
+
+__all__ = ["is_roman_char", "to_roman"]
+
+
+def is_roman_char(c: str) -> bool:
+    """True if c is a single Roman-numeral character."""
+    return len(c) == 1 and c in "IVXLCDM"
+EOF
+
+  [ "$gate" = gate-6 ] && return 0
+
+  cat > "$h/07-verify-report.md" <<'EOF'
+# 07 — Verify report
+
+- AC1: PASS — to_roman(1994) == "MCMXCIV", to_roman(3999) == "MMMCMXCIX"
+- AC2: PASS — to_roman("5") raised TypeError: expected int, got str
+- AC3: PASS — to_roman(0) raised ValueError: out of range (1..3999): 0
+
+Boundaries: none (pure feature). Verdict: PASS.
 EOF
 }
