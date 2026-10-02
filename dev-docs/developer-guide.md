@@ -91,8 +91,8 @@ Check a change against these before approving it.
 ## 4. Repo-local skills
 
 Slash commands for working on **this repo**, in `.claude/skills/`. Not shipped. Human-typed only.
-Shared process: [`.claude/sdlc/gates.md`](../.claude/sdlc/gates.md). Why not use `sdlc-lite` on
-itself: [`verification-ladder.md`](verification-ladder.md) §6.
+Gates, STOPs, when each fires and why they diverge from `sdlc-lite`:
+[`repo-local-skills.md`](repo-local-skills.md).
 
 | Command | What it does | Status |
 |---|---|---|
