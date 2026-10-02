@@ -75,6 +75,9 @@ Limits, by design:
 - **Working / waiting is inferred,** and debounced over two 5 s polls. A dialog is detected by its
   on-screen text (`Do you want to`, `Would you like to`, `Enter to select`).
 - **A restarted `watch` replays** the run's history, so earlier GATE lines repeat.
+- **Earlier runs are not replayed.** Their transcripts stay in `~/.claude/projects/` (on the
+  volume, kept for post-mortems); `watch` reads only those newer than the marker `t3-start` touches
+  (`/tmp/t3-start.marker` in the container).
 - The guard writes to `<fixture>/if-runlog.jsonl` until the conductor writes the `.active-run`
   pointer at Gate 0, then to `.implement-feature/<run>/handoff/run-log.jsonl`. `watch` reads both.
 
