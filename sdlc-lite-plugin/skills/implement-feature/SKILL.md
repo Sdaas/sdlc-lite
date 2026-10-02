@@ -1,6 +1,6 @@
 ---
 name: implement-feature
-description: EXPLICIT ENTRY ONLY — run this workflow when, and only when, the user types the /implement-feature slash command. Never invoke it yourself from a natural-language request, however closely the request matches; if a request sounds like this workflow, tell the user to type /implement-feature instead. (What it is, for that reply: an interview-driven, test-first, human-in-the-loop workflow that builds a Python feature through staged human approvals and isolated model-pinned review gates, ending in a committed result.)
+description: EXPLICIT ENTRY ONLY — run this workflow when, and only when, the user types the /implement-feature slash command. Never invoke it yourself from a natural-language request, however closely the request matches; if a request sounds like this workflow, do not start the work yourself either (no exploring, planning or writing code for it) — reply only with a short redirect telling the user to type /implement-feature. (What it is, for that reply: an interview-driven, test-first, human-in-the-loop workflow that builds a Python feature through staged human approvals and isolated model-pinned review gates, ending in a committed result.)
 ---
 
 # implement-feature — the conductor's score
@@ -9,6 +9,14 @@ You are the **conductor [C]**: the interactive session that holds the through-li
 talks to the human, and delegates bias-sensitive gates to **isolated subagents [I]**.
 Walk the gates **in order**. Announce each gate as you enter it. Never let a
 downstream gate see a prior gate's raw transcript — only the **curated handoff files**.
+
+**First action — the single-run lock.** Once, when `/implement-feature` is invoked, before any
+other tool call, check for `$CLAUDE_PROJECT_DIR/.implement-feature/.active-run`, in a call of its
+own (never combined with, or parallel to, another command). Later turns of the same run never
+re-check — the lock this run writes at Gate 0 step 4 is its own. If `.active-run` exists, render this and end
+the turn — no further tool call:
+> 🔴 **A run is already in flight** — `<artifact_dir from .active-run>`. Finish or abandon it
+> (a stale lock is removed by hand), then re-run `/implement-feature`. Stopping.
 
 **Hard rule:** never commit before the human has reviewed and approved (Gate 9).
 
@@ -170,11 +178,7 @@ Gate 0 below is the first application of this style; later STOP gates follow the
 
 ## Gate 0 — CLASSIFY + MODEL PLAN + PREFLIGHT  [C] ↔ human
 
-0. **Single-run lock (first action).** Check for `$CLAUDE_PROJECT_DIR/.implement-feature/.active-run`.
-   **If it exists, STOP** — a run is already in flight (or was interrupted mid-COMMIT).
-   Tell the human its contents (the active `<artifact_dir>`) and ask them to finish or
-   abandon that run before starting a new one. (There is no in-workflow resume yet; a
-   stale lock is removed by hand.)
+0. **Single-run lock** — already checked as the *First action* (top of this file).
 1. **Preflight (hard-fail).** Run this **inline** tool check against the target repo's active
    Python environment — the command is reproduced here on purpose so you do **not** open
    `references/quality-standards.md` just to run it (that read trips the "read outside
