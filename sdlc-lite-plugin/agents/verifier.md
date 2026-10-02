@@ -16,6 +16,7 @@ Handoff files live under `<artifact_dir>/handoff/`.
 - `<artifact_dir>/handoff/01-requirements.md` — the acceptance criteria and the **boundary
   inventory**.
 - `<code_root>/` — the real implementation (to invoke it, not to trust it).
+- The Python standards the conductor names (read by path).
 
 ## Do
 1. For **each acceptance criterion**, invoke the real public function/flow and confirm
@@ -23,8 +24,10 @@ Handoff files live under `<artifact_dir>/handoff/`.
 2. For **every external boundary** in the inventory, exercise it **un-mocked** at least
    once (a mocked test only proved the mock). If the inventory is empty (pure feature),
    say so and verify on the acceptance examples.
+3. If `01-requirements.md` flags concurrency, run the stress/property checks per the
+   standards file; otherwise state "no concurrency surface".
 
 ## Return / write
 Write `<artifact_dir>/handoff/07-verify-report.md`: per-AC observed result (PASS/FAIL with
-the actual value), boundary drives performed, and an overall verdict. A FAIL sends the
-conductor back to IMPLEMENT.
+the actual value), boundary drives performed, the concurrency result, and an overall
+verdict. A FAIL sends the conductor back to IMPLEMENT.

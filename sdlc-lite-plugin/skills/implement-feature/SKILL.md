@@ -83,8 +83,8 @@ the read-through narrative.
 | WRITE-TESTS [I] | `01-requirements.md` + `02-design-interface.md` + `04-test-plan.md` (**never** `03-design-internal.md`) | `<tests_root>/…` + `05-test-intent.md` |
 | TEST-REVIEW [I] | `01-requirements.md` + full design + `04-test-plan.md` + tests + `05-test-intent.md` | `06-test-review-findings.md` |
 | IMPLEMENT [I] | `01-requirements.md` + tests + full design | `<code_root>/…` |
-| VERIFY [I] | `01-requirements.md` (ACs + boundary inventory) + `<code_root>/` | `07-verify-report.md` |
-| CODE-REVIEW [I] | `01-requirements.md` + full design + whole diff | `08-code-review-findings.md` |
+| VERIFY [I] | `01-requirements.md` (ACs + boundary inventory) + `<code_root>/` + the standards | `07-verify-report.md` |
+| CODE-REVIEW [I] | `01-requirements.md` + full design + `04-test-plan.md` + whole diff | `08-code-review-findings.md` |
 
 The interface/internal design split (Gate 2) keeps the test-writer blind to the
 algorithm. **Never hand `03-design-internal.md` to the test-writer.**
@@ -490,8 +490,8 @@ are the slow checks, enforced at CODE-REVIEW — not here.)
 **Green unit tests are not Done.** Spawn a **fresh, read-only** verifier —
 `subagent_type: sdlc-lite:verifier` (Sonnet/medium; observes, cannot fix — pinned in
 `agents/verifier.md`). It did not write the code, so it won't drive it the way the author
-expects. Its inbox: `01-requirements.md` (the ACs + boundary inventory) and `<code_root>/`
-(to invoke the real thing, not to trust it).
+expects. Its inbox: `01-requirements.md` (the ACs + boundary inventory), `<code_root>/`
+(to invoke the real thing, not to trust it), and the standards.
 
 **It must:**
 1. For **each acceptance criterion**, invoke the **real** public function/flow and confirm
@@ -500,10 +500,11 @@ expects. Its inbox: `01-requirements.md` (the ACs + boundary inventory) and `<co
    once (a mocked test only proved the mock). If the inventory is "None (pure feature)",
    verify on the acceptance examples and say so.
 3. If `01-requirements.md` flagged concurrency, run the stress/property checks per
-   `references/quality-standards.md`.
+   `references/quality-standards.md`; otherwise state "no concurrency surface".
 
 It writes `<artifact_dir>/handoff/07-verify-report.md`: per-AC **observed** PASS/FAIL with
-the actual value, the boundary drives performed, and an overall verdict.
+the actual value, the boundary drives performed, the concurrency result, and an overall
+verdict.
 
 **This is the OUTER loop.** On any FAIL → go **back to IMPLEMENT (Gate 5)** — re-enter the
 inner loop, fix, re-green, then re-VERIFY (bounded; surface to the human if it won't
@@ -515,8 +516,8 @@ Spawn a fresh, read-only whole-diff reviewer —
 `subagent_type: sdlc-lite:code-reviewer` (Opus/medium; pinned in
 `agents/code-reviewer.md`). "One senior engineer reviewing the entire PR": fresh context
 kills anchoring, a stronger model than the implementer kills monoculture. Its inbox:
-`01-requirements.md` + the full design + the **whole change** (tests + `<code_root>/`) +
-the standards.
+`01-requirements.md` + the full design + `04-test-plan.md` (its thresholds) + the
+**whole change** (tests + `<code_root>/`) + the standards.
 
 **It reviews across six quality dimensions** (borrowed from the `claude-sdlc` profile
 backbone — scale each to the feature; state **`N/A — why`**, never silently drop one):

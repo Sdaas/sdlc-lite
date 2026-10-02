@@ -15,6 +15,8 @@ Handoff files live under `<artifact_dir>/handoff/`.
 ## Read (your inbox)
 - `<artifact_dir>/handoff/01-requirements.md` — ACs, constraints, boundary inventory.
 - `<artifact_dir>/handoff/02-design-interface.md` and `03-design-internal.md`.
+- `<artifact_dir>/handoff/04-test-plan.md` — the coverage and mutation kill-rate thresholds
+  you grade against.
 - The full change in the repo (tests under `<tests_root>/` + code under `<code_root>/`).
 - The Python standards the conductor names (read by path).
 

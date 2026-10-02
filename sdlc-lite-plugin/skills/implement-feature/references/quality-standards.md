@@ -13,11 +13,13 @@ see the sdlc-lite README.
 | Tool | Purpose | Command |
 |------|---------|---------|
 | ruff | lint + format | `ruff check .` and `ruff format --check .` |
-| mypy | static type checking | `mypy src/` |
+| mypy | static type checking | `mypy <code_root>` |
 | pytest | tests | `python -m pytest -q` |
-| pytest-cov | coverage | `python -m pytest --cov=src --cov-report=term-missing` |
+| pytest-cov | coverage | `python -m pytest --cov=<code_root> --cov-report=term-missing` |
 | mutmut | mutation testing | `mutmut run` then `mutmut results` |
 | hypothesis / pytest-asyncio | property/stress/async (situational) | via the test files |
+
+`<code_root>` is the package path the conductor names in each brief.
 
 ## Gate 0 preflight (hard-fail)
 Before any work, the conductor verifies the environment. **If any check fails, STOP and
@@ -36,7 +38,7 @@ ruff --version && mypy --version && pytest --version && python -c "import import
 The implementer may NOT exit its loop until ALL of:
 1. `python -m pytest -q` — all tests pass.
 2. `ruff check .` — clean (and `ruff format --check .`).
-3. `mypy src/` — no type errors.
+3. `mypy <code_root>` — no type errors.
 
 ## CODE-REVIEW gate (slow checks) — thresholds live in the per-feature test plan
 - **Coverage** ≥ the threshold set in `handoff/` test plan (`pytest-cov`).
