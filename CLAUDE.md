@@ -12,6 +12,7 @@ This file provides guidance to Claude Code when working in this repository.
 - **`dev-docs/`** — for someone improving the plugin. See `dev-docs/README.md` for the map:
   - `tutorial.md` — concepts + subagent isolation, with `toy-greet-plugin/` as the runnable example.
   - `developer-guide.md` — the hub: change → edit → verify table, review checklist, repo-local skills.
+  - `repo-local-skills.md` — `/issue`, `/feature`, `/fix`: gates, STOPs, when each fires.
   - `architecture.md` — gates, handoff, model pins, guard rules, analyzer. `adr/` — the ADRs.
   - `DEVCONTAINER.md`, `verification-ladder.md`, `RELEASING.md`, `release-plan.md`,
     `issue-template.md`; `findings/` (settled investigations) and `proposals/` (unbuilt sketches).
@@ -21,8 +22,9 @@ This file provides guidance to Claude Code when working in this repository.
   `marketplace add Sdaas/claude-plugins` → `install sdlc-lite@sdaas`.
 
 ## Working conventions
-- **Repo-local skills** (`.claude/skills/`, human-typed only): filing an issue → `/issue`. Shared
-  process: `.claude/sdlc/gates.md`. List + status: `dev-docs/developer-guide.md` §4.
+- **Repo-local skills** (`.claude/skills/`, human-typed only): filing an issue → `/issue`; an
+  `enhancement` → `/feature #NN`; a `bug` → `/fix #NN`. Shared process: `.claude/sdlc/gates.md`.
+  Gates, STOPs, routing: `dev-docs/repo-local-skills.md`.
 - **Process:** plan → approve → phased execution. Commit per **logical unit**. Keep git history.
 - **Before every commit:** give the user a concise list of the key files / changes to review, and
   wait for explicit approval. Never commit before the user has reviewed and approved.
