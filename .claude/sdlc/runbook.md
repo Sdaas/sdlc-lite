@@ -57,7 +57,7 @@ Run the route approved at STOP ①:
 - **T3** — nothing cheaper shows it: the STOP ① attestation stands, or run the dry run per Gate 7's
   T3 procedure.
 
-The route does not show the bug → **halt** (as a Gate 7 failure does; not an approval STOP): show
+The route does not show the bug → **halt** (as a Gate 7 failure does, but with no diagnostic re-run; not an approval STOP): show
 what was tried; the human approves another route (and its cap), narrows the issue, or closes it as
 not reproducible. Never move to a costlier route unapproved; never design a fix for an unreproduced
 bug. Record the tier, the case path (or the recipe), the red output, and the fingerprint
@@ -67,7 +67,10 @@ they open the Gate 2 design.
 ## Gate 2 — DESIGN
 
 Present the items Gate 2 lists in `gates.md`, in that order. A case's prompt is what a user would
-type — never the answer you expect (ladder §6, "simulating"). Write `<NN>-plan.md` now if Gate 0
+type — never the answer you expect (ladder §6, "simulating"). T3 declared → name the fixture (its
+`SLUG`), each piece of T3 evidence, and the fixture step that exercises it (e.g. a concurrency rule needs a fixture with
+shared state; a pure-function fixture never opens it). No fixture exercises it → pick another
+fixture, or drop that evidence and say what is left unproven. Write `<NN>-plan.md` now if Gate 0
 said so; it holds the design and a progress tracker.
 
 **STOP ②** — the design.
@@ -111,7 +114,7 @@ once. Route findings per `gates.md`; fast checks after every fix; re-review at m
 
 - **T1** — this change's new cases, in design order, fail-fast, one run each.
 - **T2** — `python3 -m pytest sdlc-lite-plugin -q` (host).
-- **T3** — follow `dev-docs/t3-runs.md` §1: `make t3-start SLUG=<slug>`, check `make t3-peek`, run
+- **T3** — follow `dev-docs/t3-runs.md` §1: `make t3-start SLUG=<fixture slug from Gate 2>`, check `make t3-peek`, run
   `make t3-watch` under Monitor, give the human `make t3-attach`, and report each event in chat
   (⏸ at every WAITING, with the ask). Read handoff files yourself via `devcontainer exec`. Ask the
   human only for what you cannot or must not do — typing into the session, approvals — never to check
@@ -121,14 +124,15 @@ once. Route findings per `gates.md`; fast checks after every fix; re-review at m
 `/fix`: always include the tier the bug was reproduced at, and run the reproducing case first
 (T2: `python3 -m pytest <file> -q`, then the suite).
 
-A failure stops here: show it; the human decides re-run, repair (→ Gate 5), or abandon.
+A failure stops here — see *When a case fails*; the human decides re-run, repair (→ Gate 5), or
+abandon.
 
 ## Gate 8 — REGRESSION
 
 Existing cases only, fail-fast, one run each: every `smoke` case first, then cases whose tags match
 the areas the diff touched (e.g. edited Gate 0 prose → `gate-0`), skipping ones run at Gate 7.
-List tags with `grep -h '^tags:' sdlc-lite-plugin/evals/*/prompt.md`. A failing `flaky` case is
-labelled `flaky`. Code changed → pytest again. Never the full suite (`/regression`).
+List tags with `grep -h '^tags:' sdlc-lite-plugin/evals/*/prompt.md`. A failure stops here, as at
+Gate 7 (see *When a case fails*). Code changed → pytest again. Never the full suite (`/regression`).
 
 ## Gate 8b — DEPOSIT (`/fix` only)
 
@@ -178,3 +182,12 @@ devcontainer exec --workspace-folder . bash -c \
 
 `--allow-tools` stays last (variadic). The container isn't up → tell the human to run
 `devcontainer up --workspace-folder .` and wait. Report each case with its results dir.
+
+## When a case fails (Gates 7, 8)
+
+- **An existing case tagged `flaky`** → no re-run, no halt: note it for Gate 9 as `<case> — FAIL (flaky), 1 run,
+  <results dir>` and go on to the next case.
+- **Not `flaky`** → re-run that one case once, adding `--keep-temp` (before `--allow-tools`), with
+  the cap approved at STOP ②. Report both runs and the kept sandbox path; a pass on the re-run is
+  reported as "failed, then passed on the diagnostic re-run" — still a failure. Then stop for the
+  human's ruling.

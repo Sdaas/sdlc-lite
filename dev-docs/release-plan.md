@@ -56,26 +56,24 @@ child, #53.
 
 ### Open — in execution order
 
-1. **#73** — `feat(repo): runbook — T3 evidence, flaky-case handling, --keep-temp on eval failure`
-   *Done by hand. Before #58, because that run would hit the same flake halts and lost sandboxes.*
-2. **#72** — `fix(repo): t3-run.sh watch replays transcripts from earlier runs`
+1. **#72** — `fix(repo): t3-run.sh watch replays transcripts from earlier runs`
    *Done by hand, because tooling issues are outside `/fix` until #70. Before #58, which needs
    trustworthy T3 watching.*
-3. **#58** — `fix(skill): conductor sometimes skips the lock STOP and the explicit-entry redirect`
+2. **#58** — `fix(skill): conductor sometimes skips the lock STOP and the explicit-entry redirect`
    *Second `/fix` run. Must land before the cut: `release-verify.sh` gates it on the eval suite at
    0.8, and the opus-5-5 baseline is 5/7 because of this bug. Still live: `gate-0-lock-stop` failed
    1 of 3 runs in #60's close-out eval.*
-4. **#43** — `fix(guard-hook): bash_write_targets misreads scratch writes as product-tree writes`
+3. **#43** — `fix(guard-hook): bash_write_targets misreads scratch writes as product-tree writes`
    **+ #74** — `fix(guard-hook): Bash write-form check skips commands after &&, ; and |`
    *`/fix` runs that reproduce at T2, one after the other: both change the same parser in
    `policy.py`. #43 covers the false positives (`cd`, `$VAR`); #74 covers the false negatives
    (chained commands).*
-5. **#75** — `fix(guard-hook): critic's pytest --cov writes .coverage into the product tree`
+4. **#75** — `fix(guard-hook): critic's pytest --cov writes .coverage into the product tree`
    *A `/fix` run that reproduces at T3. After #43/#74, so its dry run uses the fixed guard.*
-6. **#71** — `fix(repo): resolve contradictions and gaps in the repo-local spine`
+5. **#71** — `fix(repo): resolve contradictions and gaps in the repo-local spine`
    *Built by hand like #53. Its before/after `opus` cold read also checks the rules #73 added.
    Before #70 because #70 edits Gate 0 in the same files.*
-7. **#70** — `feat(repo): widen /feature Gate 0 to accept tooling issues`
+6. **#70** — `feat(repo): widen /feature Gate 0 to accept tooling issues`
    *Last. Gives shell, `Makefile`, dev-container, fixture, CI and repo-local-skill issues an
    explicit tooling lane; from then on every non-docs issue goes through `/feature` or `/fix`.*
 
@@ -97,6 +95,7 @@ child, #53.
 | **#66** `feat(toolchain): hands-off dev-container test runs — fresh state, auto-auth, tmux, live progress` | 2026-09-26 (`d3ecef8`) | `make t3-start / t3-attach / t3-peek / t3-watch / t3-stop` (`dev-docs/t3-runs.md`): the agent launches and watches, the human only attaches, answers STOPs and attests; proven by a hands-off `roman-numeral` run. Filed #68, #69; moved #40 to `1.0.0`. |
 | **#61** `fix(skill): agent inboxes and quality-standards disagree with SKILL.md` | 2026-10-02 (`e7fdc6c`) | First `/fix` run, and #53's proof: REPRODUCE at T2 (`test_inbox_parity.py` red, then green), T3 dry run. Its lessons became #72–#75. |
 | **#53** `feat(repo): /fix skill — REPRODUCE + DEPOSIT gates` | 2026-10-02 | `/fix` adds 1b REPRODUCE + 8b DEPOSIT with no fifth STOP; shared `runbook.md`; `dev-docs/repo-local-skills.md`; root scripts stay at the root. Closes **#48** (`feat(repo): repo-local SDLC — verification ladder + /issue, /feature, /fix skills`). |
+| **#73** `feat(repo): runbook — T3 evidence, flaky-case handling, --keep-temp on eval failure` | 2026-10-02 | A failing `flaky` case is noted, not halted (`routing-no-autoinvoke` tagged until #58 removes it); a non-flaky failure gets one `--keep-temp` re-run; Gate 2 names the T3 fixture and evidence it exercises. |
 
 ## Next release — `0.2.0`
 

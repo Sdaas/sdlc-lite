@@ -34,14 +34,14 @@ the ladder. This file only names them.
 |---|---|---|---|
 | **0 CLASSIFY** | [C] | Resolve `#NN` with `gh issue view NN`. Missing, or not conforming to `dev-docs/issue-template.md` → hand off to `/issue` and exit. Classify the surface: prose · hook · code (`guard.py`/`policy.py`/`agentdefs.py`/`analyzer/`) · docs-only. Docs-only or shell-only → **decline and exit** (not gated). Take the minimum tier from the ladder. Create branch `<NN>-<slug>` from `main`, or from a base the human names — never work on `main`. Decide whether `<NN>-plan.md` is warranted (root `CLAUDE.md` → Planning docs). | |
 | **1 INTERVIEW** | [C]↔H | Grill to scope clarity. **Anchor the smallest viable scope first**: propose a one-paragraph minimal version and an explicit out-of-scope list; every extra is a scope decision the human opts into. Skip the grilling (not the STOP) when the issue's acceptance criteria are already testable. After approval, post the settled scope as one comment on the issue. | **① scope** (+ tier, branch) |
-| **2 DESIGN** | [C]↔H | Which files change and how; the behavior delta a cold agent should show; the eval cases that will prove it, **in run order**, each with its prompt and graders; the failing `pytest` for a code change; what T1 cannot prove and so needs T3; the `--max-cost-usd` cap (see Eval budget). Write `<NN>-plan.md` if Gate 0 said so. | **② design** |
+| **2 DESIGN** | [C]↔H | Which files change and how; the behavior delta a cold agent should show; the eval cases that will prove it, **in run order**, each with its prompt and graders; the failing `pytest` for a code change; what T1 cannot prove and so needs T3: the T3 fixture (by slug) and the evidence the dry run must show, which that fixture must actually exercise; the `--max-cost-usd` cap (see Eval budget). Write `<NN>-plan.md` if Gate 0 said so. | **② design** |
 | **3 WRITE-EVALS** | [C] | Write the approved eval cases (and any `pytest`) **before touching any prose**. Their frontmatter must parse. Nothing is run yet. | |
 | **4 EVAL-REVIEW** | [I] `opus` | Cold review of the new cases against the *Eval-review checks* below. Findings → back to Gate 3, then re-review. Present the cases and the verdict. | **③ tests** |
 | **5 IMPLEMENT** | [C] / [I] | **First, confirm red:** run each new case once — it must fail, or pass for the wrong reason (a case that **passes** is shown to the human: it does not test the change); run the new `pytest` red. Then edit the Markdown or code — [C] by default; [I] `sonnet` when the diff spans more than 3 files or touches `guard.py` / `policy.py` / `analyzer/`. Exit when the **fast checks** pass. | |
 | **6 CODE-REVIEW** | [I] `opus` | Cold review of the whole diff against the six review dimensions, **before any further eval spend**. Findings are typed (see *Routing findings*). | |
-| **7 VERIFY** | [C] | Run the declared tier: T1 on this change's new cases, fail-fast; T2; T3 is handed to the human, who runs it and attests. A failure stops the gate and is shown. | |
+| **7 VERIFY** | [C] | Run the declared tier: T1 on this change's new cases, fail-fast; T2; T3 is handed to the human, who runs it and attests. A failure stops the gate and is shown (except a `flaky` case — see Eval budget). | |
 | **8 REGRESSION** | [C] | Existing eval cases, fail-fast: `smoke`-tagged first, then those tagged with the areas the diff touched. Plus `pytest` if code changed. Never the full suite. | |
-| **9 REVIEW-GUIDE** | [C] | Changed files in review order, one line each; the Gate 7/8 evidence (per case, pass/fail, "1 run", results dir); the Gate 4 and 6 findings and how each was resolved; the proposed commit split. | |
+| **9 REVIEW-GUIDE** | [C] | Changed files in review order, one line each; the Gate 7/8 evidence (per case, pass/fail, "1 run", results dir; `flaky` failures and diagnostic re-runs marked as such); the Gate 4 and 6 findings and how each was resolved; the proposed commit split. | |
 | **10 HUMAN REVIEW** | [C]↔H | The human reviews the implementation with the evidence in hand. T3, if declared, is attested here. Change requests route to the gate that owns them, then the run re-converges forward. | **④ implementation** |
 | **11 COMMIT** | [C]↔H | Re-check HEAD is not `main`. Commit per logical unit, referencing `#NN`. At close, `git rm <NN>-plan.md`, ask the human **"open a PR, or merge to `main`?"**, then close the issue. | |
 
@@ -144,9 +144,16 @@ least that still answers the question.
   cases; then cases tagged with the touched areas. Never the full suite inside a change.
 - **Fail fast.** One `claude plugin eval` invocation per case (`--case <name> --runs 1`); stop at
   the first failure. The tool has no fail-fast flag, so the ordering is the mechanism.
-- **A failure stops the gate.** Show it to the human, who decides whether to re-run. Never re-run
-  on your own. A case tagged `flaky` is labelled as such when it fails.
-- **One run is one run.** Evidence says "1 run"; at STOP ④ the human may ask for more.
+- **A failure at Gate 7 or 8 stops the gate** (except a `flaky` case, below). At 1b, 5 and 8b
+  red is the expected result. Before the human rules, re-run that one case once with
+  `--keep-temp`, under the STOP ② cap, so the sandbox survives for diagnosis. That re-run never
+  turns the failure into a pass: a pass is reported as "failed, then passed on the diagnostic
+  re-run". The human then decides re-run, repair or abandon. No other re-run on your own.
+- **A `flaky` case does not stop the gate.** An existing case tagged `flaky` that fails at Gate 7
+  or 8 gets no diagnostic re-run; it is noted in the Gate 9 evidence as a `flaky` failure and the
+  gate goes on. A case this change adds may not carry `flaky`.
+- **One run is one run.** Evidence says "1 run" (a diagnostic re-run is listed separately); at
+  STOP ④ the human may ask for more.
 - **Hard cap.** Every eval command at Gates 5, 7, 8 and 8b carries the `--max-cost-usd` cap
   approved at STOP ②; at 1b, the repro cap approved at STOP ①. Hitting it stops the gate. There is
   no default: the design states it.
