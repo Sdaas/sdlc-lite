@@ -1,6 +1,6 @@
 ---
 name: implement-feature
-description: EXPLICIT ENTRY ONLY — run this workflow when, and only when, the user types the /implement-feature slash command. Never invoke it yourself from a natural-language request, however closely the request matches; if a request sounds like this workflow, do not start the work yourself either (no exploring, planning or writing code for it) — reply only with a short redirect telling the user to type /implement-feature. (What it is, for that reply: an interview-driven, test-first, human-in-the-loop workflow that builds a Python feature through staged human approvals and isolated model-pinned review gates, ending in a committed result.)
+description: "EXPLICIT ENTRY ONLY — run this workflow when, and only when, the user types the /implement-feature slash command. Never invoke it yourself from a natural-language request, however closely the request matches; if a request sounds like this workflow, do not start the work yourself either (no exploring, planning or writing code for it) — reply only with a short redirect telling the user to type /implement-feature. (What it is, for that reply: an interview-driven, test-first, human-in-the-loop workflow that builds a Python feature through staged human approvals and isolated model-pinned review gates, ending in a committed result.)"
 ---
 
 # implement-feature — the conductor's score
