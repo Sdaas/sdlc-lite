@@ -40,7 +40,7 @@ and the repo-local SDLC skills that give *this repo* the requirements → design
 test runs** (#45 → #21 → #66, all done), so every later dry run — #53's proof, #58, #61 — is cheap to repeat.
 Added 2026-09-26: **#70**, so the repo's tooling issues run through the same skills; and **#71**,
 so `/feature` and `/fix` read one way before they take on more work. Added 2026-10-02: the lessons
-of the first `/fix` run (#61), as #73, #72, #74 and #75, with #43 moved up from `0.2.0` next to #74.
+of the first `/fix` run (#61), as #73, #72, #74 and #75, with #43 moved up from `0.2.0` next to #74; and #76, from #58's close-out.
 
 **Why before GA, and why it is `0.1.0` and not GA.** The `0.2.0` issues are real behavior changes
 to a product whose source is prose, and today they would be verified only by ad-hoc dry runs and
@@ -56,10 +56,9 @@ child, #53.
 
 ### Open — in execution order
 
-1. **#58** — `fix(skill): conductor sometimes skips the lock STOP and the explicit-entry redirect`
-   *Second `/fix` run. Must land before the cut: `release-verify.sh` gates it on the eval suite at
-   0.8, and the opus-5-5 baseline is 5/7 because of this bug. Still live: `gate-0-lock-stop` failed
-   1 of 3 runs in #60's close-out eval.*
+1. **#76** — `fix(skill): a plain request should get ordinary help; the routing case grades only auto-invocation`
+   *First, because it corrects wording #58 put on `main`: the description tells the model to
+   withhold ordinary help. A small `/fix` run (description, one grader, ADR-14).*
 2. **#43** — `fix(guard-hook): bash_write_targets misreads scratch writes as product-tree writes`
    **+ #74** — `fix(guard-hook): Bash write-form check skips commands after &&, ; and |`
    *`/fix` runs that reproduce at T2, one after the other: both change the same parser in
@@ -92,8 +91,9 @@ child, #53.
 | **#66** `feat(toolchain): hands-off dev-container test runs — fresh state, auto-auth, tmux, live progress` | 2026-09-26 (`d3ecef8`) | `make t3-start / t3-attach / t3-peek / t3-watch / t3-stop` (`dev-docs/t3-runs.md`): the agent launches and watches, the human only attaches, answers STOPs and attests; proven by a hands-off `roman-numeral` run. Filed #68, #69; moved #40 to `1.0.0`. |
 | **#61** `fix(skill): agent inboxes and quality-standards disagree with SKILL.md` | 2026-10-02 (`e7fdc6c`) | First `/fix` run, and #53's proof: REPRODUCE at T2 (`test_inbox_parity.py` red, then green), T3 dry run. Its lessons became #72–#75. |
 | **#53** `feat(repo): /fix skill — REPRODUCE + DEPOSIT gates` | 2026-10-02 | `/fix` adds 1b REPRODUCE + 8b DEPOSIT with no fifth STOP; shared `runbook.md`; `dev-docs/repo-local-skills.md`; root scripts stay at the root. Closes **#48** (`feat(repo): repo-local SDLC — verification ladder + /issue, /feature, /fix skills`). |
-| **#73** `feat(repo): runbook — T3 evidence, flaky-case handling, --keep-temp on eval failure` | 2026-10-02 (`a7c0038`) | A failing `flaky` case is noted, not halted (`routing-no-autoinvoke` tagged until #58 removes it); a non-flaky failure gets one `--keep-temp` re-run; Gate 2 names the T3 fixture and evidence it exercises. |
+| **#73** `feat(repo): runbook — T3 evidence, flaky-case handling, --keep-temp on eval failure` | 2026-10-02 (`a7c0038`) | A failing `flaky` case is noted, not halted (`routing-no-autoinvoke` tagged until #76 removes it); a non-flaky failure gets one `--keep-temp` re-run; Gate 2 names the T3 fixture and evidence it exercises. |
 | **#72** `fix(repo): t3-run.sh watch replays transcripts from earlier runs` | 2026-10-02 | `t3-start` touches `/tmp/t3-start.marker`; `watch` reads only newer transcripts (old ones kept), so #58's T3 watching is trustworthy. Done by hand (tooling, pre-#70). |
+| **#58** `fix(skill): conductor sometimes skips the lock STOP and the explicit-entry redirect` | 2026-10-02 (`cbcc5e5`) | Second `/fix` run, reproduced from recorded T1 runs: the lock check is the first, sole action (`gate-0-lock-stop` 8/8, `flaky` removed). Routing can't be fixed in prose (the model never reads the skill list when built-in tools suffice) → #76. |
 
 ## Next release — `0.2.0`
 
@@ -106,7 +106,7 @@ section becomes the current release.
 **Execution order** (verified with the ladder and eval corpus from #48):
 
 1. **#62** — `feat(skill): simplify SKILL.md prose for a cold reader, verified by the eval suite`
-   *After #58 (0.1.0) — same prose, same eval proof; land the behavior fix before the rewrite.*
+   *After #58 and #76 (0.1.0) — same prose, same eval proof; land the behavior fix before the rewrite.*
 2. **#63** — `chore(skill): re-evaluate the dated reviewer pin claude-opus-4-8`
    *After #62 — both touch SKILL.md's model table. We should not ship a reviewer pin that was never
    re-checked against the current Opus; the decision is recorded in ADR-2.*
