@@ -10,7 +10,7 @@ Titles can drift — GitHub wins; re-check with `gh issue list --milestone "<tit
 Decision history lives in the issues and the ADRs (`adr/`);
 release conventions live in `RELEASING.md`._
 
-_Last updated: 2026-10-02._
+_Last updated: 2026-10-03._
 
 ---
 
@@ -54,7 +54,7 @@ proves the tooling before later releases depend on it.
 | Customer-visible features | #19 |
 | Customer-visible fixes / hardening | #75, #40, #68, #63 |
 | Internal SDLC improvements | — |
-| Internal SDLC fixes / hardening | #71, #67, #44 |
+| Internal SDLC fixes / hardening | #67, #44 |
 
 On 2026-10-02 **#43 and #74 were parked to the backlog**: textual shell parsing in the guard proved
 to be whack-a-mole, and the write policy will be rethought first (rationale on #43).
@@ -65,22 +65,19 @@ Current milestone: **`0.1.0`**.
 
 ### Open — in execution order
 
-1. **#71** — `fix(repo): resolve contradictions and gaps in the repo-local spine`
-   *First, so `/feature` and `/fix` read one way before they build the rest. Built by hand like
-   #53; its before/after `opus` cold read also checks the rules #73 added.*
-2. **#67** — `fix(repo): setup-fixture.sh leaves an untracked *.egg-info in every fixture run`
+1. **#67** — `fix(repo): setup-fixture.sh leaves an untracked *.egg-info in every fixture run`
    *A clean starting tree, so every later dry run's `git status` evidence is trustworthy.*
-3. **#44** — `feat(repo): ship the python-starter fixtures configured as /sdlc-init would leave them`
+2. **#44** — `feat(repo): ship the python-starter fixtures configured as /sdlc-init would leave them`
    *Before #40: its dry runs need a fixture where mutmut runs.*
-4. **#40** — `feat(gate-7): the conductor runs coverage and mutmut; the code-reviewer only reads results`
+3. **#40** — `feat(gate-7): the conductor runs coverage and mutmut; the code-reviewer only reads results`
    **+ #75** — `fix(guard-hook): critic's pytest --cov writes .coverage into the product tree`
    *One change: moving coverage to the conductor fixes #75, which closes with #40.*
-5. **#68** — `fix(guard-hook): read-only critics can run pip install and repoint the user's environment`
+4. **#68** — `fix(guard-hook): read-only critics can run pip install and repoint the user's environment`
    *After #40 removes the reviewer's reason to install anything; #68 covers what remains (seen in #61's run).*
-6. **#19** — `feat(skill): /sdlc-init — set a Python repo up for /implement-feature`
+5. **#19** — `feat(skill): /sdlc-init — set a Python repo up for /implement-feature`
    *Gate 0 then stops with "run `/sdlc-init`" when the toolchain or `[tool.mutmut]` is missing.
    Proven on a fixture copy with the config removed; the fixtures' config must match its output.*
-7. **#63** — `chore(skill): re-evaluate the dated reviewer pin claude-opus-4-8`
+6. **#63** — `chore(skill): re-evaluate the dated reviewer pin claude-opus-4-8`
    *Last, so the reviewer pin is re-checked against the final prose.*
 
 ### Closed
@@ -105,6 +102,7 @@ Current milestone: **`0.1.0`**.
 | **#72** `fix(repo): t3-run.sh watch replays transcripts from earlier runs` | 2026-10-02 | `t3-start` touches `/tmp/t3-start.marker`; `watch` reads only newer transcripts (old ones kept), so #58's T3 watching is trustworthy. Done by hand (tooling, pre-#70). |
 | **#58** `fix(skill): conductor sometimes skips the lock STOP and the explicit-entry redirect` | 2026-10-02 (`cbcc5e5`) | Second `/fix` run, reproduced from recorded T1 runs: the lock check is the first, sole action (`gate-0-lock-stop` 8/8, `flaky` removed). Routing can't be fixed in prose (the model never reads the skill list when built-in tools suffice) → #76. |
 | **#76** `fix(skill): a plain request should get ordinary help; the routing case grades only auto-invocation` | 2026-10-02 (`072980a`) | Third `/fix` run, reproduced at T2 (`test_entry_points.py` §3): the description forbids only self-invocation, not ordinary help; `routing-no-autoinvoke` grades only auto-invocation (8/8, `flaky` removed); ADR-14 records why the workflow is opt-in. |
+| **#71** `fix(repo): resolve contradictions and gaps in the repo-local spine` | 2026-10-03 (`07b2803`) | By hand, opus cold read before/after: 9 contradictions → 0. Adds *halt*, a `→ DESIGN` route, the whole-change diff (intent-to-add + merge-base), resume rules; "red" = the case fails. Remaining gaps → #79 (backlog). |
 
 ## Next release — `0.2.0` (the planning suite)
 
@@ -145,7 +143,7 @@ before a release). Earlier: #45 and #21 to 0.1.0 (2026-09-26).
 
 Everything else — **open issues with no milestone**, including work that was previously milestoned
 here but isn't committed now (e.g. **#43**, **#74**, parked 2026-10-02; **#62**, moved
-2026-10-02). Not tracked here; query GitHub: `gh issue list --state open --search "no:milestone"`.
+2026-10-02; **#79**, filed 2026-10-03). Not tracked here; query GitHub: `gh issue list --state open --search "no:milestone"`.
 Promote an issue into a milestone when it's committed to a release.
 
 ---
