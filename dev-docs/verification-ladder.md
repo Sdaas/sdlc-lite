@@ -34,8 +34,8 @@ So: changes land with no verification, or with verification so expensive it is s
 that is fixed stays fixed. **This file is the answer to "how much proof does this change owe, and
 how do I get it cheaply?"**
 
-For *how to author and run* an eval case, see **[`eval-tutorial.md`](eval-tutorial.md)** — that file
-teaches the tool, this one decides how much of it a given change needs.
+For *how to author and run* an eval case, see the **[eval suite README](../sdlc-lite-plugin/evals/README.md)**
+(case rules) and `claude plugin eval --help`. This file decides how much of it a given change needs.
 
 ---
 
@@ -164,9 +164,9 @@ These limits are structural. Read them before authoring cases, not after.
   host: the OS sandbox must exclude `~/.docker` (a credential store), Docker Desktop fills it with
   symlinks, and path-based exclusions cannot cover a link graph — so the harness fails closed.
   The host still runs read-only cases, which is handy while writing graders, but it is a
-  convenience and not the harness. Full explanation: `eval-tutorial.md` § 1.
+  convenience and not the harness. Full explanation: `DEVCONTAINER.md` → *Running `plugin eval`*, problem 4.
 - **`claude plugin eval` needs claude ≥ 2.1.281** (GA; the container's pin). Older builds gate it
-  off and reject the pinned `claude-opus-5-5`: `eval-tutorial.md` § 1.
+  off and reject the pinned `claude-opus-5-5`: `DEVCONTAINER.md` → *Running `plugin eval`*, problem 1.
 - **Network is not blocked, and the plugin's own hooks run unconfined as you.** Evaluating a plugin
   is the same trust decision as `--plugin-dir`.
 

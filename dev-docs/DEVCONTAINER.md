@@ -137,12 +137,102 @@ restart the container (or copy `.devcontainer/claude/settings.json` in by hand).
 `unshare(CLONE_NEWUSER)`) and mount a fresh `/proc` (the kernel refuses while Docker masks paths
 in `/proc`). Without both, every sandboxed Bash call fails with
 `bwrap: No permissions to create a new namespace` — which is what `claude plugin eval` runs for any
-case that grants Bash ([`eval-tutorial.md`](eval-tutorial.md) § 1).
+case that grants Bash (see [Running `plugin eval`](#running-plugin-eval-problems-and-fixes), problem 5).
 
 The trade-off: the container ↔ VM-kernel boundary is looser (more syscalls allowed, `/proc`
 unmasked). No capabilities are added, you are still not root, and the Docker Desktop VM still
 separates it from macOS — far narrower than `--privileged`. Changing `runArgs` needs
 `devcontainer up --workspace-folder . --remove-existing-container`.
+
+## Running `plugin eval`: problems and fixes
+
+`claude plugin eval` runs the plugin's eval cases (T1 on the
+[verification ladder](verification-ladder.md)). Run it in this container. Five problems show up
+when you do not. Each has a symptom, a cause and a fix.
+
+### 1. "`plugin eval` is currently in early access"
+
+- **Cause:** your `claude` is older than 2.1.281. Older builds turn the command off. They also
+  reject the pinned model `claude-opus-5-5`.
+- **Fix:** use the container. It pins `CLAUDE_VERSION=2.1.281` in `.devcontainer/Dockerfile`.
+
+### 2. The first headless run waits for a trust prompt
+
+- **Cause:** `plugin eval` runs the plugin's code and scaffold scripts as you. The first run in an
+  untrusted plugin directory asks you to confirm.
+- **Fix:** pass `--trust-plugin`. `release-verify.sh` already does.
+
+### 3. "not granted (missing --allow-tools grant …)"
+
+- **Cause:** a case lists the tools it wants in `allowed_tools` (in `prompt.md`). That is only a
+  request. The operator must also grant each gated tool on the command line.
+  `Read`, `Glob`, `Grep`, `Skill`, `TodoWrite` and `Agent` need no grant.
+  `Bash`, `Write`, `Edit`, `WebFetch`, `WebSearch` and `mcp__*` do.
+- **Fix:** pass `--allow-tools`. Put it last on the command line, because it takes a list.
+
+A case is **Bash-granting** when both sides agree: the case asks for `Bash` and the operator grants
+it. A narrow grant still counts:
+
+| Grant | Bash-granting? |
+|---|---|
+| `--allow-tools Bash` | yes |
+| `--allow-tools "Bash(pytest:*)"` | yes |
+| `--allow-tools "Bash(printf:*)"` | yes |
+| `--allow-tools Write Edit` | no |
+| no grant (a read-only case) | no |
+
+Every case that types `/implement-feature` is Bash-granting, because Gate 0 runs shell commands.
+Problems 4 and 5 apply to Bash-granting cases only.
+
+### 4. On the Mac: "a Bash-granting evaluation cannot run here"
+
+The full error:
+
+```
+error: the Docker (~/.docker, DOCKER_CONFIG) credential store on this machine holds a symbolic
+link inside it, so the Bash sandbox cannot reliably exclude it — a Bash-granting evaluation
+cannot run here
+```
+
+- **Cause, step by step:**
+  1. When Bash is granted, `plugin eval` wraps each Bash command in the OS sandbox (seatbelt on
+     macOS, bubblewrap on Linux). The sandbox hides every credential store from the agent.
+  2. `~/.docker` is a credential store. `~/.docker/config.json` has `auths` (registry
+     credentials) and `credsStore` (a pointer to the Keychain helper).
+  3. Docker Desktop puts symlinks in that directory. All 14 entries in `~/.docker/cli-plugins`
+     are links into `/Applications/Docker.app`, and `docker-pass` is a credential helper:
+
+     ```
+     ~/.docker/cli-plugins/docker-buildx -> /Applications/Docker.app/Contents/Resources/cli-plugins/docker-buildx
+     ~/.docker/cli-plugins/docker-pass   -> /Applications/Docker.app/Contents/Library/SecretsEngine/docker-pass.app/…/docker-pass
+     ```
+  4. A sandbox rule hides a path by its name. A symlink gives the same file a second name. The
+     rules cannot say "hide everything that resolves here, under any name".
+  5. The sandbox fails closed. If it cannot prove that it hides a credential store, it refuses to
+     run. This is correct. Docker Desktop and the sandbox are both working as designed.
+- **Fix:** run Bash-granting cases in this container. It has no Docker Desktop and no
+  `~/.docker`.
+- **What does not work:**
+  - `DOCKER_CONFIG=<other dir>`. It only tells the docker CLI where to look. The sandbox still
+    checks `~/.docker`. (Tested 2026-10-03: the same error.)
+  - Deleting the symlinks. Docker Desktop recreates them, and `docker compose` breaks until it does.
+- **Host runs:** read-only cases (routing, guard) run on the Mac. Use them for fast iteration on
+  graders. A green host run is not a suite run. Run the suite in the container before you call a
+  change verified.
+
+### 5. In the container: "bwrap: No permissions to create a new namespace"
+
+- **Cause:** the container is the right place, but Docker's default settings block bubblewrap.
+  It must create a user namespace and mount a fresh `/proc`. The default seccomp profile and
+  the masked `/proc` paths stop both. Every Bash call then fails. The agent reports "Bash is
+  non-functional", and the case scores low for a reason that is not the plugin.
+- **Fix:** `devcontainer.json` sets `--security-opt seccomp=unconfined` and
+  `--security-opt systempaths=unconfined`. Keep both. After you change `runArgs`, recreate the
+  container. The trade-offs are in "Two loosened Docker defaults" above.
+
+### Run it
+
+Full command and flags: [`sdlc-lite-plugin/evals/README.md`](../sdlc-lite-plugin/evals/README.md).
 
 ---
 

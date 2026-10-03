@@ -20,9 +20,8 @@ here — the root [`README.md`](../README.md) is the complete user-facing doc. E
   here before changing any of the plugin's prose.
 - **[`repo-local-skills.md`](repo-local-skills.md)** — `/issue`, `/feature`, `/fix`: the slash
   commands that govern changes to this repo — their gates, STOPs, and when each one fires.
-- **[`eval-tutorial.md`](eval-tutorial.md)** — how to author and run a `claude plugin eval` case
-  (T1 on that ladder): case format, graders, the ablation delta, and the environment gotchas.
-- **[`DEVCONTAINER.md`](DEVCONTAINER.md)** — the dev-container test harness lifecycle.
+- **[`DEVCONTAINER.md`](DEVCONTAINER.md)** — the dev-container test harness lifecycle, and the
+  problems you meet when running `claude plugin eval` (T1 on that ladder) and their fixes.
 - **[`t3-runs.md`](t3-runs.md)** — hands-off T3 dry runs: the agent launches and watches the session
   in tmux, you attach and answer the STOPs. Includes a short tmux primer.
 - **[`RELEASING.md`](RELEASING.md)** — versioning, issue triage, and how a release is cut and

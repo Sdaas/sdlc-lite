@@ -152,7 +152,7 @@ change the related code.
 - **The transcript format is internal and unstable,** yet it's the only ground truth for model and
   effort ([finding](findings/audit-observability-findings.md)).
 - **`claude plugin eval` sandboxes Bash, fail-closed,** so some cases run only in the container
-  ([`eval-tutorial.md`](eval-tutorial.md)).
+  ([`DEVCONTAINER.md`](DEVCONTAINER.md#running-plugin-eval-problems-and-fixes)).
 
 ---
 
@@ -218,7 +218,7 @@ Full detail: [`verification-ladder.md`](verification-ladder.md).
 2. `SKILL.md`: read it in full once.
 3. One `agents/*.md` in full (e.g. `test-writer.md`), then skim the rest.
 4. `references/quality-standards.md`.
-5. [`verification-ladder.md`](verification-ladder.md) → [`eval-tutorial.md`](eval-tutorial.md):
+5. [`verification-ladder.md`](verification-ladder.md) → [eval suite README](../sdlc-lite-plugin/evals/README.md):
    how you'll prove the change.
 6. [`adr/`](adr/README.md) before any structural change; [`developer-guide.md`](developer-guide.md) §2–§3
    for what to edit and the review checklist.

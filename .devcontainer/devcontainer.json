@@ -13,7 +13,7 @@
   //
   // The two --security-opt flags let Claude Code's own Bash sandbox (bubblewrap)
   // run INSIDE this container, which `claude plugin eval` needs for any case that
-  // grants Bash (see dev-docs/eval-tutorial.md § 1). bwrap must (1) create a user
+  // grants Bash (see dev-docs/DEVCONTAINER.md, "Running plugin eval"). bwrap must (1) create a user
   // namespace — Docker's default seccomp profile blocks unshare(CLONE_NEWUSER) —
   // and (2) mount a fresh /proc — the kernel refuses while Docker masks paths in
   // /proc. This loosens the container<->VM-kernel boundary (more syscalls, /proc

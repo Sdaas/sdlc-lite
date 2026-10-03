@@ -14,7 +14,7 @@ To *run* the plugin, see the [README](../README.md).
 | Gates, handoff, model pins, guard rules, analyzer | [`architecture.md`](architecture.md) |
 | *Why* a part is shaped this way | [`adr/`](adr/README.md) |
 | How much proof a change needs | [`verification-ladder.md`](verification-ladder.md) |
-| Writing an eval case | [`eval-tutorial.md`](eval-tutorial.md) |
+| Writing an eval case | [`evals/README.md`](../sdlc-lite-plugin/evals/README.md) |
 | Container, auth, entry-point check | [`DEVCONTAINER.md`](DEVCONTAINER.md) |
 | Dry-run fixtures; reset for a run: `make clean-run` | [`test-fixtures/README.md`](../test-fixtures/README.md) |
 | Hands-off T3 run (tmux; you attach and answer STOPs): `make t3-start SLUG=<slug>` | [`t3-runs.md`](t3-runs.md) |

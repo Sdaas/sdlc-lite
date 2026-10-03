@@ -2,7 +2,8 @@
 
 T1 on the [verification ladder](../../dev-docs/verification-ladder.md): `claude plugin eval` cases
 that check the plugin's **prose** still behaves after a change. How to author a case and read a
-result: [`eval-tutorial.md`](../../dev-docs/eval-tutorial.md).
+result: run `claude plugin eval --help` and ask Claude. Environment problems (container, Bash grant,
+`~/.docker`): [`DEVCONTAINER.md`](../../dev-docs/DEVCONTAINER.md#running-plugin-eval-problems-and-fixes).
 
 ## Run it (dev container, repo root)
 
@@ -38,4 +39,41 @@ Results land in `results/<timestamp>/` (`aggregate-result.json`, `report.html`) 
 | `guard-secret-read-denied` | smoke, guard | The guard hook blocks reading `.env`; the secret never reaches the reply |
 
 `gate-1-interview-entry/history/through-gate-0.jsonl` is a recorded real session — re-record it
-when Gate 0's shape changes (`eval-tutorial.md` § 5).
+when Gate 0's shape changes. See "Case rules" below.
+
+## Case rules
+
+1. **Write the prompt as a user would type it. Never name the skill.** Use "Add a --json flag to
+   the exporter", not "run /implement-feature". The case must prove that routing works.
+2. **Write the case before the prose it checks. Run it. It must fail.** This is the "red" step of
+   [`verification-ladder.md`](../../dev-docs/verification-ladder.md) § 6.
+3. **Test a "must not fire" case with this grader:**
+
+   ```markdown
+   ---
+   type: tool_used
+   tool: Skill
+   input_match: '"skill"\s*:\s*"(?:[\w-]+:)?implement-feature"'
+   min: 0
+   max: 0
+   arm: both
+   ---
+   ```
+
+   `max: 0` alone never passes, because `min` defaults to 1. Without `arm: both`, `--ablation
+   with-without` drops `Skill` graders from the score. The negative case would then be unscored.
+4. **A case seeded with `history_file` has a Δ of about 0.** The recorded transcript already holds
+   the skill text, so the no-plugin arm still has it. Judge such a case on its with-plugin score.
+   Each run also writes `history/<session-uuid>.jsonl`. `.gitignore` excludes it. Do not commit it.
+   Re-record the history file when the gates before it change.
+
+## Tags
+
+| Tag | Meaning |
+|---|---|
+| `gate-0` … `gate-11` | The gate the case exercises |
+| `routing` | Whether the workflow starts (or correctly does not) |
+| `entry-point` | The explicit-entry contract: slash spellings, no auto-invocation |
+| `guard` | Guard-hook behavior |
+| `smoke` | Cheap cases that every change runs first (`/feature` Gate 6) |
+| `flaky` | Known unreliable. A failure goes in the evidence and does not halt the gate (none today; #58, #76) |

@@ -82,7 +82,7 @@ approved design and a progress tracker, updated at each gate exit.
 
 ## Gate 3 — WRITE-EVALS
 
-Write the cases under `sdlc-lite-plugin/evals/<case>/` (authoring: `dev-docs/eval-tutorial.md`);
+Write the cases under `sdlc-lite-plugin/evals/<case>/` (case rules: `sdlc-lite-plugin/evals/README.md`; flags: `claude plugin eval --help`);
 give each case `tags:` naming the areas it covers (Gate 8 selects by them) and add a row to the case
 table in `sdlc-lite-plugin/evals/README.md`. Code change: write the `pytest`. Check the frontmatter
 parses (the YAML fast check). Run nothing that costs money. `/fix`: the reproducing case exists
