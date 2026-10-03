@@ -314,6 +314,67 @@ def bash_wildcard_handoff_reads(command: str) -> list[str]:
     return out
 
 
+_SEP_TOKENS = frozenset({"&&", "||", ";", "|", "&"})
+_LAUNCHERS = frozenset({"env", "nice", "timeout", "uv", "time"})
+
+
+def _is_assignment(tok: str) -> bool:
+    return bool(re.match(r"[A-Za-z_][A-Za-z0-9_]*=", tok))
+
+
+def _segment_runs_quality_tool(toks: list[str]) -> bool:
+    i = 0
+    while i < len(toks):                      # skip VAR=val and the launchers
+        t = toks[i]
+        if _is_assignment(t) or t in ("env", "nice", "time"):
+            i += 1
+        elif t == "uv" and toks[i + 1:i + 2] == ["run"]:
+            i += 2
+        elif t == "timeout":
+            i += 2                            # `timeout N`
+        elif t.startswith("-") and i > 0 and toks[i - 1] in ("env", "nice"):
+            i += 1
+        else:
+            break
+    toks = toks[i:]
+    if not toks:
+        return False
+    prog = os.path.basename(toks[0])
+    rest = toks[1:]
+    if prog.startswith("python") and "-m" in rest:
+        k = rest.index("-m")                  # `-m` may follow other leading options
+        if k + 1 >= len(rest):
+            return False
+        prog, rest = rest[k + 1], rest[k + 2:]
+    if prog == "mutmut":
+        return True
+    if prog == "coverage":
+        return bool(rest) and rest[0] == "run"   # `coverage report` writes nothing
+    return prog in ("pytest", "py.test") and any(t.startswith("--cov") for t in rest)
+
+
+def runs_quality_tool(command: str) -> bool:
+    """#40/#75 (best-effort): True if a Bash command RUNS `mutmut`, `pytest --cov*` or
+    `coverage run`. They write into the product tree (`.coverage`, `mutants/`), so the
+    conductor runs them at Gate 7 and the critics never do. Tokenizes first and splits on
+    separator TOKENS (a quoted `|` is not one); keys on each segment's program — a mere
+    mention (`grep mutmut f`, `echo --cov`) is not a run. Known gaps: `bash -c "..."`, a
+    launcher option that takes a value (`nice -n 5`, `timeout -s KILL`), `sudo`/`xargs`, and a
+    pytest config whose `addopts` carries `--cov`; the transcript auditor is the backstop."""
+    toks = bash_tokens(strip_heredocs(command))
+    seg: list[str] = []
+    for tok in toks + [";"]:
+        if tok in _SEP_TOKENS:
+            if _segment_runs_quality_tool(seg):
+                return True
+            seg = []
+        else:
+            tok = tok.strip("()")
+            if tok:
+                seg.append(tok)
+    return False
+
+
 @dataclass
 class Decision:
     allowed: bool
@@ -322,6 +383,20 @@ class Decision:
 
 
 _ALLOW = Decision(allowed=True)
+
+
+def critic_bash_decision(agent_type: str, command: str) -> Decision:
+    """#40/#75: a write-confined critic may not run coverage or mutmut — they write
+    `.coverage*` / `mutants/` into the product tree. The conductor measures at Gate 7 and
+    the critic grades the results files; producers and the conductor are unaffected."""
+    pol = POLICY.get(role_of(agent_type) or "")
+    if pol and pol.write_confined and runs_quality_tool(command):
+        return Decision(False, "critic-quality-tool",
+                        f"{role_of(agent_type)} never runs coverage or mutmut — the conductor "
+                        "runs them at Gate 7. Grade quality/coverage.txt and "
+                        "quality/mutation.txt; if one is missing, report that as a finding "
+                        "(except mutation.txt when the brief says mutation: SKIPPED).")
+    return _ALLOW
 
 
 # --- explicit entry: this plugin's skills are never auto-invoked (#55) -------

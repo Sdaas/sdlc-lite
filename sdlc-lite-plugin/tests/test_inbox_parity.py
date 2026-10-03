@@ -90,3 +90,34 @@ def test_standards_commands_use_code_root():
     assert "--cov=src" not in text
     assert "mypy <code_root>" in text
     assert "--cov=<code_root>" in text
+
+
+# --- #40: CODE-REVIEW grades the conductor's results files, never runs the tools ---
+
+RESULTS = ("quality/coverage.txt", "quality/mutation.txt")
+
+
+def test_code_reviewer_inbox_lists_results_files():
+    inbox = _inbox("code-reviewer")
+    assert all(r in inbox for r in RESULTS)
+
+
+def test_skill_code_review_table_row_lists_results_files():
+    row = _table_row("CODE-REVIEW")
+    assert all(r in row for r in RESULTS)
+
+
+def test_skill_gate7_inbox_prose_lists_results_files():
+    section = _gate_section("Gate 7 — CODE-REVIEW")
+    inbox = section.split("Its inbox:", 1)[1].split("\n\n", 1)[0]
+    assert all(r in inbox for r in RESULTS)
+
+
+def test_code_reviewer_never_told_to_run_quality_tools():
+    text = (PLUGIN / "agents" / "code-reviewer.md").read_text()
+    assert "mutmut run" not in text and "--cov" not in text
+
+
+def test_skill_shows_mutation_skip_at_gates_8_and_11():
+    assert "mutation: SKIPPED" in _gate_section("Gate 8 — REVIEW-GUIDE")
+    assert "mutation: SKIPPED" in _gate_section("Gate 11 — REPORT")

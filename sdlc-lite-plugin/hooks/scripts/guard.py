@@ -197,6 +197,11 @@ def _bash_deny_reason(agent_type: str, command: str, handoff: str) -> str | None
         return (_DENY_PREFIX + "handoff/draft/ holds unapproved drafts. Subagents read "
                 "only promoted files under handoff/. (Conductor promotes on approval.)")
 
+    # (c0) #40/#75: critics never run coverage/mutmut (the conductor does, at Gate 7).
+    d = policy.critic_bash_decision(agent_type, command)
+    if not d.allowed:
+        return _DENY_PREFIX + d.reason
+
     # (c) writes — resolve redirect/tee targets and adjudicate each against the policy
     #     (implementer test-integrity + the confined roles' product-tree ban).
     for t in policy.bash_write_targets(command):

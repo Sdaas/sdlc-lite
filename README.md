@@ -126,7 +126,7 @@ in a directory named for the installed version) or by name:
 pip install -r ~/.claude/plugins/cache/sdaas/sdlc-lite/<version>/toolchain/requirements-dev.txt
 
 # or simply, by name (the pinned floors):
-pip install ruff mypy pytest pytest-cov mutmut hypothesis pytest-asyncio
+pip install ruff mypy pytest pytest-cov mutmut==3.8.0 hypothesis pytest-asyncio
 ```
 
 > **A `/sdlc-init` command that installs the toolchain and configures your repo is planned for
@@ -186,13 +186,13 @@ unattended.
 | **4 · Review tests** | An independent critic checks the tests encode the requirements and aren't tautological — before any code exists. | — (unattended) |
 | **5 · Implement** | A subagent writes the minimum code until `pytest` + `ruff` + `mypy` are all green. It **cannot edit your tests**. | — (unattended) |
 | **6 · Verify** | A fresh read-only subagent drives the **real** feature against every acceptance criterion and exercises every boundary un-mocked. | — (unattended) |
-| **7 · Code review** | A stronger-model reviewer reviews the whole diff across six quality dimensions and runs coverage + mutation testing. | — (unattended) |
+| **7 · Code review** | The conductor measures coverage + mutation testing (results in `quality/`); a stronger-model reviewer grades them and reviews the whole diff across six quality dimensions. | — (unattended) |
 | **8 · Review guide** | Orders the changed files, points you at every findings file and the audit log. | — |
 | **9 · Human review** | Presents the finished work + an isolation-compliance summary. | **Review; reply APPROVED — or request changes.** |
 | **10 · Commit** | Commits on the feature branch, with your git identity. | — |
 | **11 · Report** | Auto-runs the analyzer and shows the per-gate model split + isolation compliance + token totals. | — |
 
-Everything the run produces (requirements, design, findings, the audit log) is written to a per-run
+Everything the run produces (requirements, design, findings, `quality/` results, the audit log) is written to a per-run
 directory under `.implement-feature/` in your repo. It's gitignored automatically and is **never** part
 of the commit. Browse `handoff/` top-to-bottom (files are numbered in read order) to replay the run.
 
