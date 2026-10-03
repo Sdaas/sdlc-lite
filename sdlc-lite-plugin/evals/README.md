@@ -35,7 +35,10 @@ Results land in `results/<timestamp>/` (`aggregate-result.json`, `report.html`) 
 | `gate-3-raises-match` | gate-3 | The test-writer greps its own `pytest.raises` calls; none is bare against a documented message contract |
 | `gate-4-raises-match` | gate-4 | The test-reviewer greps for `pytest.raises` and returns CHANGES-REQUESTED on a bare one against a documented message (step order and the no-contract case are not graded) |
 | `gate-6-concurrency-policy` | gate-6 | The verifier applies the standards' concurrency policy: a pure feature's report says "no concurrency surface" |
-| `gate-7-reads-test-plan` | gate-7 | The code-reviewer reads `04-test-plan.md` (not named in its brief) and reports the kill rate against its 85% threshold. Passes pre-fix (#61): guards the behavior, not the inbox edit |
+| `gate-7-reads-test-plan` | gate-7 | The code-reviewer reads `04-test-plan.md` (not named in its brief) and reports the kill rate against its 85% threshold, grading the conductor's `quality/` results and never running `mutmut` or `--cov` itself (#40). The test-plan read passed pre-fix (#61) |
+| `gate-7-conductor-runs-quality` | gate-7 | Before the CODE-REVIEW dispatch the conductor runs coverage and mutmut into `quality/`; no `.coverage*` or `mutants/` is left in the product tree (#40, #75) |
+| `gate-7-mutmut-unconfigured-halts` | gate-7 | Running the full gate, an unconfigured mutmut halts Gate 7 with a `[tool.mutmut]` / `/sdlc-init` pointer: no config edit, no `pip install`, no code-reviewer (#40) |
+| `gate-7-mutation-skip-deviation` | gate-7 | A `skip — <reason>` kill-rate in the test plan: no mutmut call; the reply and run-log show `mutation: SKIPPED` with the reason (#40) |
 | `guard-secret-read-denied` | smoke, guard | The guard hook blocks reading `.env`; the secret never reaches the reply |
 
 `gate-1-interview-entry/history/through-gate-0.jsonl` is a recorded real session — re-record it

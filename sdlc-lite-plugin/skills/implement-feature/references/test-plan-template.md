@@ -31,6 +31,7 @@ response-level (status / body) faults; see `quality-standards.md` → "Boundary 
   **justify any deviation right here**: raise for a small/safety-critical pure function,
   lower only with a stated reason (large surface, equivalent mutants). Surviving mutants
   below the chosen rate are treated as weak tests and block APPROVE at CODE-REVIEW.
+  - Or **Chosen: skip — <reason>** (no mutmut run at Gate 7; the skip is surfaced at approval).
   - Chosen: **<M>%** — Justification: <why this differs from 80%, or "default 80%">.
 
 ## Concurrency plan (fill only if the feature is concurrent/async)

@@ -1,6 +1,6 @@
 ---
 name: code-reviewer
-description: Reviews the whole change (tests + implementation) like one human reviewing a PR, and checks the mutation-kill rate against the threshold. Spawned at the CODE-REVIEW gate of /implement-feature.
+description: Reviews the whole change (tests + implementation) like one human reviewing a PR, and grades the coverage and mutation-kill rate against the threshold. Spawned at the CODE-REVIEW gate of /implement-feature.
 model: claude-opus-4-8
 effort: medium
 tools: Read, Grep, Glob, Bash
@@ -17,6 +17,8 @@ Handoff files live under `<artifact_dir>/handoff/`.
 - `<artifact_dir>/handoff/02-design-interface.md` and `03-design-internal.md`.
 - `<artifact_dir>/handoff/04-test-plan.md` — the coverage and mutation kill-rate thresholds
   you grade against.
+- `<artifact_dir>/quality/coverage.txt` and `<artifact_dir>/quality/mutation.txt` — the
+  conductor's coverage report and per-mutant `killed|survived` list.
 - The full change in the repo (tests under `<tests_root>/` + code under `<code_root>/`).
 - The Python standards the conductor names (read by path).
 
@@ -28,10 +30,15 @@ silently drop it.
 2. **Performance & scale** — the measurable signals the design flagged; no accidental
    O(n²)/N+1 or unbounded growth.
 3. **Testing pyramid (slow checks)** —
-   - **Coverage** — `python -m pytest --cov=<code_root> --cov-report=term-missing` vs the
-     coverage threshold in the test plan; call out untested lines.
-   - **Mutation** — `mutmut run` then `mutmut results` vs the kill-rate threshold; call out
-     surviving mutants as weak tests.
+   - **Coverage** — `quality/coverage.txt` vs the coverage threshold in the test plan; call
+     out untested lines.
+   - **Mutation** — `quality/mutation.txt` (killed / total) vs the kill-rate threshold; call
+     out surviving mutants as weak tests. Kill rate = killed / every listed mutant
+     (`timeout` counts as killed; `no tests` / `suspicious` / `skipped` / `not checked` count
+     as not killed — call them out). If the brief says `mutation: SKIPPED`, grade nothing here
+     and state the skip.
+   - You **never run coverage or mutmut**. A missing results file is itself a finding —
+     except `mutation.txt` when the brief says `mutation: SKIPPED`.
 4. **Security** — injection/quoting, secrets, filesystem, dependency surface.
 5. **Reliability & resilience** — timeout/retry/backoff/idempotency at each boundary in the
    inventory; concurrency (races, deadlocks, ordering, cancellation) if applicable. For a

@@ -72,6 +72,7 @@ behavior; this file is the map.
       draft/                     # unapproved drafts (ADR-8); no subagent may read
       01-requirements.md … 08-code-review-findings.md
       run-log.jsonl              # audit log: guard (per tool call) + conductor (per gate)
+    quality/                     # Gate 7: coverage.txt, mutation.txt, mutmut-run.log
     run-report.md                # Gate 11
 ```
 
@@ -85,7 +86,7 @@ behavior; this file is the map.
 | TEST-REVIEW | `01` + full design + `04` + tests + `05` | `06-test-review-findings` |
 | IMPLEMENT | `01` + tests + full design | `<code_root>/…` |
 | VERIFY | `01` (ACs + boundary inventory) + `<code_root>/` + standards | `07-verify-report` |
-| CODE-REVIEW | `01` + full design + `04` + whole diff | `08-code-review-findings` |
+| CODE-REVIEW | `01` + full design + `04` + whole diff + `quality/coverage.txt` + `quality/mutation.txt` | `08-code-review-findings` |
 
 - Blind the producer, inform the critic (ADR-3).
 
@@ -140,6 +141,7 @@ disallowedTools: Write, Edit
 | 5 | Test-integrity | implementer | editing or writing any test file |
 | 6 | Write-confinement | test-reviewer, verifier, code-reviewer | writes outside their outbox + scratch dir |
 | 7 | Explicit-entry | all | any `Skill` call to this plugin's skills (ADR-14) |
+| 8 | Critic-quality-tool | test-reviewer, verifier, code-reviewer | Bash `mutmut …` / `pytest --cov…` (they write `.coverage` / `mutants/` into the tree; the conductor runs them at Gate 7, #40; known gap: `analyzer/runlog.py` has no matching detective check, so a denial shows only as `guard_decision: deny`) |
 
 **How the hook finds the run.** A hook doesn't inherit the conductor's env.
 - It reads `.implement-feature/.active-run` to find the run-log.

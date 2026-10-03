@@ -15,8 +15,8 @@ see the sdlc-lite README.
 | ruff | lint + format | `ruff check .` and `ruff format --check .` |
 | mypy | static type checking | `mypy <code_root>` |
 | pytest | tests | `python -m pytest -q` |
-| pytest-cov | coverage | `python -m pytest --cov=<code_root> --cov-report=term-missing` |
-| mutmut | mutation testing | `mutmut run` then `mutmut results` |
+| pytest-cov | coverage (conductor, Gate 7) | `COVERAGE_FILE=<artifact_dir>/quality/.coverage python -m pytest --cov=<code_root> --cov-report=term-missing` |
+| mutmut | mutation testing (conductor, Gate 7) | `mutmut run` then `mutmut results --all true` |
 | hypothesis / pytest-asyncio | property/stress/async (situational) | via the test files |
 
 `<code_root>` is the package path the conductor names in each brief.
@@ -53,6 +53,8 @@ drifts (P46). So:
 - **Justify any deviation, in the test plan.** *Raise* it (e.g. 90–95%) for a small or
   safety-critical pure function; *lower* it only with a stated reason (large surface,
   hard-to-kill equivalent mutants). Record the rationale next to the number.
+- **`skip — <reason>`** is a Gate 2 deviation too: the conductor runs no mutmut at Gate 7,
+  and the skip is surfaced at approval like any other threshold.
 - **Surface it at DESIGN approval** so the human sees and can veto the chosen threshold
   (the human now reviews the real `04-test-plan.md`, where the number + justification live).
 

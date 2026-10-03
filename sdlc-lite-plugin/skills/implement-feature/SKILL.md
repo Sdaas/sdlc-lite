@@ -58,6 +58,7 @@ The workflow keeps two things strictly apart:
         draft/                              # unapproved drafts (Gates 1,2,9); never read by a subagent
         01-requirements.md … 08-code-review-findings.md
         run-log.jsonl                       # the audit/orchestration log for this run
+      quality/                              # Gate 7: coverage.txt, mutation.txt, mutmut-run.log
   ```
 
 Pass the absolute **`<artifact_dir>`**, **`<code_root>`**, and **`<tests_root>`** in every
@@ -92,7 +93,7 @@ the read-through narrative.
 | TEST-REVIEW [I] | `01-requirements.md` + full design + `04-test-plan.md` + tests + `05-test-intent.md` | `06-test-review-findings.md` |
 | IMPLEMENT [I] | `01-requirements.md` + tests + full design | `<code_root>/…` |
 | VERIFY [I] | `01-requirements.md` (ACs + boundary inventory) + `<code_root>/` + the standards | `07-verify-report.md` |
-| CODE-REVIEW [I] | `01-requirements.md` + full design + `04-test-plan.md` + whole diff | `08-code-review-findings.md` |
+| CODE-REVIEW [I] | `01-requirements.md` + full design + `04-test-plan.md` + whole diff + `quality/coverage.txt` + `quality/mutation.txt` | `08-code-review-findings.md` |
 
 The interface/internal design split (Gate 2) keeps the test-writer blind to the
 algorithm. **Never hand `03-design-internal.md` to the test-writer.**
@@ -119,7 +120,8 @@ Two records, plus a hard guard, run alongside every gate:
 
 1. **Gate run-log (conductor-written).** Append one line to
    `<artifact_dir>/handoff/run-log.jsonl` as each gate completes:
-   `{gate, mode, agent, inbox:[...], outbox:[...], result, ts}` — the orchestration story.
+   `{gate, mode, agent, inbox:[...], outbox:[...], result, ts}` — the orchestration story. A
+   gate's `[C]` sub-step may add its own record (`gate: "<GATE>/<step>"`), e.g. Gate 7's measure step.
    **Do not write `model`/`effort` for an `[I]` gate** — a subagent's *resolved* model/effort
    is unobservable to the conductor, so a written value would be a guess. The receipt sources
    the **requested** model/effort from the agent-def pins (`agents/*.md`) and the **actual**
@@ -142,7 +144,10 @@ Two records, plus a hard guard, run alongside every gate:
      must pass the tests, not change them);
    - any write outside its `handoff/` outbox + a scratch dir — for the **test-reviewer**,
      **verifier** and **code-reviewer** (read-only critics must not mutate the product tree /
-     build a reference implementation); and
+     build a reference implementation);
+   - Bash `mutmut` / `pytest --cov` / `coverage run` — for the **test-reviewer**, **verifier**
+     and **code-reviewer** (they write `.coverage` / `mutants/` into the tree; the conductor
+     measures at Gate 7); and
    - a `Skill` tool call to this plugin's own skills — for **any** agent (explicit-entry:
      `/implement-feature` runs only when a human types it).
    Each is defense-in-depth with the agents' own role instructions. (The guard does **not**
@@ -378,8 +383,9 @@ consumed by test-writer, test-reviewer, and code-reviewer:
 - Enumerated tests (**unit / api / e2e**), each traced to an **AC or a boundary**;
   cover happy path, edges, negatives, and every boundary in the inventory.
 - **Coverage threshold** and **mutation kill-rate threshold** (the numbers Gate 7
-  enforces via `pytest-cov` / `mutmut`). **Anchor the mutation kill-rate at 80%** (P46) —
-  start there and **justify any deviation in the plan**; do not free-pick. **Surface the
+  measures via `pytest-cov` / `mutmut`). **Anchor the mutation kill-rate at 80%** (P46) —
+  start there and **justify any deviation in the plan** (a deviation may be
+  `skip — <reason>`); do not free-pick. **Surface the
   chosen threshold + justification prominently at approval** so the human can veto it.
 - If `01-requirements.md`'s boundary inventory flags the feature concurrent/async, the plan
   MUST include the property/stress/async tests + concurrency review focus (per
@@ -487,7 +493,7 @@ in depth: (a) the **guard hook denies the implementer any Edit/Write to a test f
 (c) the whole-diff CODE-REVIEW (Gate 7), which flags any change under `<tests_root>/`.
 
 Exit when green; append the run-log entry, then proceed to VERIFY. (Coverage + mutation
-are the slow checks, enforced at CODE-REVIEW — not here.)
+are the slow checks, measured by the conductor at Gate 7 — not here.)
 
 ## Gate 6 — VERIFY  [I] `verifier`  (outer loop)
 
@@ -516,12 +522,33 @@ converge). On all-PASS → append the run-log entry and proceed to CODE-REVIEW.
 
 ## Gate 7 — CODE-REVIEW + quality  [I] `code-reviewer`  (the last unattended gate)
 
+**Before dispatch [C] — measure.** The reviewer never runs coverage or mutmut (they write into
+the product tree), so you run them first, results under `<artifact_dir>/quality/`:
+1. Read the mutation target in `04-test-plan.md`.
+2. `mkdir -p <artifact_dir>/quality`, then coverage: `COVERAGE_FILE=<artifact_dir>/quality/.coverage python -m pytest --cov=<code_root> --cov-report=term-missing > <artifact_dir>/quality/coverage.txt`.
+3. Mutation, unless the plan says `skip — <reason>` (then run no mutmut): note whether
+   `mutants/` already exists, run `mutmut run > <artifact_dir>/quality/mutmut-run.log 2>&1`
+   (its output is only a spinner), then
+   `mutmut results --all true > <artifact_dir>/quality/mutation.txt` (one
+   `<mutant>: <status>` line each); `rm -rf mutants/` if you created it. Kill rate =
+   killed / every listed mutant; `timeout` counts as killed, while `no tests`, `suspicious`,
+   `skipped` and `not checked` count as not killed — call them out.
+4. **If `mutmut run` exits non-zero → HALT.** Quote the error verbatim from the tail of
+   `mutmut-run.log`, tell the human to configure `[tool.mutmut]` (e.g. via `/sdlc-init`),
+   and do not dispatch. Never work around it — no config edit, no scratch copy, no
+   `pip install`.
+5. Append a separate **measure** run-log record now, before dispatch (the gate's own
+   completion record follows the review):
+   `{"gate":"CODE-REVIEW/measure","mode":"[C]","agent":"conductor","inbox":["handoff/04-test-plan.md"],"outbox":["quality/coverage.txt","quality/mutation.txt"],"result":"coverage <N>%; mutation: <killed>/<total> | mutation: SKIPPED — <reason>","ts":"<UTC ISO>"}` (on a skip, `outbox` has no `mutation.txt`).
+
 Spawn a fresh, read-only whole-diff reviewer —
 `subagent_type: sdlc-lite:code-reviewer` (Opus/medium; pinned in
 `agents/code-reviewer.md`). "One senior engineer reviewing the entire PR": fresh context
 kills anchoring, a stronger model than the implementer kills monoculture. Its inbox:
 `01-requirements.md` + the full design + `04-test-plan.md` (its thresholds) + the
-**whole change** (tests + `<code_root>/`) + the standards.
+**whole change** (tests + `<code_root>/`) + `quality/coverage.txt` + `quality/mutation.txt`
+(unless skipped; your results) + the standards. When skipped, put
+`mutation: SKIPPED — <reason>` in the brief.
 
 **It reviews across six quality dimensions** (borrowed from the `claude-sdlc` profile
 backbone — scale each to the feature; state **`N/A — why`**, never silently drop one):
@@ -529,9 +556,9 @@ backbone — scale each to the feature; state **`N/A — why`**, never silently 
    idiomatic Python; the constraints in `01-requirements.md` honored.
 2. **Performance & scale** — the measurable signals the design flagged; no accidental
    O(n²)/N+1 or unbounded growth.
-3. **Testing pyramid** — the **slow checks** live here (deferred by split-by-speed):
-   **coverage** (`pytest --cov=<code_root>`) and **mutation** (`mutmut run` → kill-rate) vs
-   the `04-test-plan.md` thresholds. Surviving mutants = weak tests; call out untested lines.
+3. **Testing pyramid** — the **slow checks** (deferred by split-by-speed): it **reads the
+   results files** (coverage, per-mutant kill list) vs the `04-test-plan.md` thresholds.
+   Surviving mutants = weak tests; call out untested lines.
 4. **Security** — injection/quoting, secrets, filesystem, dependency surface.
 5. **Reliability & resilience** — timeout/retry/backoff/idempotency at every boundary in the
    inventory; concurrency (races/deadlocks/ordering/cancellation) if `01-requirements.md` flagged it.
@@ -565,8 +592,10 @@ Make the human's review fast and focused — **guide the eye; do not dump a diff
 - the list of **changed files**, with a recommended **review order**;
 - **one line per file** — why it matters / where the key change is;
 - **pointers to every findings file** under `<artifact_dir>/handoff/`:
-  `06-test-review-findings.md`, `07-verify-report.md`, `08-code-review-findings.md`, and
-  the audit `run-log.jsonl` (what each agent did, which model, what it read).
+  `06-test-review-findings.md`, `07-verify-report.md`, `08-code-review-findings.md`, the
+  measured `quality/coverage.txt` + `quality/mutation.txt`, and the audit `run-log.jsonl`
+  (what each agent did, which model, what it read). If mutation was skipped, state
+  `mutation: SKIPPED — <reason>` (the Gate 2 deviation).
 
 The observability from every gate pays off here: the human can drill into any agent's work
 rather than re-reviewing everything from scratch.
@@ -627,6 +656,8 @@ the report** next to the handoff dir via `--out`:
 - **Per-gate model split** — each isolated gate's pinned model + tokens (the evidence for
   "reviews ran on a higher model than implementation").
 - **Per-agent activity** + token/cost totals.
+- **Mutation** — the kill rate, or `mutation: SKIPPED — <reason>`, taken from the Gate 7
+  measure record in the run-log (the analyzer does not emit it).
 
 The analyzer only **measures** — it never blocks or edits. (Any past run can be re-analyzed
 later with the standalone `/sdlc-lite:analyze-run` command.) The pipeline (Gates
