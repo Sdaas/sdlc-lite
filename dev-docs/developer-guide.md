@@ -38,6 +38,7 @@ Paths are under `sdlc-lite-plugin/`. Tiers: T1 = eval, T2 = pytest, T3 = contain
 | What an agent may read / write | the agent's prose inbox **and** `policy.py` | [`architecture.md`](architecture.md) §3 inbox table, §5 rules | T2 (`tests/test_policy.py`) + T1 |
 | A new guard rule | `policy.py` (+ `hooks/scripts/guard.py` / `hooks.json` matcher for a new tool) | architecture §5 rules table | T2 (+ T3 if `hooks.json`) |
 | Add or rename a skill / command | `skills/<x>/` — **never** a `commands/<x>.md` of the same name (ADR-14) | `policy.PLUGIN_SKILL_NAMES` | T2 (`tests/test_entry_points.py`) + `verify-entry-points.py` |
+| The toolchain floors or what `/sdlc-init` sets up | `toolchain/requirements-dev.txt`, `toolchain/setup_check.py` (measure only), `skills/sdlc-init/SKILL.md` | fixtures (`test-fixtures/`, `evals/_fixtures/python-starter.sh`) must match what it writes | T2 (`tests/test_setup_check.py`) + T1 `--tag sdlc-init` + T3 (`ENTRY=/sdlc-init VENV=1`) |
 | Analyzer logic | `analyzer/*.py` | [`analyzer/README.md`](../sdlc-lite-plugin/analyzer/README.md) | T2 |
 | Transcript format drifted | `analyzer/transcript.py` | [`TRANSCRIPT-FORMAT.md`](../sdlc-lite-plugin/analyzer/TRANSCRIPT-FORMAT.md) | T2 + a T3 run |
 | A structural decision | new `adr/ADR-NN-slug.md` | row in [`adr/README.md`](adr/README.md) | review |

@@ -6,7 +6,8 @@ This file provides guidance to Claude Code when working in this repository.
 
 - Ships the `sdlc-lite` plugin: `/implement-feature` turns a one-line feature request into a
   reviewed, tested, committed Python change through an interview-driven, test-first,
-  human-in-the-loop workflow. The slash command is registered by the skill itself (ADR-14).
+  human-in-the-loop workflow; `/sdlc-init` sets a Python repo up for it (toolchain + config). Each
+  slash command is registered by its skill (ADR-14).
 - **`README.md`** — the single user-facing doc (install, setup, run, FAQ) for a real user on their
   own machine and repo. Developers are routed to `dev-docs/`.
 - **`dev-docs/`** — for someone improving the plugin. See `dev-docs/README.md` for the map:
@@ -71,7 +72,7 @@ This file provides guidance to Claude Code when working in this repository.
 What to edit for a given change, and how to verify it: `dev-docs/developer-guide.md` §2. Architecture:
 `dev-docs/architecture.md`. ADRs: `dev-docs/adr/`. The hard rules:
 - **Behavior lives in Markdown** (`SKILL.md`, `agents/*.md`, `references/*`, `hooks.json`). The only
-  real code is `guard.py` + `policy.py` (enforcement) and `analyzer/` + `agentdefs.py`
+  real code is `guard.py` + `policy.py` (enforcement) and `analyzer/` + `agentdefs.py` + `toolchain/setup_check.py`
   (measurement) — code may enforce or measure, never orchestrate.
 - **Isolated gates are spawned by the plugin-namespaced name** (`sdlc-lite:test-writer`), never the
   bare name.
