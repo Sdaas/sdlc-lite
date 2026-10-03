@@ -104,7 +104,8 @@ The toolchain, the Definition of "green", the coverage/mutation gates, and the
 concurrency policy live in **`references/quality-standards.md`** (in this skill's
 folder). Pass its **absolute path** to every subagent brief so each gate applies the same
 standard. This workflow is **prescriptive about the dev container** — it assumes the
-pinned toolchain from `toolchain/requirements-dev.txt` is installed.
+pinned toolchain from `toolchain/requirements-dev.txt` is installed — `/sdlc-init` installs it and
+configures the repo.
 
 > **Reference-file read tax (P53).** The skill's bundled `references/*.md` live in the
 > plugin install dir, *outside* the session's working dir, so Claude Code's default
@@ -188,14 +189,19 @@ Gate 0 below is the first application of this style; later STOP gates follow the
    Python environment — the command is reproduced here on purpose so you do **not** open
    `references/quality-standards.md` just to run it (that read trips the "read outside
    working directories" prompt — the reference-file read tax, P53):
-   `ruff --version && mypy --version && pytest --version && python -c "import
-   importlib.metadata as m; print('mutmut', m.version('mutmut'))"`. **Note:** mutmut is
-   version-checked via package metadata, **not** `mutmut --version` — mutmut eagerly loads
+   `ruff --version && mypy --version && pytest --version && python -c "import importlib.metadata
+   as m; [print(p, m.version(p)) for p in ('ruff','mypy','pytest','pytest-cov','mutmut','hypothesis','pytest-asyncio')]"`
+   (a package that is not installed raises `PackageNotFoundError` — that is a miss). **Note:**
+   mutmut is version-checked via package metadata, **not** `mutmut --version` — mutmut eagerly loads
    its config on *any* invocation and hard-fails outside a project with a discoverable
-   source layout, so `mutmut --version` would false-fail the preflight. **If any tool is
-   missing, STOP** and tell the human to install the pinned toolchain
-   (`toolchain/requirements-dev.txt`) into this repo's active Python environment — see the
-   sdlc-lite README. Do not proceed.
+   source layout, so `mutmut --version` would false-fail the preflight. **Also check mutmut is
+   configured:** a `[tool.mutmut]` table in `pyproject.toml` or a `[mutmut]` section in `setup.cfg`
+   (e.g. `python -c "import tomllib,configparser,pathlib as p; c=configparser.ConfigParser();
+   c.read('setup.cfg'); t=p.Path('pyproject.toml'); print('mutmut-config', 'mutmut' in
+   (tomllib.loads(t.read_text()).get('tool',{}) if t.exists() else {}) or c.has_section('mutmut'))"`).
+   **If any tool is missing or mutmut is not configured, STOP** — before anything else, in
+   particular before step 4's lock — render (a) below, telling the human to run `/sdlc-init`.
+   Gate 0 is a pure checker: never install, never edit config. Do not proceed.
 2. Restate the feature in **one sentence**. Confirm the stack is **Python** (this
    workflow targets Python).
 3. **Detect the code layout, human confirms.** Inspect `pyproject.toml` / `setup.cfg`,
@@ -283,9 +289,9 @@ Gate 0 below is the first application of this style; later STOP gates follow the
    glyph-led, terse on the happy path, expand only deviations.
 
    **(a) Preflight failed → terminal render (nothing else prints; the run STOPs):**
-   > 🔴 **Preflight failed — `<tool>` not found.** Install the pinned toolchain
-   > (`toolchain/requirements-dev.txt`) into this repo's active Python environment — see the
-   > sdlc-lite README (https://github.com/Sdaas/sdlc-lite) — then re-run. Stopping.
+   > 🔴 **Preflight failed — `<tool>` not found** *(or: **mutmut is not configured**)*. Run
+   > `/sdlc-init` in this repo to install the toolchain and add the config, then re-run
+   > `/implement-feature`. Stopping.
 
    **(b) Preflight passed → full Gate 0 summary:**
    > ✅ **Preflight passed** — ruff `<v>`, mypy `<v>`, pytest `<v>`, mutmut `<v>`. No

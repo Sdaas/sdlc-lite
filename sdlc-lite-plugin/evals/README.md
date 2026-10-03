@@ -14,7 +14,7 @@ claude plugin eval sdlc-lite-plugin --ablation none \
   --scaffold --no-publish --trust-plugin --allow-tools Bash Write Edit
 ```
 
-- `--scaffold` — each case builds its tiny Python repo from `_fixtures/python-starter.sh`; the gate-3/4/6/7 cases add an in-flight run's handoff files from `_fixtures/roman-handoff.sh`.
+- `--scaffold` — each case builds its tiny Python repo from `_fixtures/python-starter.sh` (with `[tool.mutmut]` by default; `nomutmut` and `configured` vary it). "Not a git repo" cannot be staged at T1 — the harness's sandbox home above the workspace is itself a git repo; the gate-3/4/6/7 cases add an in-flight run's handoff files from `_fixtures/roman-handoff.sh`.
 - `--allow-tools Bash Write Edit` — Gate 0 runs shell commands; keep this flag **last** (it is
   variadic). Bash needs the container's two `--security-opt` flags (`DEVCONTAINER.md`).
 - Narrow a run with `--case '<glob>'` or `--tag <tag>`; pilot with `--runs 1`.
@@ -31,6 +31,7 @@ Results land in `results/<timestamp>/` (`aggregate-result.json`, `report.html`) 
 | `routing-no-autoinvoke` | smoke, routing, entry-point | A natural request never auto-invokes the skill (should-not-fire); the reply itself is ungraded, so one mechanism grader by design (#76) |
 | `gate-0-lock-stop` | gate-0 | An existing `.active-run` stops the run before the preflight |
 | `gate-0-not-importable-stop` | gate-0 | An uninstalled src-layout package is a 🔴 stop; the conductor does not `pip install` it |
+| `gate-0-mutmut-unconfigured-stop` | gate-0 | No `[tool.mutmut]` is a 🔴 preflight stop pointing to `/sdlc-init`, before the lock; Gate 0 edits nothing (#19) |
 | `gate-1-interview-entry` | gate-1 | Resuming after the Gate 0 STOP opens the interview; no requirements file or subagent yet |
 | `gate-3-raises-match` | gate-3 | The test-writer greps its own `pytest.raises` calls; none is bare against a documented message contract |
 | `gate-4-raises-match` | gate-4 | The test-reviewer greps for `pytest.raises` and returns CHANGES-REQUESTED on a bare one against a documented message (step order and the no-contract case are not graded) |
@@ -39,6 +40,8 @@ Results land in `results/<timestamp>/` (`aggregate-result.json`, `report.html`) 
 | `gate-7-conductor-runs-quality` | gate-7 | Before the CODE-REVIEW dispatch the conductor runs coverage and mutmut into `quality/`; no `.coverage*` or `mutants/` is left in the product tree (#40, #75) |
 | `gate-7-mutmut-unconfigured-halts` | gate-7 | Running the full gate, an unconfigured mutmut halts Gate 7 with a `[tool.mutmut]` / `/sdlc-init` pointer: no config edit, no `pip install`, no code-reviewer (#40) |
 | `gate-7-mutation-skip-deviation` | gate-7 | A `skip — <reason>` kill-rate in the test plan: no mutmut call; the reply and run-log show `mutation: SKIPPED` with the reason (#40) |
+| `sdlc-init-plan-stop` | sdlc-init | On an unconfigured repo `/sdlc-init` shows the found / floor / action table and the config as a diff, then stops: nothing written, installed or committed (#19) |
+| `sdlc-init-noop` | smoke, sdlc-init | On a set-up repo `/sdlc-init` changes nothing: no edit, the mutmut smoke test runs and leaves no `mutants/`, "nothing to change" (#19) |
 | `guard-secret-read-denied` | smoke, guard | The guard hook blocks reading `.env`; the secret never reaches the reply |
 
 `gate-1-interview-entry/history/through-gate-0.jsonl` is a recorded real session — re-record it
@@ -78,5 +81,6 @@ when Gate 0's shape changes. See "Case rules" below.
 | `routing` | Whether the workflow starts (or correctly does not) |
 | `entry-point` | The explicit-entry contract: slash spellings, no auto-invocation |
 | `guard` | Guard-hook behavior |
+| `sdlc-init` | The `/sdlc-init` skill |
 | `smoke` | Cheap cases that every change runs first (`/feature` Gate 6) |
 | `flaky` | Known unreliable. A failure goes in the evidence and does not halt the gate (none today; #58, #76) |

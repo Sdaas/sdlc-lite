@@ -6,8 +6,8 @@
 
 ## Environment assumption
 This workflow runs in the target repo's active Python environment. The pinned toolchain
-(`toolchain/requirements-dev.txt`, shipped with the plugin) must be installed there —
-see the sdlc-lite README.
+(`toolchain/requirements-dev.txt`, shipped with the plugin) must be installed there and mutmut
+configured — `/sdlc-init` does both.
 
 ## Toolchain (pinned)
 | Tool | Purpose | Command |
@@ -22,12 +22,10 @@ see the sdlc-lite README.
 `<code_root>` is the package path the conductor names in each brief.
 
 ## Gate 0 preflight (hard-fail)
-Before any work, the conductor verifies the environment. **If any check fails, STOP and
-tell the human to install the pinned toolchain into this repo's active Python environment —
-do not proceed.**
-```
-ruff --version && mypy --version && pytest --version && python -c "import importlib.metadata as m; print('mutmut', m.version('mutmut'))"
-```
+Before any work, the conductor verifies the environment: every pinned package is installed and
+mutmut is configured (`[tool.mutmut]` in `pyproject.toml` or `[mutmut]` in `setup.cfg`). **If any
+check fails, STOP and tell the human to run `/sdlc-init` — do not proceed.** The exact command is
+inline in `SKILL.md` Gate 0 step 1 (the hot path never opens this file).
 
 > **Why not `mutmut --version`?** mutmut eagerly loads its config on *any* invocation and
 > hard-fails when run outside a project with a discoverable source layout (e.g. a bare
