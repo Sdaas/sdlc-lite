@@ -209,8 +209,8 @@ forever regardless.
 the prose routes correctly, not that a named invocation works. `"Add a --json flag to the
 exporter"` — not `"run /implement-feature"`.
 
-**2. Write the case before the prose it verifies.** Run it first; it should fail, or pass for the
-wrong reason. That is this repo's "red" (`verification-ladder.md` § 6). A case written afterwards
+**2. Write the case before the prose it verifies.** Run it first; it must fail. That is this
+repo's "red" (`verification-ladder.md` § 6). A case written afterwards
 tends to encode what you already did rather than what you meant.
 
 **3. Never leak the answer into the prompt.** `"Check that the gate refuses to commit without

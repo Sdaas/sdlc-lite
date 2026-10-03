@@ -1,6 +1,6 @@
 ---
 name: feature
-description: Implement one GitHub issue for this repo (plugin prose, hooks, or guard/policy/agentdefs/analyzer code) through the repo-local spine — gates 0–11 with 4 human STOPs (scope, design, tests, implementation), eval cases before prose, opus reviews before any eval spend, and no commit before approval. Declines docs-only and shell-only changes.
+description: Implement one GitHub issue for this repo (plugin prose, hooks, or guard/policy/agentdefs/analyzer code) through the repo-local spine — gates 0–11 with 4 human STOPs (scope, design, tests, implementation), eval cases before prose, opus reviews before the verify spend, and no commit before approval. Declines docs-only and shell-only changes.
 disable-model-invocation: true
 argument-hint: "#NN [optional note]"
 ---
