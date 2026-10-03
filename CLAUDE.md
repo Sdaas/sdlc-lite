@@ -47,7 +47,11 @@ This file provides guidance to Claude Code when working in this repository.
     is plan-mode-worthy** (multiple sessions, multiple phases, or structurally complex; otherwise the
     GitHub issue is the plan). It carries the locked decisions, the phased plan with testing, and a
     progress tracker. **Checked in on the feature branch, `git rm`'d in the merge/close commit.**
-- Temp/scratch files go to `/tmp/` or end in `.tmp`, deleted when done.
+- **Temp files:** throwaway working files (scripts, intermediate data) go to `/tmp/` or the session
+  scratchpad, or end in `.tmp`, and are deleted when done. **Anything the user is meant to read**
+  (reports, findings, drafts, diffs, command output) is written to the **repo root** as
+  `<name>.md.tmp` (gitignored via `*.tmp`) and left in place for review. Delete every root
+  `*.md.tmp` with plain `rm` in the merge/close commit step, alongside `git rm <NN>-plan.md`.
 
 ## Running / testing
 - **Never install the plugin into the Mac's global `~/.claude`.** Development runs happen in the

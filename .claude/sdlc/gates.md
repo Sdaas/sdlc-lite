@@ -45,7 +45,7 @@ the ladder. This file only names them.
 | **8 REGRESSION** | [C] | Existing eval cases, fail-fast: `smoke`-tagged first, then those tagged with the areas the diff touched. Plus `pytest` if code changed. Never the full suite. | |
 | **9 REVIEW-GUIDE** | [C] | Changed files in review order, one line each; the Gate 7/8 evidence (per case, pass/fail, "1 run", results dir; `flaky` failures and diagnostic re-runs marked as such); the Gate 4 and 6 findings and how each was resolved; the proposed commit split (with a plan file: its own `git rm` commit last). | |
 | **10 HUMAN REVIEW** | [C]↔H | The human reviews the implementation with the evidence in hand. T3, if declared, is attested here. Change requests route to the gate that owns them, then the run re-converges forward. | **④ implementation** |
-| **11 COMMIT** | [C]↔H | Re-check HEAD is not `main`. Commit the Gate 9 split, referencing `#NN`. At close, `git rm <NN>-plan.md` (it went in with the first commit), ask the human **"open a PR, or merge to `main`?"** (merge = `--no-ff` into `main`; push only when asked), then close the issue. | |
+| **11 COMMIT** | [C]↔H | Re-check HEAD is not `main`. Commit the Gate 9 split, referencing `#NN`. At close, `git rm <NN>-plan.md` (it went in with the first commit) and `rm` any root `*.md.tmp` review files (gitignored; root `CLAUDE.md` → Temp files), ask the human **"open a PR, or merge to `main`?"** (merge = `--no-ff` into `main`; push only when asked), then close the issue. | |
 
 A skill may **add** gates between these (e.g. `/fix`'s REPRODUCE, DEPOSIT) or **omit** a range
 (`/issue` runs none of them). It never renumbers or rewords a spine gate.
