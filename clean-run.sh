@@ -202,8 +202,8 @@ for slug in "${SLUGS[@]}"; do
   fixture_check="set -e
 cd '$run'
 [[ \"\$(git branch --show-current)\" == main ]] || { echo 'not on main'; exit 1; }
-# Tracked files only: setup-fixture's 'pip install -e .' leaves an untracked *.egg-info.
-[[ -z \"\$(git status --porcelain --untracked-files=no)\" ]] || { echo 'baseline modified'; exit 1; }
+# Untracked files count too: the fixture's .gitignore covers what 'pip install -e .' writes.
+[[ -z \"\$(git status --porcelain)\" ]] || { echo 'baseline modified'; exit 1; }
 for pkg in src/*/; do
   name=\"\$(basename \"\$pkg\")\"; [[ \"\$name\" == *.egg-info ]] && continue
   (cd /tmp && python -c \"import \$name\") || { echo \"import \$name failed\"; exit 1; }

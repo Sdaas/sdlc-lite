@@ -17,6 +17,7 @@ container ([`DEVCONTAINER.md`](../dev-docs/DEVCONTAINER.md)). Tier context:
 |---|---|
 | `pyproject.toml` | src-layout; package from slug (`roman-numeral` → `src/roman_numeral/`) |
 | `src/<pkg>/greet.py` + `tests/test_greet.py` | shared, deliberately boring module: `greet(name) -> f"Hello, {name}!"`, `ValueError` on empty/whitespace. Identical in every fixture |
+| `.gitignore` | `*.egg-info/`, `__pycache__/`, `.pytest_cache/`, so the tree is still clean after `pip install -e .` (`clean-run.sh` checks untracked files too). Not `.coverage`: if a run leaves one, it should show up as dirty |
 | `BRIEF.md` | the literal one-line request, verbatim, so a receipt difference means the workflow changed, not the wording |
 
 ## Fixtures
