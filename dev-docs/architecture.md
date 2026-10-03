@@ -7,14 +7,15 @@ behavior; this file is the map.
 
 ---
 
-## 1. Four parts, no orchestration code
+## 1. Five parts, no orchestration code
 
 | Part | File(s) | Job |
 |---|---|---|
-| Skill | `skills/implement-feature/SKILL.md` | the ordered script of gates, loops, stop conditions |
+| Skill | `skills/implement-feature/SKILL.md` · `skills/sdlc-init/SKILL.md` | the ordered script of gates, loops, stop conditions · one-time repo setup (conductor-only) |
 | Agent defs | `agents/*.md` | pin each isolated gate's model, effort, tools |
 | Guard hook | `hooks/hooks.json` → `hooks/scripts/guard.py` + `policy.py` | enforce isolation on every tool call |
 | Analyzer | `analyzer/` + `agentdefs.py` | measure what actually happened, after the run |
+| Setup check | `toolchain/setup_check.py` | measure what a repo lacks for `/implement-feature` (read-only; `/sdlc-init` does the writing) |
 
 - The agent is the runtime: it reads `SKILL.md` and executes it.
 - Code may **enforce** or **measure**, never orchestrate (ADR-5).

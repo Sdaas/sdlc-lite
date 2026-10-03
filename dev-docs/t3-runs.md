@@ -49,6 +49,7 @@ header comment is the full spec.
 | `make` | Does |
 |---|---|
 | `make t3-start SLUG=<slug>` | Reset + fixture (`clean-run.sh <slug>`), pre-trust `/workspaces/<slug>-run`, start tmux session `t3` with the entry prompt from the fixture's `BRIEF.md`. |
+| `make t3-start SLUG=<slug> ENTRY=/sdlc-init VENV=1` | The `/sdlc-init` T3 (#19): `ENTRY` replaces the entry prompt (no BRIEF); `VENV=1` first builds `~/t3-venv` (`ruff==0.5.0`, fixture editable), strips the run copy's mutmut/pytest/coverage config and `.gitignore` lines (committed clean), and launches claude with the venv on `PATH`. |
 | `make t3-attach` | Attach this terminal to the session. Same as `docker exec -it -u vscode -e TERM=xterm-256color sdlc-lite-test tmux attach -t t3`. |
 | `make t3-peek` | Print the current screen, without attaching. |
 | `make t3-watch` | Stream one line per change until the run ends (below). |

@@ -9,9 +9,10 @@ clean-run:
 
 # Hands-off T3 runs (#66): the session runs in tmux inside the container.
 # Guide: dev-docs/t3-runs.md. E.g. make t3-start SLUG=roman-numeral, then make t3-attach.
+# Optional: ENTRY=/sdlc-init (default /implement-feature), VENV=1 (~/t3-venv, config stripped).
 t3-start:
 	@test -n "$(SLUG)" || { echo "usage: make t3-start SLUG=<fixture slug>" >&2; exit 2; }
-	./t3-run.sh start $(SLUG)
+	./t3-run.sh start $(SLUG) $(if $(ENTRY),ENTRY=$(ENTRY)) $(if $(VENV),VENV=$(VENV))
 
 t3-attach:
 	@./t3-run.sh attach

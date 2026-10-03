@@ -98,7 +98,7 @@ claude plugin marketplace add Sdaas/claude-plugins   # the umbrella / release ch
 claude plugin install sdlc-lite@sdaas                # version-pinned to the released tag
 ```
 
-Then install the pinned toolchain and run `/implement-feature` — full walkthrough in the
+Then run `/sdlc-init` in your repo (pinned toolchain + config) and `/implement-feature` — full walkthrough in the
 [README](../README.md). To update to a newer release: refresh the marketplace, then
 `claude plugin update sdlc-lite`.
 

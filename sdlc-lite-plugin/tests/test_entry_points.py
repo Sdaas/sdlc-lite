@@ -45,21 +45,27 @@ def test_no_command_shadows_a_skill():
     )
 
 
-def test_the_skill_still_owns_the_entry_point():
+SHIPPED_SKILLS = ["implement-feature", "sdlc-init"]
+
+
+@pytest.mark.parametrize("name", SHIPPED_SKILLS)
+def test_the_skill_still_owns_the_entry_point(name):
     """The entry point users type must keep existing as a skill after the command is gone."""
-    assert "implement-feature" in _skill_names()
-    assert (PLUGIN / "skills/implement-feature/SKILL.md").read_text().startswith("---")
+    assert name in _skill_names()
+    assert (PLUGIN / f"skills/{name}/SKILL.md").read_text().startswith("---")
 
 
 # --- 2. explicit entry ------------------------------------------------------
 
 @pytest.mark.parametrize("skill", [
     "sdlc-lite:implement-feature",
+    "sdlc-lite:sdlc-init",
     "sdlc-lite:analyze-run",
     "sdlc-lite:some-future-workflow",
     # (#56) the harness namespaces plugin skills, but a bare id must not be a way in.
     "implement-feature",
     "  implement-feature  ",
+    "sdlc-init",
 ])
 def test_this_plugins_skills_are_never_auto_invoked(skill):
     d = policy.skill_invoke_decision(skill)
@@ -68,11 +74,12 @@ def test_this_plugins_skills_are_never_auto_invoked(skill):
     assert "/" in d.reason  # the denial tells the user which slash command to type
 
 
-def test_the_denial_names_the_slash_command_for_both_spellings():
+@pytest.mark.parametrize("name", SHIPPED_SKILLS)
+def test_the_denial_names_the_slash_command_for_both_spellings(name):
     """Bare and namespaced must produce the SAME advice — `/implement-feature`, not
     `/sdlc-lite:implement-feature` and not a truncated name."""
-    for spelling in ("implement-feature", "sdlc-lite:implement-feature"):
-        assert "/implement-feature" in policy.skill_invoke_decision(spelling).reason
+    for spelling in (name, f"sdlc-lite:{name}"):
+        assert f"/{name}" in policy.skill_invoke_decision(spelling).reason
 
 
 @pytest.mark.parametrize("skill", [
@@ -93,7 +100,8 @@ def test_the_bare_name_list_matches_what_the_plugin_ships():
     assert set(policy.PLUGIN_SKILL_NAMES) == _skill_names()
 
 
-@pytest.mark.parametrize("skill", ["sdlc-lite:implement-feature", "implement-feature"])
+@pytest.mark.parametrize("skill", ["sdlc-lite:implement-feature", "implement-feature",
+                                   "sdlc-lite:sdlc-init", "sdlc-init"])
 def test_guard_denies_a_skill_tool_call(skill):
     """End-to-end through the guard's own decision function, not just the policy."""
     sys.path.insert(0, str(PLUGIN / "hooks" / "scripts"))
@@ -125,8 +133,9 @@ def _frontmatter(path: Path) -> dict[str, str]:
             (ln.partition(":") for ln in lines[1:end] if ":" in ln and not ln.startswith(" "))}
 
 
-def test_the_description_does_not_withhold_ordinary_help():
-    desc = _frontmatter(PLUGIN / "skills/implement-feature/SKILL.md")["description"].lower()
+@pytest.mark.parametrize("name", SHIPPED_SKILLS)
+def test_the_description_does_not_withhold_ordinary_help(name):
+    desc = _frontmatter(PLUGIN / f"skills/{name}/SKILL.md")["description"].lower()
     assert "explicit entry only" in desc and "never invoke it yourself" in desc
     for withholding in ("reply only", "do not start the work", "no exploring"):
         assert withholding not in desc, f"description withholds help: {withholding!r}"

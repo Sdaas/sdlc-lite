@@ -1,16 +1,17 @@
-# Pinned dev toolchain for /implement-feature.
-# This is the SINGLE SOURCE OF TRUTH for the tools every gate relies on. It is
-# installed into the dev container (see .devcontainer postCreateCommand) so the
-# Gate 0 preflight finds them. The workflow assumes it runs inside that container.
+# Dev toolchain floors for /implement-feature.
+# This is the SINGLE SOURCE OF TRUTH for the tools every gate relies on. `/sdlc-init` reads it
+# (toolchain/setup_check.py) and pip-installs whatever is missing or below its floor; it also
+# goes into the dev container (see .devcontainer postCreateCommand), so the Gate 0 preflight
+# finds them.
 #
-# NOTE: these are conservative floors. After the first clean install inside the
-# container, FREEZE exact versions (`uv pip freeze`) into a lockfile so runs are
-# reproducible. Do not rely on "latest".
+# NOTE: these are floors, never exact pins (`/sdlc-init` never downgrades), and only `>=` or a
+# bare name is allowed. After the first clean install inside the container, FREEZE exact
+# versions (`uv pip freeze`) into a lockfile so runs are reproducible.
 
 ruff>=0.6            # lint + format         (IMPLEMENT inner loop)
 mypy>=1.11           # static type checking  (IMPLEMENT inner loop) — CI-gate checker
 pytest>=8.0          # unit/api/e2e tests    (IMPLEMENT inner loop)
 pytest-cov>=5.0      # coverage              (CODE-REVIEW gate)
-mutmut==3.8.0        # mutation testing      (CODE-REVIEW gate) — pinned: Gate 7 relies on 3.x (`results --all`, `mutants/`)
+mutmut>=3            # mutation testing      (CODE-REVIEW gate) — Gate 7 relies on 3.x (`results --all`, `mutants/`, `source_paths`)
 hypothesis>=6.100    # property-based / stress (concurrency + edge cases, when applicable)
 pytest-asyncio>=0.23 # async test support    (concurrency features, when applicable)

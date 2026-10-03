@@ -9,11 +9,23 @@
 # The full journey (who does what, when) is in dev-docs/t3-runs.md.
 #
 # SUBCOMMANDS
-#   start <slug>  1. ./clean-run.sh <slug> — reset the container, set up the fixture.
+#   start <slug> [ENTRY=<prompt>] [VENV=1]
+#                 1. ./clean-run.sh <slug> — reset the container, set up the fixture.
 #                 2. Pre-trust /workspaces/<slug>-run in ~/.claude.json (jq merge, like
 #                    post-start.sh does for /workspaces/sdlc-lite), so no trust dialog.
+#                 2b. VENV=1 only (the /sdlc-init T3, #19): build ~/t3-venv in the container
+#                    (no system site packages) with ruff==0.5.0 (under the floor) and the
+#                    fixture installed editable; strip the run copy's [tool.mutmut],
+#                    [tool.pytest.ini_options], [tool.coverage.run] tables and three of the
+#                    /sdlc-init .gitignore lines (.coverage*, .implement-feature/,
+#                    if-runlog.jsonl — mutants/ and *.egg-info/ stay: the editable
+#                    install committed next would otherwise dirty the tree), and commit that so the tree is clean.
+#                    claude then runs with the venv first on PATH: no mutmut, old ruff,
+#                    unconfigured — what /sdlc-init has to fix.
 #                 3. Start tmux session `t3` in the fixture dir, running
 #                    claude --model opus "/implement-feature <BRIEF.md>"
+#                    or, with ENTRY=<prompt> other than /implement-feature (e.g. /sdlc-init),
+#                    claude --model opus "<ENTRY>" (no BRIEF).
 #                    with .env sourced for auth. The script types the entry prompt; the
 #                    human only answers the plugin's STOPs. Just before, it touches
 #                    $START_MARKER in the container: `watch` reads only transcripts newer
@@ -49,8 +61,9 @@
 #
 # Usage (on the Mac, from anywhere in the repo; Docker Desktop must be running):
 #   ./t3-run.sh start roman-numeral
+#   ./t3-run.sh start roman-numeral ENTRY=/sdlc-init VENV=1
 #   ./t3-run.sh attach | peek | watch | stop
-#   make t3-start SLUG=roman-numeral   ·   make t3-attach | t3-peek | t3-watch | t3-stop
+#   make t3-start SLUG=roman-numeral [ENTRY=/sdlc-init] [VENV=1]   ·   make t3-attach | t3-peek | t3-watch | t3-stop
 #
 set -euo pipefail
 
@@ -219,12 +232,49 @@ cd "$(git rev-parse --show-toplevel)"
 
 case "$cmd" in
   start)
-    [[ $# -eq 1 ]] || die "usage: ./t3-run.sh start <slug>"
-    slug="$1"
+    [[ $# -ge 1 ]] || die "usage: ./t3-run.sh start <slug> [ENTRY=<prompt>] [VENV=1]"
+    slug="$1"; shift
+    entry="/implement-feature"; venv=""
+    for opt in "$@"; do
+      case "$opt" in
+        ENTRY=*) entry="${opt#ENTRY=}" ;;
+        VENV=*)  venv="${opt#VENV=}" ;;
+        *) die "unknown option: $opt (ENTRY=<prompt> | VENV=1)" ;;
+      esac
+    done
+    [[ -n "$entry" ]] || entry="/implement-feature"
     [[ -d "$FIXTURES/$slug" ]] || die "no such fixture: $FIXTURES/$slug"
     run="/workspaces/${slug}-run"
 
     ./clean-run.sh "$slug"
+
+    if [[ "$venv" == 1 ]]; then
+      echo
+      echo "── t3: VENV=1 — ~/t3-venv, run copy stripped of /sdlc-init config ──"
+      # The run copy is a git repo on main (setup-fixture.sh); commit the stripped state so
+      # `git status` starts clean and /sdlc-init's own changes are the only diff.
+      dexec "set -euo pipefail
+rm -rf ~/t3-venv
+python -m venv ~/t3-venv
+~/t3-venv/bin/pip install --quiet ruff==0.5.0
+~/t3-venv/bin/pip install --quiet -e $run
+cd $run
+python - <<'PY'
+import re, pathlib
+p = pathlib.Path('pyproject.toml')
+s = p.read_text()
+for t in ('tool.mutmut', 'tool.pytest.ini_options', 'tool.coverage.run'):
+    s = re.sub(r'\n?\[' + re.escape(t) + r'\]\n(?:(?!\[).*\n?)*', '\n', s)
+p.write_text(s.rstrip('\n') + '\n')
+g = pathlib.Path('.gitignore')
+drop = {'.coverage*', '.implement-feature/', 'if-runlog.jsonl'}
+g.write_text(''.join(l for l in g.read_text().splitlines(True) if l.strip() not in drop))
+PY
+git add -A
+git commit -q -m 'fixture baseline: stripped of /sdlc-init config'
+[[ -z \"\$(git status --porcelain)\" ]]"
+      echo "  ~/t3-venv ready; run copy committed clean"
+    fi
 
     echo
     echo "── t3: pre-trust $run ─────────────────────────────────────────────"
@@ -243,11 +293,21 @@ rm -f \"\$tmp\""
     # devcontainer exec (not docker exec) so the tmux server — and so claude — gets the
     # container's remoteEnv (DISABLE_AUTOUPDATER). BRIEF.md is read inside the fixture.
     # shellcheck disable=SC2016  # $(cat BRIEF.md) expands inside the tmux pane, on purpose
-    launch='set -a; source '"$WS"'/.env; set +a; exec claude --model '"$MODEL"' "/implement-feature $(cat BRIEF.md)"'
+    if [[ "$entry" == "/implement-feature" ]]; then
+      prompt='"/implement-feature $(cat BRIEF.md)"'
+    else
+      prompt="\"$entry\""
+    fi
+    pre=""
+    if [[ "$venv" == 1 ]]; then
+      # shellcheck disable=SC2016  # $HOME expands inside the tmux pane, on purpose
+      pre='export PATH=$HOME/t3-venv/bin:$PATH VIRTUAL_ENV=$HOME/t3-venv; '
+    fi
+    launch="${pre}"'set -a; source '"$WS"'/.env; set +a; exec claude --model '"$MODEL"' '"$prompt"
     devcontainer exec --workspace-folder . \
       tmux new-session -d -s "$SESSION" -x 200 -y 50 -c "$run" "$launch" >/dev/null
     has_session || die "tmux session '$SESSION' did not start"
-    echo "  started: claude --model $MODEL \"/implement-feature <$slug BRIEF.md>\" in $run"
+    echo "  started: claude --model $MODEL ${prompt//\$(cat BRIEF.md)/<$slug BRIEF.md>} in $run${venv:+ (venv ~/t3-venv)}"
     echo
     echo "Attach from a Mac terminal (repo root):  make t3-attach"
     echo "   or:  docker exec -it -u vscode -e TERM=xterm-256color $CONTAINER tmux attach -t $SESSION"
@@ -282,5 +342,5 @@ rm -f \"\$tmp\""
     ;;
 
   -h|--help) usage ;;
-  *) die "unknown subcommand: $cmd (start <slug> | attach | peek | watch | stop)" ;;
+  *) die "unknown subcommand: $cmd (start <slug> [ENTRY=…] [VENV=1] | attach | peek | watch | stop)" ;;
 esac

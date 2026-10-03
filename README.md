@@ -35,7 +35,7 @@ What that buys you:
    /plugin install sdlc-lite@sdaas
    ```
 2. Make sure your target project is a git repo.
-3. Install the required toolchain into that repo's environment (see Prerequisites below).
+3. Run `/sdlc-init` in that repo: it installs the required toolchain and adds the test/coverage/mutation config (see Prerequisites below).
 4. Run `/implement-feature` and point it at a GitHub issue, a file, or a 1-2 line description of the feature.
 
 ---
@@ -115,22 +115,20 @@ commands in** (use a virtualenv for your project):
 | `hypothesis` | property/stress tests | when the feature is concurrent/async |
 | `pytest-asyncio` | async test support | when the feature is concurrent/async |
 
-The plugin ships the pinned list at
-`sdlc-lite-plugin/toolchain/requirements-dev.txt`. Install it into your project's environment,
-either from the file (after `claude plugin install`, it lives under your Claude Code plugins cache,
-in a directory named for the installed version) or by name:
+**The easy way: run `/sdlc-init` in your repo.** It
+- reads the floors the plugin ships (`toolchain/requirements-dev.txt`) and shows what is installed, what is missing and what is below its floor;
+- after **one approval**, `python -m pip install`s the missing or too-old packages into the active environment (never downgrades, never creates a venv);
+- adds only the *missing* `pyproject.toml` tables (`[tool.mutmut]`, `[tool.pytest.ini_options]`, `[tool.coverage.run]`) and `.gitignore` lines, each shown as a diff first, then smoke-tests `mutmut`. It never commits, and a second run changes nothing.
+
+Manual fallback: the plugin ships the floors at `sdlc-lite-plugin/toolchain/requirements-dev.txt`
+(after `claude plugin install`, under your Claude Code plugins cache, in a directory named for the
+installed version), or install by name:
 
 ```bash
-# from the pinned file (<version> = the installed version, e.g. 0.0.9;
-# `ls ~/.claude/plugins/cache/sdaas/sdlc-lite/` shows it):
-pip install -r ~/.claude/plugins/cache/sdaas/sdlc-lite/<version>/toolchain/requirements-dev.txt
-
-# or simply, by name (the pinned floors):
-pip install ruff mypy pytest pytest-cov mutmut==3.8.0 hypothesis pytest-asyncio
+pip install "ruff>=0.6" "mypy>=1.11" "pytest>=8.0" "pytest-cov>=5.0" "mutmut>=3" "hypothesis>=6.100" "pytest-asyncio>=0.23"
 ```
 
-> **A `/sdlc-init` command that installs the toolchain and configures your repo is planned for
-> `0.1.0`** ([#19](https://github.com/Sdaas/sdlc-lite/issues/19)). Until then, this manual step is expected.
+You then also need a `[tool.mutmut]` table with `source_paths = ["<your package dir>/"]` in `pyproject.toml`.
 
 ### 3. Grant the plugin directory a one-time read permission
 
@@ -201,8 +199,8 @@ of the commit. Browse `handoff/` top-to-bottom (files are numbered in read order
 ## Troubleshooting
 
 **"Preflight failed — `<tool>` not found."**
-A required tool isn't importable in the active environment. Install the toolchain (above) into the same
-Python environment Claude Code runs commands in, then re-run.
+A required tool isn't importable in the active environment, or mutmut isn't configured. Run `/sdlc-init`
+in your repo (it installs into the same Python environment Claude Code runs commands in), then re-run.
 
 **"`<pkg>` is not importable — a src-layout package that isn't installed."**
 Your source package isn't on `sys.path`, so the test suite would go *falsely* red and could never reach
@@ -298,7 +296,7 @@ toy-greet-plugin/              # a minimal 2-gate example plugin (used by the Tu
 This repo's root `.claude-plugin/marketplace.json` is the **dev** catalog
 (`name: sdlc-lite-dev`, a live directory source used by the maintainer + dev container). It carries:
 
-- **`sdlc-lite`** — the product this repo exists to ship (command `/implement-feature`).
+- **`sdlc-lite`** — the product this repo exists to ship (commands `/implement-feature` and `/sdlc-init`).
 - **`toy-greet`** — a two-file, two-gate `/greet` workflow kept as the Tutorial's runnable example
   (tutorial-only; never published to customers).
 
