@@ -65,12 +65,9 @@ Current milestone: **`0.1.0`**.
 
 ### Open — in execution order
 
-1. **#19** — `feat(skill): /sdlc-init — set a Python repo up for /implement-feature`
-   *Gate 0 then stops with "run `/sdlc-init`" when the toolchain or `[tool.mutmut]` is missing.
-   Proven on a fixture copy with the config removed; the fixtures' config must match its output.*
-2. **#81** — `fix(skill): critic briefs don't state the pip install/uninstall guard rule`
+1. **#81** — `fix(skill): critic briefs don't state the pip install/uninstall guard rule`
    *Follow-up to #68: states guard rule 9 in the critic briefs. Before #63, which re-checks the pin against that prose.*
-3. **#63** — `chore(skill): re-evaluate the dated reviewer pin claude-opus-4-8`
+2. **#63** — `chore(skill): re-evaluate the dated reviewer pin claude-opus-4-8`
    *Last, so the reviewer pin is re-checked against the final prose.*
 
 ### Closed
@@ -100,6 +97,7 @@ Current milestone: **`0.1.0`**.
 | **#44** `feat(repo): ship the python-starter fixtures configured as /sdlc-init would leave them` | 2026-10-03 (`2cc5e42`) | By hand (tooling, pre-#70): `roman-numeral` ships `[tool.mutmut]` `source_paths`, ignores `mutants/`, and kills all 6 baseline mutants. T3: Gate 7 ran `mutmut run` once (51/51, no setup loop). #19 now pins `mutmut>=3` (#40 then pinned `==3.8.0`). |
 | **#40** `feat(gate-7): the conductor runs coverage and mutmut; the code-reviewer only reads results` + **#75** `fix(guard-hook): critic's pytest --cov writes .coverage into the product tree` | 2026-10-03 (`9352965`) | `/feature` run: before the Gate 7 dispatch the conductor measures into `<artifact_dir>/quality/` (`COVERAGE_FILE`, `mutmut results --all true`, `mutants/` removed); a mutmut error halts with a `/sdlc-init` pointer; `skip — <reason>` is the only skip. The guard denies critics `mutmut` / `pytest --cov`; `mutmut==3.8.0` pinned. T3 `roman-numeral`: no `.coverage*` / `mutants/` in the product tree, reviewer 0 denials. |
 | **#68** `fix(guard-hook): read-only critics can run pip install and repoint the user's environment` | 2026-10-03 (`ad9c486`) | `/fix` run, reproduced at T2 (guard subprocess test, 6/6 red): `policy.changes_environment()` denies critics `pip`/`pip3`/`pipX.Y` install/uninstall, `python -m pip`, `uv pip install/uninstall/sync` (rule `critic-env-change`, architecture.md §5 row 9); conductor and implementer unaffected. Gate 8 smoke 3/3. No T3; critic briefs don't mention pip yet. |
+| **#19** `feat(skill): /sdlc-init — set a Python repo up for /implement-feature` | 2026-10-03 (`4e4f110`) | `/feature` run: `/sdlc-init` measures with read-only `toolchain/setup_check.py` (found / floor / action table + missing config), shows one plan, applies it after approval, runs a `mutmut run "*__mutmut_1"` smoke test, never commits; a 2nd run is a no-op. Gate 0 checks all seven pins + mutmut config and stops with "run `/sdlc-init`". `mutmut>=3`; both fixtures carry exactly its config. T3 `roman-numeral` (`ENTRY=/sdlc-init VENV=1`): install + upgrade, no-op re-run, `/implement-feature` through Gate 7 (mutmut 90.9%), #68 import check held; `git init` offer attested in a non-git copy (T1 can't stage "not a repo"). |
 
 ## Next release — `0.2.0` (the planning suite)
 
