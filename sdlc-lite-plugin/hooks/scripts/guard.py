@@ -197,7 +197,8 @@ def _bash_deny_reason(agent_type: str, command: str, handoff: str) -> str | None
         return (_DENY_PREFIX + "handoff/draft/ holds unapproved drafts. Subagents read "
                 "only promoted files under handoff/. (Conductor promotes on approval.)")
 
-    # (c0) #40/#75: critics never run coverage/mutmut (the conductor does, at Gate 7).
+    # (c0) #40/#75/#68: critics never run coverage/mutmut (the conductor does, at Gate 7) nor
+    #      change the Python environment (pip install/uninstall).
     d = policy.critic_bash_decision(agent_type, command)
     if not d.allowed:
         return _DENY_PREFIX + d.reason

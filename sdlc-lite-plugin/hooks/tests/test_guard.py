@@ -496,3 +496,24 @@ def test_conductor_may_run_quality_tools(tmp_path):
     rc, _ = run_guard(call("Bash", "mutmut run"),
                       env_extra={"IF_RUNLOG": str(tmp_path / "l.jsonl")})
     assert rc == 0
+
+
+# --- #68: critics may not change the Python environment (pip install/uninstall) ---
+
+@pytest.mark.parametrize("agent", [
+    "sdlc-lite:test-reviewer", "sdlc-lite:verifier", "sdlc-lite:code-reviewer",
+])
+@pytest.mark.parametrize("cmd", ["pip install -e .", "pip uninstall -y roman-numeral"])
+def test_critics_denied_pip_install_and_logged(agent, cmd, tmp_path):
+    log = tmp_path / "l.jsonl"
+    rc, out = run_guard(call("Bash", cmd, agent_type=agent), env_extra={"IF_RUNLOG": str(log)})
+    assert rc == 2
+    assert "conductor" in json.loads(out)["hookSpecificOutput"]["permissionDecisionReason"]
+    assert json.loads(log.read_text().strip())["guard_decision"] == "deny"
+
+
+@pytest.mark.parametrize("agent", ["", "sdlc-lite:implementer"])
+def test_conductor_and_implementer_may_pip_install(agent, tmp_path):
+    rc, _ = run_guard(call("Bash", "pip install -e .", agent_type=agent),
+                      env_extra={"IF_RUNLOG": str(tmp_path / "l.jsonl")})
+    assert rc == 0
