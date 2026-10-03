@@ -54,7 +54,7 @@ proves the tooling before later releases depend on it.
 | Customer-visible features | #19 |
 | Customer-visible fixes / hardening | #75, #40, #68, #63 |
 | Internal SDLC improvements | — |
-| Internal SDLC fixes / hardening | #44 |
+| Internal SDLC fixes / hardening | — |
 
 On 2026-10-02 **#43 and #74 were parked to the backlog**: textual shell parsing in the guard proved
 to be whack-a-mole, and the write policy will be rethought first (rationale on #43).
@@ -65,17 +65,15 @@ Current milestone: **`0.1.0`**.
 
 ### Open — in execution order
 
-1. **#44** — `feat(repo): ship the python-starter fixtures configured as /sdlc-init would leave them`
-   *Before #40: its dry runs need a fixture where mutmut runs.*
-2. **#40** — `feat(gate-7): the conductor runs coverage and mutmut; the code-reviewer only reads results`
+1. **#40** — `feat(gate-7): the conductor runs coverage and mutmut; the code-reviewer only reads results`
    **+ #75** — `fix(guard-hook): critic's pytest --cov writes .coverage into the product tree`
    *One change: moving coverage to the conductor fixes #75, which closes with #40.*
-3. **#68** — `fix(guard-hook): read-only critics can run pip install and repoint the user's environment`
+2. **#68** — `fix(guard-hook): read-only critics can run pip install and repoint the user's environment`
    *After #40 removes the reviewer's reason to install anything; #68 covers what remains (seen in #61's run).*
-4. **#19** — `feat(skill): /sdlc-init — set a Python repo up for /implement-feature`
+3. **#19** — `feat(skill): /sdlc-init — set a Python repo up for /implement-feature`
    *Gate 0 then stops with "run `/sdlc-init`" when the toolchain or `[tool.mutmut]` is missing.
    Proven on a fixture copy with the config removed; the fixtures' config must match its output.*
-5. **#63** — `chore(skill): re-evaluate the dated reviewer pin claude-opus-4-8`
+4. **#63** — `chore(skill): re-evaluate the dated reviewer pin claude-opus-4-8`
    *Last, so the reviewer pin is re-checked against the final prose.*
 
 ### Closed
@@ -102,6 +100,7 @@ Current milestone: **`0.1.0`**.
 | **#76** `fix(skill): a plain request should get ordinary help; the routing case grades only auto-invocation` | 2026-10-02 (`072980a`) | Third `/fix` run, reproduced at T2 (`test_entry_points.py` §3): the description forbids only self-invocation, not ordinary help; `routing-no-autoinvoke` grades only auto-invocation (8/8, `flaky` removed); ADR-14 records why the workflow is opt-in. |
 | **#71** `fix(repo): resolve contradictions and gaps in the repo-local spine` | 2026-10-03 (`07b2803`) | By hand, opus cold read before/after: 9 contradictions → 0. Adds *halt*, a `→ DESIGN` route, the whole-change diff (intent-to-add + merge-base), resume rules; "red" = the case fails. Remaining gaps → #79 (backlog). |
 | **#67** `fix(repo): setup-fixture.sh leaves an untracked *.egg-info in every fixture run` | 2026-10-03 (`9f384cb`) | By hand (tooling, pre-#70): the fixture template ships a `.gitignore` (not `.coverage`) and `clean-run.sh` counts untracked files again, so a dirty `git status` after a dry run is the workflow's doing. #70 needs another tooling issue as its proof run. |
+| **#44** `feat(repo): ship the python-starter fixtures configured as /sdlc-init would leave them` | 2026-10-03 (`2cc5e42`) | By hand (tooling, pre-#70): `roman-numeral` ships `[tool.mutmut]` `source_paths`, ignores `mutants/`, and kills all 6 baseline mutants. T3: Gate 7 ran `mutmut run` once (51/51, no setup loop). #19 now pins `mutmut>=3`. |
 
 ## Next release — `0.2.0` (the planning suite)
 
