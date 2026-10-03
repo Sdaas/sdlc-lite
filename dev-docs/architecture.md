@@ -142,6 +142,7 @@ disallowedTools: Write, Edit
 | 6 | Write-confinement | test-reviewer, verifier, code-reviewer | writes outside their outbox + scratch dir |
 | 7 | Explicit-entry | all | any `Skill` call to this plugin's skills (ADR-14) |
 | 8 | Critic-quality-tool | test-reviewer, verifier, code-reviewer | Bash `mutmut …` / `pytest --cov…` (they write `.coverage` / `mutants/` into the tree; the conductor runs them at Gate 7, #40; known gap: `analyzer/runlog.py` has no matching detective check, so a denial shows only as `guard_decision: deny`) |
+| 9 | Critic-env-change | test-reviewer, verifier, code-reviewer | Bash `pip`/`pip3`/`pipX.Y` `install`/`uninstall`, `python -m pip …`, `uv pip install/uninstall/sync` (they rewrite site-packages and can repoint the user's installed package, #68; same analyzer gap as row 8) |
 
 **How the hook finds the run.** A hook doesn't inherit the conductor's env.
 - It reads `.implement-feature/.active-run` to find the run-log.

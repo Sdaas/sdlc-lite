@@ -193,3 +193,33 @@ def test_runs_quality_tool_sees_through_launch_prefixes():
 def test_runs_quality_tool_quoted_pipe_is_not_a_segment():
     assert not policy.runs_quality_tool('grep "a|mutmut run" notes.txt')
     assert not policy.runs_quality_tool("coverage report")   # reads .coverage, writes nothing
+
+
+# --- #68: critics never change the Python environment (pip install/uninstall) ---------
+def test_changes_environment_detects_pip_forms():
+    for cmd in ("pip install -e .", "pip3 uninstall -y roman-numeral", "pip3.12 install x",
+                "python -m pip install x", "python3 -m pip uninstall -y x",
+                "/usr/bin/python3 -m pip install -e .", "uv pip install x",
+                "uv pip uninstall x", "uv pip sync requirements.txt", "uv run pip install x",
+                "env PIP_NO_INPUT=1 pip install x", "pip -q install x",
+                "cd /tmp/mut && pip install -e ."):
+        assert policy.changes_environment(cmd), cmd
+
+
+def test_changes_environment_ignores_read_only_and_mentions():
+    for cmd in ("pip list", "pip show roman-numeral", "pip freeze", "python -m pip list",
+                "uv pip list", "uv pip freeze", "grep 'pip install' README.md", "echo pip install",
+                "python -m pytest -q"):
+        assert not policy.changes_environment(cmd), cmd
+
+
+def test_critic_bash_decision_denies_env_change_for_every_critic():
+    for agent in (TR, VER, CR):
+        d = policy.critic_bash_decision(agent, "pip install -e .")
+        assert not d.allowed and d.rule == "critic-env-change", agent
+        assert "pip" in d.reason and "conductor" in d.reason, agent
+
+
+def test_critic_bash_decision_allows_env_change_for_conductor_and_implementer():
+    for agent in (CONDUCTOR, IMPL):
+        assert policy.critic_bash_decision(agent, "pip install -e .").allowed, agent

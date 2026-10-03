@@ -322,7 +322,24 @@ def _is_assignment(tok: str) -> bool:
     return bool(re.match(r"[A-Za-z_][A-Za-z0-9_]*=", tok))
 
 
-def _segment_runs_quality_tool(toks: list[str]) -> bool:
+def _segments(command: str):
+    """Yield each command segment's token list: tokenize, split on separator TOKENS (a
+    quoted `|` is not one), strip `()` from tokens, drop empty segments."""
+    seg: list[str] = []
+    for tok in bash_tokens(strip_heredocs(command)) + [";"]:
+        if tok in _SEP_TOKENS:
+            if seg:
+                yield seg
+            seg = []
+        else:
+            tok = tok.strip("()")
+            if tok:
+                seg.append(tok)
+
+
+def _segment_program(toks: list[str]) -> tuple[str, list[str]]:
+    """(program basename, its args) for one segment, past `VAR=val`, `env`/`nice`/`time`,
+    `timeout N` and `uv run`; `python* -m X` unwraps to (X, args after X). ("", []) if empty."""
     i = 0
     while i < len(toks):                      # skip VAR=val and the launchers
         t = toks[i]
@@ -338,14 +355,19 @@ def _segment_runs_quality_tool(toks: list[str]) -> bool:
             break
     toks = toks[i:]
     if not toks:
-        return False
+        return "", []
     prog = os.path.basename(toks[0])
     rest = toks[1:]
     if prog.startswith("python") and "-m" in rest:
         k = rest.index("-m")                  # `-m` may follow other leading options
         if k + 1 >= len(rest):
-            return False
+            return "", []
         prog, rest = rest[k + 1], rest[k + 2:]
+    return prog, rest
+
+
+def _segment_runs_quality_tool(toks: list[str]) -> bool:
+    prog, rest = _segment_program(toks)
     if prog == "mutmut":
         return True
     if prog == "coverage":
@@ -361,18 +383,31 @@ def runs_quality_tool(command: str) -> bool:
     mention (`grep mutmut f`, `echo --cov`) is not a run. Known gaps: `bash -c "..."`, a
     launcher option that takes a value (`nice -n 5`, `timeout -s KILL`), `sudo`/`xargs`, and a
     pytest config whose `addopts` carries `--cov`; the transcript auditor is the backstop."""
-    toks = bash_tokens(strip_heredocs(command))
-    seg: list[str] = []
-    for tok in toks + [";"]:
-        if tok in _SEP_TOKENS:
-            if _segment_runs_quality_tool(seg):
-                return True
-            seg = []
-        else:
-            tok = tok.strip("()")
-            if tok:
-                seg.append(tok)
+    return any(_segment_runs_quality_tool(seg) for seg in _segments(command))
+
+
+def _first_non_option(toks: list[str]) -> str:
+    return next((t for t in toks if not t.startswith("-")), "")
+
+
+def _segment_changes_environment(toks: list[str]) -> bool:
+    prog, rest = _segment_program(toks)
+    if re.fullmatch(r"pip\d*(\.\d+)?", prog):
+        return bool(rest) and _first_non_option(rest) in ("install", "uninstall")
+    if prog == "uv" and rest[:1] == ["pip"]:
+        return _first_non_option(rest[1:]) in ("install", "uninstall", "sync")
     return False
+
+
+def changes_environment(command: str) -> bool:
+    """#68 (best-effort): True if a Bash command RUNS `pip install|uninstall` (also
+    `python -m pip …`, `uv run pip …`) or `uv pip install|uninstall|sync`. A critic's
+    `pip install` rewrites site-packages and repoints the user's installed package, so the
+    environment belongs to the conductor and the user. Reads (`pip list|show|freeze`) and
+    mere mentions (`grep 'pip install' f`, `echo pip install`) are not a run. Known gaps:
+    `sudo`, `bash -c "..."`, `xargs`, and a pip option that takes a value before the
+    subcommand (`pip --log x install`); the transcript auditor is the backstop."""
+    return any(_segment_changes_environment(seg) for seg in _segments(command))
 
 
 @dataclass
@@ -388,7 +423,8 @@ _ALLOW = Decision(allowed=True)
 def critic_bash_decision(agent_type: str, command: str) -> Decision:
     """#40/#75: a write-confined critic may not run coverage or mutmut — they write
     `.coverage*` / `mutants/` into the product tree. The conductor measures at Gate 7 and
-    the critic grades the results files; producers and the conductor are unaffected."""
+    the critic grades the results files; producers and the conductor are unaffected.
+    #68: nor may it change the Python environment (`pip install`/`uninstall`)."""
     pol = POLICY.get(role_of(agent_type) or "")
     if pol and pol.write_confined and runs_quality_tool(command):
         return Decision(False, "critic-quality-tool",
@@ -396,6 +432,12 @@ def critic_bash_decision(agent_type: str, command: str) -> Decision:
                         "runs them at Gate 7. Grade quality/coverage.txt and "
                         "quality/mutation.txt; if one is missing, report that as a finding "
                         "(except mutation.txt when the brief says mutation: SKIPPED).")
+    if pol and pol.write_confined and changes_environment(command):
+        return Decision(False, "critic-env-change",
+                        f"{role_of(agent_type)} never changes the Python environment "
+                        "(pip install/uninstall) — the environment belongs to the conductor "
+                        "and the user. If a dependency or install is missing, report it as a "
+                        "finding; do not retry or work around it.")
     return _ALLOW
 
 
