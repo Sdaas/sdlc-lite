@@ -465,7 +465,7 @@ PLUGIN_SKILL_PREFIX = "sdlc-lite:"
 #   - any BARE id naming a skill we actually ship — listed here rather than globbed off disk,
 #     because this module is pure (no I/O). `test_entry_points.py` asserts the list matches
 #     `skills/`, so adding a skill without updating this constant fails the suite.
-PLUGIN_SKILL_NAMES = frozenset({"implement-feature"})
+PLUGIN_SKILL_NAMES = frozenset({"implement-feature", "sdlc-init"})
 
 
 def is_plugin_skill(skill: str) -> bool:

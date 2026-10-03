@@ -12,3 +12,10 @@ where = ["src"]
 
 [tool.mutmut]
 source_paths = ["src/roman_numeral/"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["src/roman_numeral"]
+branch = true

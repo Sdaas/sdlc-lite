@@ -2,3 +2,6 @@
 __pycache__/
 .pytest_cache/
 mutants/
+.coverage*
+.implement-feature/
+if-runlog.jsonl
