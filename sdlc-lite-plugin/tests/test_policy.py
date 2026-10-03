@@ -148,3 +148,48 @@ def test_bash_wildcard_handoff_reads():
     # An explicit (non-glob) handoff read is fine; a glob NOT over handoff is fine.
     assert policy.bash_wildcard_handoff_reads("cat handoff/01-requirements.md") == []
     assert policy.bash_wildcard_handoff_reads("ls tests/*.py") == []
+
+
+# --- #40/#75: critics never run the quality tools (the conductor does, at Gate 7) ---------
+def test_runs_quality_tool_detects_mutmut_and_pytest_cov():
+    for cmd in ("mutmut run", "mutmut results --all true", "cd /r && mutmut results",
+                "python -m pytest --cov=romankit", "pytest -q --cov-report=term-missing",
+                "/usr/bin/python3 -m pytest --cov romankit tests",
+                "python -m mutmut run"):
+        assert policy.runs_quality_tool(cmd), cmd
+
+
+def test_runs_quality_tool_ignores_plain_tests_and_mentions():
+    for cmd in ("pytest -q", "python -m pytest tests", "grep mutmut pyproject.toml",
+                "cat mutants.txt", "cat quality/coverage.txt", "echo --cov"):
+        assert not policy.runs_quality_tool(cmd), cmd
+
+
+def test_critic_bash_decision_denies_every_confined_critic():
+    for agent in (TR, VER, CR):
+        d = policy.critic_bash_decision(agent, "mutmut run")
+        assert not d.allowed and d.rule == "critic-quality-tool", agent
+        assert not policy.critic_bash_decision(agent, "pytest --cov=x").allowed, agent
+
+
+def test_critic_bash_decision_allows_conductor_and_producers():
+    for agent in (CONDUCTOR, IMPL, TW):
+        assert policy.critic_bash_decision(agent, "mutmut run").allowed, agent
+
+
+def test_critic_bash_decision_allows_critics_plain_pytest():
+    assert policy.critic_bash_decision(CR, "python -m pytest -q").allowed
+
+
+def test_runs_quality_tool_sees_through_launch_prefixes():
+    # Gate 6 review: env assignments and launcher wrappers must not hide the run.
+    for cmd in ("COVERAGE_FILE=x pytest --cov=romankit", "env A=1 mutmut run",
+                "timeout 600 mutmut run", "uv run mutmut run", "(mutmut run)",
+                "python -X dev -m pytest --cov", "coverage run -m pytest",
+                "python -m coverage run -m pytest"):
+        assert policy.runs_quality_tool(cmd), cmd
+
+
+def test_runs_quality_tool_quoted_pipe_is_not_a_segment():
+    assert not policy.runs_quality_tool('grep "a|mutmut run" notes.txt')
+    assert not policy.runs_quality_tool("coverage report")   # reads .coverage, writes nothing

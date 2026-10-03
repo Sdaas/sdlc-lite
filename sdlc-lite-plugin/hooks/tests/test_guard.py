@@ -230,7 +230,7 @@ BENIGN_BASH = [
     "python3 -c 'import secrets; print(secrets.token_hex(8))'",
     "grep -r environ src/",
     "echo my_api_key=redacted",           # bare identifier, not a file
-    "mutmut run",
+    "ruff check src",                     # was `mutmut run` — critics may no longer run it (#40)
 ]
 
 
@@ -477,4 +477,22 @@ def test_dispatch_agent_tool_name_also_allowed():
 def test_dispatch_alias_pinned_agent_without_model_is_allowed():
     # A producer pinned to the `sonnet` alias also dispatches bare — the frontmatter pin governs.
     rc, _ = run_guard(dispatch("sdlc-lite:implementer"))
+    assert rc == 0
+
+
+# --- #40/#75: critics may not run coverage or mutmut (side-effect writes) ---
+
+@pytest.mark.parametrize("agent", [
+    "sdlc-lite:test-reviewer", "sdlc-lite:verifier", "sdlc-lite:code-reviewer",
+])
+@pytest.mark.parametrize("cmd", ["mutmut run", "python -m pytest --cov=romankit"])
+def test_critics_denied_quality_tools(agent, cmd, tmp_path):
+    rc, _ = run_guard(call("Bash", cmd, agent_type=agent),
+                      env_extra={"IF_RUNLOG": str(tmp_path / "l.jsonl")})
+    assert rc == 2
+
+
+def test_conductor_may_run_quality_tools(tmp_path):
+    rc, _ = run_guard(call("Bash", "mutmut run"),
+                      env_extra={"IF_RUNLOG": str(tmp_path / "l.jsonl")})
     assert rc == 0
