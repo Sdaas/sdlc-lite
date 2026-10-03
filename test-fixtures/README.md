@@ -15,9 +15,9 @@ container ([`DEVCONTAINER.md`](../dev-docs/DEVCONTAINER.md)). Tier context:
 
 | File | What |
 |---|---|
-| `pyproject.toml` | src-layout; package from slug (`roman-numeral` → `src/roman_numeral/`) |
-| `src/<pkg>/greet.py` + `tests/test_greet.py` | shared, deliberately boring module: `greet(name) -> f"Hello, {name}!"`, `ValueError` on empty/whitespace. Identical in every fixture |
-| `.gitignore` | `*.egg-info/`, `__pycache__/`, `.pytest_cache/`, so the tree is still clean after `pip install -e .` (`clean-run.sh` checks untracked files too). Not `.coverage`: if a run leaves one, it should show up as dirty |
+| `pyproject.toml` | src-layout; package from slug (`roman-numeral` → `src/roman_numeral/`). **Required:** a `[tool.mutmut]` section with `source_paths = ["src/<pkg>/"]` (the package dir, not a file), as `/sdlc-init` would leave it, so Gate 7 can run mutation |
+| `src/<pkg>/greet.py` + `tests/test_greet.py` | shared, deliberately boring module: `greet(name) -> f"Hello, {name}!"`, `ValueError` on empty/whitespace. The tests use an anchored `match=`, so mutmut kills every baseline mutant and Gate 7's kill rate measures only new code. Identical in every fixture |
+| `.gitignore` | `*.egg-info/`, `__pycache__/`, `.pytest_cache/`, `mutants/`, so the tree is still clean after `pip install -e .` and `mutmut run` (`clean-run.sh` checks untracked files too). Not `.coverage`: if a run leaves one, it should show up as dirty |
 | `BRIEF.md` | the literal one-line request, verbatim, so a receipt difference means the workflow changed, not the wording |
 
 ## Fixtures
