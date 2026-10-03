@@ -11,7 +11,8 @@ Announce each gate as you enter it (`Gate N — NAME`), so the human always know
 
 - **Never work on `main`.** Branch at Gate 0, before any edit.
 - **Stop at every STOP.** End the turn and wait; never chain two STOPs in one turn.
-- **Nothing is committed before STOP ④.** Silence is not approval.
+- **Nothing is committed before STOP ④, nor staged before Gate 11** (except the intent-to-add
+  entries of *Diffing the change*). Silence is not approval.
 - **No eval money before STOP ③** — except `/fix`'s T1 repro run, within the cap approved at STOP ①.
 - **One issue per run.** Scope creep found mid-run → offer `/issue` for it, don't absorb it.
 
@@ -27,9 +28,12 @@ Announce each gate as you enter it (`Gate N — NAME`), so the human always know
    one exception — a doc path the shipped `SKILL.md` prints).
 4. Take the minimum tier from [`dev-docs/verification-ladder.md`](../../dev-docs/verification-ladder.md)
    §3 (union across rows).
-5. `git status` must be clean. Create `<NN>-<slug>` from the **base** — `main` unless the human
-   names another (e.g. an unmerged branch the work builds on) — or switch to it if it exists.
-   Gates 6 and 9 diff against that base.
+5. **New branch:** `git status` must be clean; dirty → show it and **halt** (never stash, commit
+   or discard on your own). Create `<NN>-<slug>` from the **base** — `main` unless the human names
+   another (e.g. an unmerged branch the work builds on). Gates 6 and 9 diff against that base.
+   **The branch already exists** → switch to it; its uncommitted work is the run's own (nothing is
+   committed before Gate 11). Resume from `<NN>-plan.md`'s tracker; no plan file → **halt** and ask
+   which gate to resume at, and from which base. Never infer a past approval.
 6. Plan file: warranted only if the work is multi-session, multi-phase or structurally complex.
 
 ## Gate 1 — INTERVIEW
@@ -57,11 +61,12 @@ Run the route approved at STOP ①:
 - **T3** — nothing cheaper shows it: the STOP ① attestation stands, or run the dry run per Gate 7's
   T3 procedure.
 
-The route does not show the bug → **halt** (as a Gate 7 failure does, but with no diagnostic re-run; not an approval STOP): show
+The route does not show the bug → **halt** (no diagnostic re-run): show
 what was tried; the human approves another route (and its cap), narrows the issue, or closes it as
 not reproducible. Never move to a costlier route unapproved; never design a fix for an unreproduced
-bug. Record the tier, the case path (or the recipe), the red output, and the fingerprint
-`git hash-object <files>` over the case **and every fixture, conftest or helper it depends on**;
+bug. Record the tier, the case path (or the recipe), the red output, and — T1/T2 only — the
+fingerprint `git hash-object <files>` over the case **and every fixture, conftest or helper it
+depends on** (a T3 recipe has none);
 they open the Gate 2 design.
 
 ## Gate 2 — DESIGN
@@ -70,45 +75,54 @@ Present the items Gate 2 lists in `gates.md`, in that order. A case's prompt is 
 type — never the answer you expect (ladder §6, "simulating"). T3 declared → name the fixture (its
 `SLUG`), each piece of T3 evidence, and the fixture step that exercises it (e.g. a concurrency rule needs a fixture with
 shared state; a pure-function fixture never opens it). No fixture exercises it → pick another
-fixture, or drop that evidence and say what is left unproven. Write `<NN>-plan.md` now if Gate 0
-said so; it holds the design and a progress tracker.
+fixture, or drop that evidence and say what is left unproven.
 
-**STOP ②** — the design.
+**STOP ②** — the design. On approval, write `<NN>-plan.md` if Gate 0 said so; it holds the
+approved design and a progress tracker, updated at each gate exit.
 
 ## Gate 3 — WRITE-EVALS
 
 Write the cases under `sdlc-lite-plugin/evals/<case>/` (authoring: `dev-docs/eval-tutorial.md`);
-add a row to the case table in `sdlc-lite-plugin/evals/README.md`. Code change: write the `pytest`.
-Check the frontmatter parses. Run nothing that costs money. `/fix`: the reproducing case exists
+give each case `tags:` naming the areas it covers (Gate 8 selects by them) and add a row to the case
+table in `sdlc-lite-plugin/evals/README.md`. Code change: write the `pytest`. Check the frontmatter
+parses (the YAML fast check). Run nothing that costs money. `/fix`: the reproducing case exists
 from 1b; write only the other approved cases.
 
 ## Gate 4 — EVAL-REVIEW
 
 Spawn an ad-hoc subagent with **`model: opus`**. Brief: the issue body, the new case directories,
-the prose files they target, and the four eval-review checks copied from `gates.md`. It returns one
-line per check per case. Fix findings (Gate 3), re-review — at most twice.
+the prose files they target, and the four eval-review checks copied from `gates.md`; it may read any
+other repo file. No new eval case → brief it the new `pytest` and checks 2–3 only. It returns one
+line per check per case. Fix findings (Gate 3), re-review — the loop bound is in `gates.md` Rules.
 
-**STOP ③** — the cases (paths + one line each) and the review verdict.
+**STOP ③** — the cases (paths + one line each; none → the `pytest`) and the review verdict.
 
 ## Gate 5 — IMPLEMENT
 
-1. **Confirm red** — each new case once, in design order (see *Running a case*); new `pytest` red.
-   `/fix`: re-run the reproducing case only if its fingerprint changed since 1b; either way record
+1. **Confirm red** — every new case once, in design order (see *Running a case*), without
+   stopping at a red one; new `pytest` red.
+   `/fix`: re-run the reproducing case only if its fingerprint changed since its last red run; either way record
    the fingerprint of its last red run.
-   Record per case: fails · passes for the wrong reason (why) · **passes** (show it to the human).
+   Record per case: fails · **passes**. A pass is a
+   `→ WRITE-EVALS` finding: fix the case (Gate 3), re-run EVAL-REVIEW, bring the changed case back
+   to STOP ③, then confirm it red here before editing any prose.
 2. Edit. In this session by default; spawn an ad-hoc subagent with **`model: sonnet`** when the
    diff spans more than 3 files or touches `guard.py`, `policy.py` or `analyzer/` — its brief is the
    approved design and the red cases, nothing else. Agent read/write change → both the agent's
    prose inbox and `policy.py` (root `CLAUDE.md`).
-3. Run the fast checks until they pass.
+3. Run the fast checks; repair and re-run, at most twice, then **halt**.
+
+A case written or edited after step 2 (a `→ WRITE-EVALS` finding, or a Gate 10 change request) is
+confirmed red with the change stashed: `git stash push -u -- <changed prose/code files>`, run the
+case, `git stash pop`. Green → it is not testing the change; back to Gate 3.
 
 ## Gate 6 — CODE-REVIEW
 
-Spawn an ad-hoc subagent with **`model: opus`**. Brief: `git diff <base>...HEAD` plus the
-working-tree diff, the issue body, and the six dimensions and routing rules copied from `gates.md` —
-**not** your reasoning or the answer you expect. It returns one line per dimension (`OK` · finding
-with its `→ IMPLEMENT` / `→ WRITE-EVALS` target · `N/A — why`); a missing dimension → send it back
-once. Route findings per `gates.md`; fast checks after every fix; re-review at most twice.
+Spawn an ad-hoc subagent with **`model: opus`**. Brief: the output of *Diffing the change*, the
+issue body, and the six dimensions and routing rules copied from `gates.md`; it may read any other
+repo file — **not** your reasoning or the answer you expect. It returns one line per dimension (`OK` · finding
+with its `→ IMPLEMENT` / `→ WRITE-EVALS` / `→ DESIGN` target · `N/A — why`); a missing dimension → send it back
+once. Route findings per `gates.md`; fast checks after every fix; re-review within the loop bound.
 
 ## Gate 7 — VERIFY
 
@@ -124,14 +138,14 @@ once. Route findings per `gates.md`; fast checks after every fix; re-review at m
 `/fix`: always include the tier the bug was reproduced at, and run the reproducing case first
 (T2: `python3 -m pytest <file> -q`, then the suite).
 
-A failure stops here — see *When a case fails*; the human decides re-run, repair (→ Gate 5), or
+A failure **halts** here — see *When a case fails*; the human decides re-run, repair (→ Gate 5), or
 abandon.
 
 ## Gate 8 — REGRESSION
 
 Existing cases only, fail-fast, one run each: every `smoke` case first, then cases whose tags match
 the areas the diff touched (e.g. edited Gate 0 prose → `gate-0`), skipping ones run at Gate 7.
-List tags with `grep -h '^tags:' sdlc-lite-plugin/evals/*/prompt.md`. A failure stops here, as at
+List tags with `grep -h '^tags:' sdlc-lite-plugin/evals/*/prompt.md`. A failure **halts** here, as at
 Gate 7 (see *When a case fails*). Code changed → pytest again. Never the full suite (`/regression`).
 
 ## Gate 8b — DEPOSIT (`/fix` only)
@@ -139,11 +153,12 @@ Gate 7 (see *When a case fails*). Code changed → pytest again. Never the full 
 Checks only — 8b edits nothing. A failed check is a `→ WRITE-EVALS` finding (Gate 3, then back
 through STOP ③ and forward again).
 
-1. Recompute the fingerprint (same file set as 1b) and compare with the last red run's (1b or
+1. T1/T2: recompute the fingerprint (same file set as 1b) and compare with the last red run's (1b or
    Gate 5). Changed → stash the fix (`git stash push -u -- <fixed files>`), re-run the case as at 1b
    (T1 with the STOP ② cap), then `git stash pop`. It must be red; green means the case no longer
    reproduces the bug.
-2. Confirm it was green at Gate 7 (T3: the human's attestation stands in, at STOP ④).
+2. Confirm it was green at Gate 7. T3: no fingerprint and no stashed re-run — the human's
+   attestation (red at 1b, green at Gate 7) is the check, collected at STOP ④.
 3. T1 → its `tags:` name the areas it covers and its `evals/README.md` row exists. T2 → it sits
    where `python3 -m pytest sdlc-lite-plugin -q` collects it.
 4. T3-only → post the recipe on the issue (`gh issue comment NN --body-file <file>`) and ask the
@@ -153,21 +168,43 @@ Emit one line for Gate 9: `Deposit: <path or recipe> — <tier>, last red <1b|5|
 
 ## Gate 9 — REVIEW-GUIDE
 
-`git status` + `git diff --stat <base>...`, then the items Gate 9 lists in `gates.md`; `/fix` adds
+`git status` + the `--stat` form of *Diffing the change*, then the items Gate 9 lists in `gates.md`; `/fix` adds
 the Deposit line and puts the reproducing case in the same commit as the fix.
 
 ## Gate 10 — HUMAN REVIEW
 
 **STOP ④** — ask for approval of the implementation, plus the T3 attestation if declared. A change
-request → the owning gate (prose → 5, a case → 3 and back through STOP ③), then forward again.
+request → the owning gate (prose → 5, a case → 3 and back through STOP ③, the design → 2 and back
+through STOP ②), then forward again.
 
 ## Gate 11 — COMMIT
 
-Confirm HEAD is `<NN>-<slug>`, not `main`. Commit per logical unit, message
-`<type>(<area>): <summary> (#NN)`. At close: `git rm <NN>-plan.md` if one exists; tick the parent
-tracking plan's box if there is one. Ask **"open a PR, or merge to `main`?"** and do that. Then
+Confirm HEAD is `<NN>-<slug>`, not `main`. Commit the split approved at STOP ④ — one logical unit
+per commit, message `<type>(<area>): <summary> (#NN)`; a commit outside that split needs a fresh
+approval. `<NN>-plan.md`, if any, goes in the first commit. At close: `git rm <NN>-plan.md` in its
+own commit; if the issue has a parent issue, tick its box in the parent's checklist (never
+`dev-docs/release-plan.md`). Ask **"open a PR, or merge to `main`?"**:
+
+- **Merge** — `git checkout main && git merge --no-ff <NN>-<slug> -m "Merge branch '<NN>-<slug>' — <summary> (#NN)"`.
+- **PR** — `git push -u origin <NN>-<slug>`, then `gh pr create`.
+
+Push `main` only when the human asks. Then
 `gh issue close NN` with a one-line comment naming the merge or PR. Do not edit
 `dev-docs/release-plan.md` — roadmap ordering is the human's call.
+
+## Diffing the change (Gates 6, 9)
+
+Nothing is committed before Gate 11, so `<base>...HEAD` is empty and a plain `git diff` misses new
+files. Use:
+
+```bash
+git add -A -N && git diff "$(git merge-base <base> HEAD)"; git reset -q    # Gate 9: add --stat
+```
+
+`-N` (intent-to-add) makes untracked, non-ignored files show in the diff; `git reset -q` drops
+those entries at once — left in the index they break 8b's `git stash push -u`. Safe because nothing
+else is staged before Gate 11. The merge-base keeps commits that landed on the base mid-run out of
+the diff.
 
 ## Running a case
 

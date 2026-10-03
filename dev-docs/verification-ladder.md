@@ -188,7 +188,7 @@ Three of its gates therefore change shape rather than carrying over:
 - **Test-first becomes expectation-first.** You cannot cold-read a `SKILL.md` section that does not
   exist yet, so "write the failing test" does not transfer literally. What transfers is the
   assertion coming first: **write the eval case and its expected answer before editing the prose.**
-  Run it; it fails, or passes for the wrong reason. That is this repo's honest "red".
+  Run it; it must fail. That is this repo's honest "red" — a case that passes does not test the change.
 - **Isolation flips from withholding to simulating.** `sdlc-lite` curates inboxes to *withhold* —
   the test-writer never sees the internal design. Here the verifying agent must see **exactly what
   the real runtime agent will see, and nothing more.** Leaking your intent into the case — "check
