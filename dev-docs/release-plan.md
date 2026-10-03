@@ -52,7 +52,7 @@ proves the tooling before later releases depend on it.
 | Theme | Issues |
 |---|---|
 | Customer-visible features | #19 |
-| Customer-visible fixes / hardening | #75, #40, #68, #63 |
+| Customer-visible fixes / hardening | #75, #40, #68, #81, #63 |
 | Internal SDLC improvements | — |
 | Internal SDLC fixes / hardening | — |
 
@@ -68,7 +68,9 @@ Current milestone: **`0.1.0`**.
 1. **#19** — `feat(skill): /sdlc-init — set a Python repo up for /implement-feature`
    *Gate 0 then stops with "run `/sdlc-init`" when the toolchain or `[tool.mutmut]` is missing.
    Proven on a fixture copy with the config removed; the fixtures' config must match its output.*
-2. **#63** — `chore(skill): re-evaluate the dated reviewer pin claude-opus-4-8`
+2. **#81** — `fix(skill): critic briefs don't state the pip install/uninstall guard rule`
+   *Follow-up to #68: states guard rule 9 in the critic briefs. Before #63, which re-checks the pin against that prose.*
+3. **#63** — `chore(skill): re-evaluate the dated reviewer pin claude-opus-4-8`
    *Last, so the reviewer pin is re-checked against the final prose.*
 
 ### Closed
