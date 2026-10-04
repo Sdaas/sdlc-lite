@@ -29,14 +29,19 @@ What that buys you:
 
 ## Quick start
 
-1. Install the plugin:
+1. Install the plugin from a terminal:
+   ```bash
+   claude plugin marketplace add Sdaas/claude-plugins
+   claude plugin install sdlc-lite@sdaas
    ```
-   /plugin marketplace add Sdaas/claude-plugins
-   /plugin install sdlc-lite@sdaas
-   ```
-2. Make sure your target project is a git repo.
-3. Run `/sdlc-init` in that repo: it installs the required toolchain and adds the test/coverage/mutation config (see Prerequisites below).
-4. Run `/implement-feature` and point it at a GitHub issue, a file, or a 1-2 line description of the feature.
+2. In your Claude Code session, type `/reload-plugins` to load it.
+3. Make sure your target project is a git repo.
+4. Run `/sdlc-init` in that repo: it installs the required toolchain and adds the test/coverage/mutation config (see Prerequisites below).
+5. If your project uses a src-layout, run `pip install -e .` in it ([setup step 4](#4-make-your-source-package-importable)).
+6. Run `/implement-feature` and point it at a GitHub issue, a file, or a 1-2 line description of the feature.
+
+To update to a newer release, see [Updating](#updating). What changed in each release:
+[`CHANGELOG.md`](CHANGELOG.md).
 
 ---
 
@@ -162,6 +167,25 @@ troubleshooting section.
 
 ---
 
+## Updating
+
+The marketplace pins the plugin to a released tag, so you get a new release only when you update.
+From a terminal:
+
+```bash
+# refresh the umbrella marketplace, so it knows about the new release
+claude plugin marketplace update sdaas
+
+# move the installed plugin to that release
+claude plugin update sdlc-lite
+```
+
+Then type `/reload-plugins` in your Claude Code session, or restart the session. Check
+[`CHANGELOG.md`](CHANGELOG.md) for what changed and for any step the new release needs (for
+example, running `/sdlc-init` again).
+
+---
+
 ## Running a feature
 
 From a Claude Code session **in your project directory**:
@@ -274,6 +298,7 @@ the **[eval suite](sdlc-lite-plugin/evals/README.md)** (the cheap tier).
 ```
 README.md                      # this file — install + run, for a user of the plugin
 CLAUDE.md                      # guidance for Claude Code working in this repo
+CHANGELOG.md                   # what changed in each release
 dev-docs/
   README.md                    # audience + findings-vs-proposals split
   developer-guide.md           # hub: how to change the plugin
@@ -305,7 +330,7 @@ This repo's root `.claude-plugin/marketplace.json` is the **dev** catalog
 
 ## Status
 
-`sdlc-lite` is at **`0.0.9`** — `0.1.0` (process & tooling hardening) is in progress. It has been run
+What each release contains: [`CHANGELOG.md`](CHANGELOG.md). `sdlc-lite` has been run
 end-to-end against real Python features (a duration parser, a slugifier, and an async cached JSON
 fetcher), including a fault-injection pass, inside the dev container. See the [verification ladder](dev-docs/verification-ladder.md) for the testing methodology and
 [`dev-docs/adr/`](dev-docs/adr/README.md) for the recorded design decisions.
