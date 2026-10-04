@@ -21,33 +21,33 @@ SLUG = "proj"
 # --- verdict classifiers ---------------------------------------------------
 
 def test_classify_model_pass_fail_unknown():
-    assert classify_model("claude-opus-4-8", "claude-opus-4-8") == PASS
-    assert classify_model("claude-opus-4-8", "claude-sonnet-5") == FAIL  # mismatch is trust-voiding
-    assert classify_model(UNKNOWN, "claude-opus-4-8") == UNKNOWN         # skeleton state
-    assert classify_model("claude-opus-4-8", UNKNOWN) == UNKNOWN         # transcript blind
+    assert classify_model("claude-opus-5-5", "claude-opus-5-5") == PASS
+    assert classify_model("claude-opus-5-5", "claude-sonnet-5") == FAIL  # mismatch is trust-voiding
+    assert classify_model(UNKNOWN, "claude-opus-5-5") == UNKNOWN         # skeleton state
+    assert classify_model("claude-opus-5-5", UNKNOWN) == UNKNOWN         # transcript blind
 
 
 def test_model_matches_alias_accepts_any_same_family_tier():
     # An alias pin (no version digits) is satisfied by any resolved dated id in its family —
     # the transcript ALWAYS reports a resolved id, which an alias can never string-equal (#22).
     assert model_matches("sonnet", "claude-sonnet-4-5-20250929") is True
-    assert model_matches("opus", "claude-opus-4-8") is True
-    assert model_matches("sonnet", "claude-opus-4-8") is False   # wrong family
+    assert model_matches("opus", "claude-opus-5-5") is True
+    assert model_matches("sonnet", "claude-opus-5-5") is False   # wrong family
 
 
 def test_model_matches_dated_pin_demands_exact_id():
     # A dated/explicit pin (has version digits) demands an EXACT id — a silent tier drift
     # within the same family is a mismatch, honoring the dated pin's reproducibility intent.
-    assert model_matches("claude-opus-4-8", "claude-opus-4-8") is True
-    assert model_matches("claude-opus-4-8", "claude-opus-5") is False  # same family, drifted
-    assert model_matches("claude-opus-4-8", "claude-sonnet-4-5") is False
+    assert model_matches("claude-opus-5-5", "claude-opus-5-5") is True
+    assert model_matches("claude-opus-5-5", "claude-opus-5") is False  # same family, drifted
+    assert model_matches("claude-opus-5-5", "claude-sonnet-4-5") is False
 
 
 def test_classify_model_alias_pin_is_pass_against_resolved_id():
-    # The producers pin the `sonnet` alias; the transcript reports a resolved id -> PASS, not
+    # An alias pin (`sonnet`) is still supported by the matcher; the transcript reports a resolved id -> PASS, not
     # the false FAIL a naive string-equality would give.
     assert classify_model("sonnet", "claude-sonnet-4-5-20250929") == PASS
-    assert classify_model("claude-opus-4-8", "claude-opus-5") == FAIL  # dated drift
+    assert classify_model("claude-opus-5-5", "claude-opus-5") == FAIL  # dated drift
 
 
 def test_classify_effort_widened_both_directions_warn():
@@ -64,7 +64,7 @@ def _transcript(tmp_path):
     projects = tmp_path / "projects"
     (projects / SLUG).mkdir(parents=True)
     main = write_transcript(projects / SLUG / "s.jsonl",
-                            [assistant_turn("claude-opus-4-8", i=1, effort="medium")])
+                            [assistant_turn("claude-opus-5-5", i=1, effort="medium")])
     write_subagent(main, "agent-1",
                    [assistant_turn("claude-opus-5", i=2, effort="high")],
                    agent_type="sdlc-lite:code-reviewer")
@@ -81,7 +81,7 @@ def test_receipt_fills_actual_from_transcript_and_grants_from_runlog(tmp_path):
     receipts = {r.label: r for r in build_receipt(runlog, _transcript(tmp_path))}
 
     cond = receipts["conductor"]
-    assert cond.actual_model == "claude-opus-4-8"
+    assert cond.actual_model == "claude-opus-5-5"
     assert cond.actual_effort == "medium"
     assert (cond.grants, cond.denies) == (1, 0)
 
@@ -94,10 +94,10 @@ def test_receipt_fills_actual_from_transcript_and_grants_from_runlog(tmp_path):
 def test_receipt_pins_fill_requested_and_drive_verdicts(tmp_path):
     # #22: with the agent-def pins supplied, the requested columns fill and the verdicts
     # compare pin vs transcript. The fixture's code-reviewer ran on claude-opus-5 while pinned
-    # to the DATED claude-opus-4-8 -> model FAIL (drift); effort high==high -> PASS. The
+    # to the DATED claude-opus-5-5 -> model FAIL (drift); effort high==high -> PASS. The
     # conductor has no pin -> requested stays UNKNOWN (honest 'nothing to check').
     from agentdefs import AgentPin
-    pins = {"code-reviewer": AgentPin(model="claude-opus-4-8", effort="high")}
+    pins = {"code-reviewer": AgentPin(model="claude-opus-5-5", effort="high")}
     runlog = parse_runlog(str(write_runlog(tmp_path / "rl.jsonl", [
         call("", "Read", "SKILL.md", guard_decision="allow"),
         call("sdlc-lite:code-reviewer", "Read", "src/foo.py", guard_decision="allow"),
@@ -106,7 +106,7 @@ def test_receipt_pins_fill_requested_and_drive_verdicts(tmp_path):
                 build_receipt(runlog, _transcript(tmp_path), None, pins)}
 
     cr = receipts["code-reviewer"]
-    assert cr.requested_model == "claude-opus-4-8" and cr.actual_model == "claude-opus-5"
+    assert cr.requested_model == "claude-opus-5-5" and cr.actual_model == "claude-opus-5"
     assert cr.model_verdict == FAIL                       # dated pin drifted
     assert cr.requested_effort == "high" and cr.effort_verdict == PASS
 
@@ -115,13 +115,13 @@ def test_receipt_pins_fill_requested_and_drive_verdicts(tmp_path):
 
 
 def test_receipt_alias_pin_passes_against_resolved_id(tmp_path):
-    # A producer pinned to the `sonnet` alias, whose transcript reports a resolved dated id,
+    # A gate pinned to the `sonnet` alias (the matcher still supports aliases), whose transcript reports a resolved dated id,
     # must read PASS (the alias/dated-aware match), never a false FAIL.
     from agentdefs import AgentPin
     projects = tmp_path / "projects"
     (projects / SLUG).mkdir(parents=True)
     main = write_transcript(projects / SLUG / "s.jsonl",
-                            [assistant_turn("claude-opus-4-8", i=1, effort="medium")])
+                            [assistant_turn("claude-opus-5-5", i=1, effort="medium")])
     write_subagent(main, "impl", [assistant_turn("claude-sonnet-4-5-20250929", i=2,
                                                   effort="medium")],
                    agent_type="sdlc-lite:implementer")

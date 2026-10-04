@@ -6,7 +6,7 @@ Cite them as `ADR-N`. Evidence lives in [`../findings/`](../findings/).
 | ADR | Decision in one line |
 |---|---|
 | [ADR-1](ADR-01-isolation-plugin-hook.md) | Isolation is enforced by a plugin PreToolUse hook, not by removing tools. |
-| [ADR-2](ADR-02-dated-reviewer-pins.md) | Reviewers pin dated `claude-opus-4-8`; producers pin `sonnet`. |
+| [ADR-2](ADR-02-dated-reviewer-pins.md) | Every isolated gate pins a dated model: reviewers `claude-opus-5-5`, producers `claude-sonnet-5-5`. |
 | [ADR-3](ADR-03-interface-internal-design-split.md) | Test-writer gets the interface design, never the internal (algorithm) design. |
 | [ADR-4](ADR-04-product-vs-process.md) | Product in the repo on a branch; process artifacts in gitignored `.implement-feature/`. |
 | [ADR-5](ADR-05-measure-never-orchestrate.md) | Code may measure or enforce, never orchestrate; monitoring fails loud. |

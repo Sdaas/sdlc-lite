@@ -474,8 +474,8 @@ def test_dispatch_agent_tool_name_also_allowed():
     assert rc == 0
 
 
-def test_dispatch_alias_pinned_agent_without_model_is_allowed():
-    # A producer pinned to the `sonnet` alias also dispatches bare — the frontmatter pin governs.
+def test_dispatch_producer_agent_without_model_is_allowed():
+    # A producer pinned to a dated id also dispatches bare — the frontmatter pin governs.
     rc, _ = run_guard(dispatch("sdlc-lite:implementer"))
     assert rc == 0
 

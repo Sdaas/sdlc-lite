@@ -25,14 +25,14 @@ The receipt for the two guarantees — **(a) isolation** and **(b) bounded model
 
 | Agent | Model (req → actual) | Effort (req → actual) | Files seen | Grants / Denies |
 |---|---|---|---|---|
-| conductor | ❔ UNKNOWN → claude-sonnet-5 | ❔ UNKNOWN → medium | ❔ UNKNOWN | 118 / 0 |
-| code-reviewer | ✅ claude-opus-4-8 → claude-opus-4-8 | ✅ high → high | ✅ none | 22 / 0 |
-| implementer | ✅ sonnet → claude-sonnet-5 | ✅ medium → medium | ✅ none | 41 / 1 |
-| test-reviewer | ✅ claude-opus-4-8 → claude-opus-4-8 | ✅ low → low | ✅ none | 17 / 0 |
-| test-writer | ✅ sonnet → claude-sonnet-5 | ✅ medium → medium | ✅ none | 29 / 0 |
-| verifier | ✅ sonnet → claude-sonnet-5 | ✅ medium → medium | ✅ none | 13 / 0 |
+| conductor | ❔ UNKNOWN → claude-sonnet-5-5 | ❔ UNKNOWN → medium | ❔ UNKNOWN | 118 / 0 |
+| code-reviewer | ✅ claude-opus-5-5 → claude-opus-5-5 | ✅ high → high | ✅ none | 22 / 0 |
+| implementer | ✅ claude-sonnet-5-5 → claude-sonnet-5-5 | ✅ medium → medium | ✅ none | 41 / 1 |
+| test-reviewer | ✅ claude-opus-5-5 → claude-opus-5-5 | ✅ low → low | ✅ none | 17 / 0 |
+| test-writer | ✅ claude-sonnet-5-5 → claude-sonnet-5-5 | ✅ medium → medium | ✅ none | 29 / 0 |
+| verifier | ✅ claude-sonnet-5-5 → claude-sonnet-5-5 | ✅ medium → medium | ✅ none | 13 / 0 |
 
-_Legend: ✅ matches pin / no forbidden content · ⚠️ effort deviates (either direction) · ❌ model mismatch or content leak (run untrusted) · ❔ unknown (no pin, or transcript blind). Model match is alias/dated-aware: an alias pin (`sonnet`) accepts any same-family tier, a dated pin (`claude-opus-4-8`) demands an exact id. Grants / Denies is the guard's own decision per call; `(?N)` = N legacy calls with no recorded decision._
+_Legend: ✅ matches pin / no forbidden content · ⚠️ effort deviates (either direction) · ❌ model mismatch or content leak (run untrusted) · ❔ unknown (no pin, or transcript blind). Model match is alias/dated-aware: an alias pin (`sonnet`) accepts any same-family tier, a dated pin (`claude-opus-5-5`) demands an exact id. Grants / Denies is the guard's own decision per call; `(?N)` = N legacy calls with no recorded decision._
 
 ### Sources (for manual cross-check)
 
@@ -50,10 +50,10 @@ The exact evidence this receipt was derived from — open these to verify any ce
 Notes on reading the receipt:
 - The `implementer`'s `41 / 1` shows one **denied** call the guard blocked (e.g. an attempt to edit a
   test file). A denied call has no transcript effect, so the run-log is the only place it appears.
-- The producers' `sonnet` (an **alias**) matches the transcript's resolved `claude-sonnet-5` because
-  the match is family-aware for aliases; the reviewers' **dated** `claude-opus-4-8` must match the
-  actual id **exactly** (a silent opus-tier drift would read ❌).
-- The clean reviewer rows above (`✅ claude-opus-4-8 → claude-opus-4-8`) hold because pinned gates are
+- Every gate pins a **dated** id (reviewers `claude-opus-5-5`, producers `claude-sonnet-5-5`), so each
+  must match the actual id **exactly** (a silent tier drift would read ❌). Alias pins (e.g. `sonnet`)
+  remain supported by the matcher: they accept any same-family id.
+- The clean reviewer rows above (`✅ claude-opus-5-5 → claude-opus-5-5`) hold because pinned gates are
   **dispatched bare** (#36): the dated frontmatter pin is honored, not overridden by an alias-only
   inline model. (#22 once forced an inline model via a deny-if-unnamed hook, which broke exactly these
   dated pins → `claude-opus-5`; that leg was reverted in
@@ -69,10 +69,10 @@ offending cells to a trust-voiding verdict (the rest of the row still reports ho
 
 | Agent | Model (req → actual) | Effort (req → actual) | Files seen | Grants / Denies |
 |---|---|---|---|---|
-| code-reviewer | ❌ claude-opus-4-8 → claude-sonnet-5 | ✅ high → high | ✅ none | 22 / 0 |
-| test-writer | ✅ sonnet → claude-sonnet-5 | ✅ medium → medium | ❌ LEAK: 03-design-internal.md | 29 / 1 |
+| code-reviewer | ❌ claude-opus-5-5 → claude-sonnet-5-5 | ✅ high → high | ✅ none | 22 / 0 |
+| test-writer | ✅ claude-sonnet-5-5 → claude-sonnet-5-5 | ✅ medium → medium | ❌ LEAK: 03-design-internal.md | 29 / 1 |
 
-- **`❌ claude-opus-4-8 → claude-sonnet-5`** — a wrong-model launch: the reviewer ran on Sonnet, not
+- **`❌ claude-opus-5-5 → claude-sonnet-5-5`** — a wrong-model launch: the reviewer ran on Sonnet, not
   its pinned Opus. The receipt is the backstop that catches it — and the receipt is the *real*
   guarantee. (#22 once tried to *enforce* the model at dispatch via a deny-if-unnamed hook; that leg
   rested on a false premise and broke the dated pins, so it was reverted in

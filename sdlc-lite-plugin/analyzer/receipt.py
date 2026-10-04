@@ -36,7 +36,7 @@ _FAMILIES = ("opus", "sonnet", "haiku", "fable")
 
 
 def _family(model: str) -> str | None:
-    """The model family named in a model string, or None. `claude-opus-4-8`, `opus`,
+    """The model family named in a model string, or None. `claude-opus-5-5`, `opus`,
     `claude-3-opus-20240229` all -> 'opus'."""
     m = model.lower()
     return next((f for f in _FAMILIES if f in m), None)
@@ -44,9 +44,9 @@ def _family(model: str) -> str | None:
 
 def _is_alias(model: str) -> bool:
     """A floating alias (`sonnet`, `opus`) carries NO version digits; an explicit/dated id
-    (`claude-opus-4-8`, `claude-sonnet-4-5-20250929`) does. This is the split the repo's own
-    pinning rationale rests on: reviewers pin a DATED id for reproducible behavior, producers
-    pin a floating alias for the-latest-tier."""
+    (`claude-opus-5-5`, `claude-sonnet-4-5-20250929`) does. This is the split the repo's own
+    pinning rationale rests on: every shipped gate pins a DATED id so model bumps are deliberate;
+    aliases remain supported by the matcher though no shipped agent uses one."""
     return not any(c.isdigit() for c in model)
 
 
@@ -55,8 +55,8 @@ def model_matches(requested: str, actual: str) -> bool:
 
     Per the #22 decision (exact-if-dated, family-if-alias): an ALIAS pin (`sonnet`) is
     satisfied by any model of the same family (the transcript reports a resolved dated id,
-    which an alias can never string-equal); an EXPLICIT/DATED pin (`claude-opus-4-8`) demands
-    an EXACT id match — a silent opus-4-8 -> opus-5 drift is a mismatch, honoring the dated
+    which an alias can never string-equal); an EXPLICIT/DATED pin (`claude-opus-5-5`) demands
+    an EXACT id match — a silent opus-5-5 -> another-id drift is a mismatch, honoring the dated
     pin's reproducibility intent."""
     r, a = requested.strip().lower(), actual.strip().lower()
     if not r or not a:

@@ -102,7 +102,7 @@ More detail: [`architecture.md`](architecture.md) §2–§3 (gate table, inbox/o
 
 **`agents/*.md`: casting.**
 - Frontmatter pins `model`, `effort`, `tools` / `disallowedTools`. The body is the role brief.
-- Reviewers pin a dated `claude-opus-4-8` (reproducible). Producers pin the `sonnet` alias
+- Reviewers pin dated `claude-opus-5-5`; producers pin dated `claude-sonnet-5-5`
   ([ADR-2](adr/ADR-02-dated-reviewer-pins.md)).
 - Invariant: design + reviews run on a higher model than implementation.
 

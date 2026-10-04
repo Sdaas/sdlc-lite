@@ -33,13 +33,13 @@ def test_transcript_present_renders_token_table(tmp_path):
     projects = tmp_path / "projects"
     (projects / SLUG).mkdir(parents=True)
     write_transcript(projects / SLUG / "s.jsonl", [
-        assistant_turn("claude-opus-4-8", i=1),
+        assistant_turn("claude-opus-5-5", i=1),
         assistant_turn("claude-sonnet-5", sidechain=True, i=2),
     ])
     out = build_report(runlog, projects, SLUG)
     assert "Run-log analysis" in out
     assert "Token / cost analysis" in out
-    assert "claude-opus-4-8" in out
+    assert "claude-opus-5-5" in out
     assert "TRANSCRIPT ANALYSIS UNAVAILABLE" not in out
 
 
@@ -47,7 +47,7 @@ def test_subagent_breakdown_rendered_in_report(tmp_path):
     runlog = _runlog(tmp_path)
     projects = tmp_path / "projects"
     (projects / SLUG).mkdir(parents=True)
-    main = write_transcript(projects / SLUG / "s.jsonl", [assistant_turn("claude-opus-4-8", i=1)])
+    main = write_transcript(projects / SLUG / "s.jsonl", [assistant_turn("claude-opus-5-5", i=1)])
     write_subagent(main, "agent-1", [assistant_turn("claude-opus-5", i=2)],
                    agent_type="sdlc-lite:code-reviewer")
     out = build_report(runlog, projects, SLUG)
@@ -62,10 +62,10 @@ def test_receipt_rendered_with_actual_columns_from_transcript(tmp_path):
     projects = tmp_path / "projects"
     (projects / SLUG).mkdir(parents=True)
     write_transcript(projects / SLUG / "s.jsonl",
-                     [assistant_turn("claude-opus-4-8", i=1, effort="medium")])
+                     [assistant_turn("claude-opus-5-5", i=1, effort="medium")])
     out = build_report(runlog, projects, SLUG)
     assert "Per-agent trust receipt" in out
-    assert "UNKNOWN → claude-opus-4-8" in out   # requested still UNKNOWN (#22), actual filled
+    assert "UNKNOWN → claude-opus-5-5" in out   # requested still UNKNOWN (#22), actual filled
     assert "UNKNOWN → medium" in out
 
 
@@ -108,7 +108,7 @@ def test_content_audit_present_and_clean_when_no_leak(tmp_path):
     runlog = _runlog(tmp_path)
     projects = tmp_path / "projects"
     (projects / SLUG).mkdir(parents=True)
-    main_t = write_transcript(projects / SLUG / "s.jsonl", [assistant_turn("claude-opus-4-8", i=1)])
+    main_t = write_transcript(projects / SLUG / "s.jsonl", [assistant_turn("claude-opus-5-5", i=1)])
     # The forbidden artifact exists in the handoff dir (= the run-log's dir) but never leaks.
     (tmp_path / "03-design-internal.md").write_text(DESIGN_INTERNAL, encoding="utf-8")
     write_subagent(main_t, "agent-1",
@@ -129,7 +129,7 @@ def test_adversarial_glob_leak_flips_run_to_untrusted(tmp_path):
     ]))
     projects = tmp_path / "projects"
     (projects / SLUG).mkdir(parents=True)
-    main_t = write_transcript(projects / SLUG / "s.jsonl", [assistant_turn("claude-opus-4-8", i=1)])
+    main_t = write_transcript(projects / SLUG / "s.jsonl", [assistant_turn("claude-opus-5-5", i=1)])
     (tmp_path / "03-design-internal.md").write_text(DESIGN_INTERNAL, encoding="utf-8")
     write_subagent(main_t, "agent-1",
                    [assistant_turn("claude-opus-5", i=2), _bash_leak_record(DESIGN_INTERNAL)],

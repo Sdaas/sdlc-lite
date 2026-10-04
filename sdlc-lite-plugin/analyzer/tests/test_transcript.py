@@ -21,17 +21,17 @@ WIN_END = dt.datetime(2026, 9, 9, 7, 40, 9, tzinfo=dt.timezone.utc)
 
 def test_parse_aggregates_main_vs_sidechain_by_model(tmp_path):
     tpath = write_transcript(tmp_path / "s.jsonl", [
-        assistant_turn("claude-opus-4-8", i=1, input_tokens=100, output_tokens=40),
-        assistant_turn("claude-opus-4-8", i=2, input_tokens=100, output_tokens=40),
+        assistant_turn("claude-opus-5-5", i=1, input_tokens=100, output_tokens=40),
+        assistant_turn("claude-opus-5-5", i=2, input_tokens=100, output_tokens=40),
         assistant_turn("claude-sonnet-5", sidechain=True, i=3, input_tokens=10, output_tokens=5),
     ])
     a = parse_transcript(tpath, WIN_START, WIN_END)
     assert a.turns_in_window == 3
-    assert a.main["claude-opus-4-8"].turns == 2
-    assert a.main["claude-opus-4-8"].input_tokens == 200
-    assert a.main["claude-opus-4-8"].output_tokens == 80
+    assert a.main["claude-opus-5-5"].turns == 2
+    assert a.main["claude-opus-5-5"].input_tokens == 200
+    assert a.main["claude-opus-5-5"].output_tokens == 80
     assert a.sidechain["claude-sonnet-5"].turns == 1
-    assert "claude-opus-4-8" not in a.sidechain
+    assert "claude-opus-5-5" not in a.sidechain
 
 
 def test_find_transcript_picks_overlapping_file(tmp_path):
@@ -84,9 +84,9 @@ def test_no_assistant_turns_is_absent_not_drift(tmp_path):
 
 def test_effort_extracted_and_split_main_vs_sidechain(tmp_path):
     tpath = write_transcript(tmp_path / "s.jsonl", [
-        assistant_turn("claude-opus-4-8", i=1, effort="high"),
-        assistant_turn("claude-opus-4-8", i=2, effort="high"),
-        assistant_turn("claude-opus-4-8", i=3, effort="medium"),
+        assistant_turn("claude-opus-5-5", i=1, effort="high"),
+        assistant_turn("claude-opus-5-5", i=2, effort="high"),
+        assistant_turn("claude-opus-5-5", i=3, effort="medium"),
         assistant_turn("claude-sonnet-5", sidechain=True, i=4, effort="low"),
     ])
     a = parse_transcript(tpath, WIN_START, WIN_END)
@@ -96,7 +96,7 @@ def test_effort_extracted_and_split_main_vs_sidechain(tmp_path):
 
 def test_effort_absent_leaves_empty_not_invented(tmp_path):
     # No top-level effort field at all -> no buckets (verdict later degrades to UNKNOWN).
-    tpath = write_transcript(tmp_path / "s.jsonl", [assistant_turn("claude-opus-4-8", i=1)])
+    tpath = write_transcript(tmp_path / "s.jsonl", [assistant_turn("claude-opus-5-5", i=1)])
     a = parse_transcript(tpath, WIN_START, WIN_END)
     assert a.main_efforts == {}
     assert a.sidechain_efforts == {}
@@ -104,7 +104,7 @@ def test_effort_absent_leaves_empty_not_invented(tmp_path):
 
 def test_subagent_effort_captured_and_folded_into_sidechain(tmp_path):
     main = write_transcript(tmp_path / "abc.jsonl",
-                            [assistant_turn("claude-opus-4-8", i=1, effort="medium")])
+                            [assistant_turn("claude-opus-5-5", i=1, effort="medium")])
     write_subagent(main, "agent-1", [
         assistant_turn("claude-opus-5", i=2, effort="high"),
         assistant_turn("claude-opus-5", i=3, effort="high"),
@@ -120,7 +120,7 @@ def test_subagent_effort_captured_and_folded_into_sidechain(tmp_path):
 # --- #15: subagent transcripts under <uuid>/subagents/*.jsonl --------------
 
 def test_subagents_parsed_and_attributed_and_folded_into_sidechain(tmp_path):
-    main = write_transcript(tmp_path / "abc.jsonl", [assistant_turn("claude-opus-4-8", i=1)])
+    main = write_transcript(tmp_path / "abc.jsonl", [assistant_turn("claude-opus-5-5", i=1)])
     write_subagent(main, "agent-1", [
         assistant_turn("claude-opus-5", i=2, input_tokens=100, output_tokens=40),
         assistant_turn("claude-opus-5", i=3, input_tokens=100, output_tokens=40),
@@ -139,25 +139,25 @@ def test_subagents_parsed_and_attributed_and_folded_into_sidechain(tmp_path):
     assert a.sidechain["claude-opus-5"].turns == 2
     assert a.sidechain["claude-sonnet-5"].turns == 1
     # Main thread is unaffected.
-    assert a.main["claude-opus-4-8"].turns == 1
+    assert a.main["claude-opus-5-5"].turns == 1
 
 
 def test_subagent_label_falls_back_to_stem_without_meta(tmp_path):
-    main = write_transcript(tmp_path / "abc.jsonl", [assistant_turn("claude-opus-4-8", i=1)])
+    main = write_transcript(tmp_path / "abc.jsonl", [assistant_turn("claude-opus-5-5", i=1)])
     write_subagent(main, "agent-xyz", [assistant_turn("claude-sonnet-5", i=2)])  # no meta
     a = parse_transcript(main, WIN_START, WIN_END)
     assert [s.agent_label for s in a.subagents] == ["agent-xyz"]
 
 
 def test_missing_subagents_dir_yields_empty(tmp_path):
-    main = write_transcript(tmp_path / "abc.jsonl", [assistant_turn("claude-opus-4-8", i=1)])
+    main = write_transcript(tmp_path / "abc.jsonl", [assistant_turn("claude-opus-5-5", i=1)])
     assert parse_subagents(main) == []
     a = parse_transcript(main, WIN_START, WIN_END)
     assert a.subagents == []
 
 
 def test_malformed_subagent_file_is_skipped_not_raised(tmp_path):
-    main = write_transcript(tmp_path / "abc.jsonl", [assistant_turn("claude-opus-4-8", i=1)])
+    main = write_transcript(tmp_path / "abc.jsonl", [assistant_turn("claude-opus-5-5", i=1)])
     sdir = tmp_path / "abc" / "subagents"
     sdir.mkdir(parents=True)
     (sdir / "broken.jsonl").write_text("not json at all\n{also bad\n", encoding="utf-8")

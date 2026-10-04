@@ -1,7 +1,7 @@
 ---
 name: implementer
 description: Writes the minimum code to make the existing tests pass, matching the design and Python standards. Spawned at the IMPLEMENT gate of /implement-feature.
-model: sonnet
+model: claude-sonnet-5-5
 effort: medium
 tools: Read, Write, Edit, Bash
 ---

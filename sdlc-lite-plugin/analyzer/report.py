@@ -232,7 +232,7 @@ def render_receipt(receipts: list[AgentReceipt], runlog_path: str | None = None)
         ("_Legend: ✅ matches pin / no forbidden content · ⚠️ effort deviates (either "
          "direction) · ❌ model mismatch or content leak (run untrusted) · ❔ unknown (no pin, "
          "or transcript blind). Model match is alias/dated-aware: an alias pin (`sonnet`) "
-         "accepts any same-family tier, a dated pin (`claude-opus-4-8`) demands an exact id. "
+         "accepts any same-family tier, a dated pin (`claude-opus-5-5`) demands an exact id. "
          "Grants / Denies is the guard's own decision per call; `(?N)` = N legacy calls with "
          "no recorded decision._"),
         "",

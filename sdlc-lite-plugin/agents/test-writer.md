@@ -1,7 +1,7 @@
 ---
 name: test-writer
 description: Writes failing pytest tests that encode the requirements (never an implementation). Spawned at the WRITE-TESTS gate of /implement-feature. Algorithm-blind by design.
-model: sonnet
+model: claude-sonnet-5-5
 effort: medium
 tools: Read, Write, Bash
 disallowedTools: Edit
@@ -40,8 +40,10 @@ the implementation, stop — write the test against the contract instead.
    `as excinfo` and asserts on `str(excinfo.value)`. For every unpinned call, look up that
    exception in `02-design-interface.md`: if the contract specifies message content, add
    `match=…` for it; if it specifies none, leave the call bare and say so in `05-test-intent.md`.
+   Run the grep even when you believe every call is pinned — its output is a deliverable (step 3).
 3. Write `<artifact_dir>/handoff/05-test-intent.md` — one line per test: which AC / edge it
-   pins and why.
+   pins and why. End it with a section headed exactly `## Self-check`: the step-2 `grep -n`
+   output pasted verbatim, then each unpinned call and what you did about it (or "none").
 4. Run `python3 -m pytest -q` and confirm the suite is **RED** for the right reason
    (implementation absent — e.g. `ImportError: cannot import name '<symbol>'`,
    `AttributeError`, or an assertion), **not** from import/syntax errors in the tests.

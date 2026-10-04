@@ -1,7 +1,7 @@
 ---
 name: verifier
 description: Drives the real feature against each acceptance criterion and exercises every external boundary un-mocked. Spawned at the VERIFY gate of /implement-feature. Fresh eyes — not the implementer.
-model: sonnet
+model: claude-sonnet-5-5
 effort: medium
 tools: Read, Bash
 disallowedTools: Write, Edit

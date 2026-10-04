@@ -50,7 +50,7 @@ records; everything else (`user`, `attachment`, …) is skipped. A representativ
   "isSidechain": false,
   "effort": "medium",
   "message": {
-    "model": "claude-opus-4-8",
+    "model": "claude-opus-5-5",
     "usage": {
       "input_tokens": 1200,
       "output_tokens": 340,
@@ -70,13 +70,13 @@ The fields `transcript.py` reads, and why:
 | `timestamp` | top level | correlate the turn to the run window (`Z`/UTC) |
 | `isSidechain` | top level | split **main thread** (`false`) vs **sidechain** (`true`) |
 | **`effort`** | **top level** (sibling of `message`) | the **actual effort** the turn ran at (#31 R3) |
-| `message.model` | inside `message` | the **actual resolved model** (ground truth, e.g. `claude-opus-4-8`) |
+| `message.model` | inside `message` | the **actual resolved model** (ground truth, e.g. `claude-opus-5-5`) |
 | `message.usage.*` | inside `message` | input/output/cache/thinking tokens |
 
 Two easy mistakes this table prevents:
 
 - **`effort` is top-level, not inside `message`.** It sits beside `message`, one per assistant turn.
-- **`message.model` is the *resolved* id** (`claude-opus-4-8`), which differs from the *requested
+- **`message.model` is the *resolved* id** (`claude-opus-5-5`), which differs from the *requested
   alias* (`"opus"`) recorded in `.meta.json` (§4). Model integrity (#22) compares the two.
 
 ### Schema self-check (drift alarm)

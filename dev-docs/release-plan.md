@@ -65,8 +65,8 @@ Current milestone: **`0.1.0`**.
 
 ### Open — in execution order
 
-1. **#63** — `chore(skill): re-evaluate the dated reviewer pin claude-opus-4-8`
-   *Last, so the reviewer pin is re-checked against the final prose.*
+1. **#63** — `chore(skill): move all gate pins to the latest dated models`
+   *Last, so the gate pins are re-checked against the final prose.*
 
 ### Closed
 
