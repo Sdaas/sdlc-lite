@@ -71,12 +71,11 @@ re-runs only the affected eval cases if it changes docs only. It re-runs the who
 
 1. ~~#63 — latest model pins.~~ Done.
 2. ~~#86 — `/review-repo` skill.~~ Done.
-   2b. **#92** — `feat(repo): cut the cost of a /review-repo run` (via `/feature`). — 3 area agents
-   plus the consolidator, review only the areas changed since a given point, optional canary. One
-   run of 9 + 1 agents cost about $28. Before #87, so #87's run is its end-to-end proof.
+   2b. ~~#92 — cut the cost of a `/review-repo` run.~~ Done.
 3. **#87** — `chore(repo): run the full-repo review and triage findings before 0.1.0` — parallel Opus 5.5 high-effort agents, one per area, plus one
    consolidator, with `/review-repo` (spec: `.claude/skills/review-repo/SKILL.md`). It also proves
-   #86's wait rule (the conductor runs the final measurement on its own) and #92's cost cut. Output: `review-YYYYMMDD.md` (repo root, committed),
+   #86's wait rule (the conductor runs the final measurement on its own) and #92's cost cut: a full
+   run is 3 + 1 agents; record its cost next to the $28.35 baseline in `repo-local-skills.md`. Output: `review-YYYYMMDD.md` (repo root, committed),
    with each finding in a bucket: fix in 0.1.0 · 0.2.0 · backlog. A finding is 0.1.0 only if a
    stranger following the README would hit a failure, wrong output, or a doc/code contradiction.
    If it finds the README too confusing to install from, the README rewrite moves into 0.1.0.
@@ -124,6 +123,7 @@ re-runs only the affected eval cases if it changes docs only. It re-runs the who
 | **#81** `fix(skill): critic briefs don't state the pip install/uninstall guard rule` | 2026-10-04 (`1d1995d`) | `/fix` run, reproduced at T2 (`test_inbox_parity.py` red): `code-reviewer`, `verifier`, `test-reviewer` briefs state guard rule 9 in the deny reason's words (never change the Python environment; a missing dependency is a finding, not retried or worked around); a host test fails if a brief drops it. T1 waived (guard-enforced). Gate 8 5/5 run, `guard-secret-read-denied` failed once (unrelated; filed separately). |
 | **#63** `chore(skill): move all gate pins to the latest dated models` | 2026-10-04 (`d26e5cd`) | `/feature` run: all five `[I]` gates pin dated ids — reviewers `claude-opus-5-5`, producers `claude-sonnet-5-5` (the `sonnet` alias still resolved to `claude-sonnet-5`); ADR-2 is "every isolated gate pins a dated model", frontmatter the SSOT; `test_agentdefs.py` tripwires keep SKILL.md's ids equal to the pins. T3 `roman-numeral` receipt: all five ✅ exact. Gate 8 found the test-writer skipping its `pytest.raises` grep self-check on sonnet-5-5 (3/5) → the grep output is now a `## Self-check` deliverable in `05-test-intent.md` (3/3 green). Filed #84, #85; evidence added to #80. |
 | **#86** `feat(repo): /review-repo skill — full-repo review pinned to Opus 5.5 at high effort` | 2026-10-04 (`59176bf`) | `/feature` run in an ad-hoc tooling lane (#70 not built): 9 area agents + 1 consolidator in `.claude/agents/`, pinned `claude-opus-5-5` / `high`; `measure.py` checks the pins before any spawn (a wrong pin costs $0) and the transcripts after the areas and after the consolidator, against fixed values. Real run: 10/10 at opus-5-5/high, but ~$28 → #92; the conductor didn't wait for the consolidator (fixed in prose, proven by #87). Wrong-pin run: INVALID at pre-flight, 0 agents. |
+| **#92** `feat(repo): cut the cost of a /review-repo run` | 2026-10-04 (`5ca71db`) | `/feature` run, tooling lane: 9 areas → 3 (A product · B install path and evals · C docs, history, process, structure) + consolidator; `measure.py` owns the area table, adds a `plan` phase and `--since <ref>` (only changed areas are reviewed; the expected count is derived from the diff, never passed in). A since-ref run checks structure only when area C changed, so the pre-release run is a full one. Canary dropped. T2 only (305 passed, $0); #87's run is the T3 proof and the "after" cost. |
 
 ## Next release — `0.2.0` (the planning suite)
 
