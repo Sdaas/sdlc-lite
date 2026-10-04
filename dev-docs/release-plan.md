@@ -10,7 +10,7 @@ Titles can drift — GitHub wins; re-check with `gh issue list --milestone "<tit
 Decision history lives in the issues and the ADRs (`adr/`);
 release conventions live in `RELEASING.md`._
 
-_Last updated: 2026-10-04._
+_Last updated: 2026-10-05._
 
 ---
 
@@ -79,10 +79,8 @@ re-runs only the affected eval cases if it changes docs only. It re-runs the who
    (`SKILL.md` says "dev container", the README is right) move to 0.2.0.
 5. ~~#89 — changelog, evergreen README and release-notes step.~~ Done. The 0.1.0 entry is already
    in `CHANGELOG.md`.
-6. **#88** — `chore(repo): record a by-hand eval baseline for 0.1.0` — the whole suite, 3 runs per case, at the release commit.
-   Record it in `sdlc-lite-plugin/evals/BASELINE-0.1.0.md` (model, claude version, commit, date at
-   the top; known flakes labeled, e.g. #58). A regression later = any single case below its baseline
-   rate. (The file lives outside `evals/results/`, which is gitignored.)
+6. ~~#88 — by-hand eval baseline.~~ Done: `sdlc-lite-plugin/evals/BASELINE-0.1.0.md`, 13 cases
+   3/3 and 5 flaky at 2/3. A regression later = any single case below its baseline rate.
 7. **Green dry run** in the dev container (`DEVCONTAINER.md`). Also check #93: no `if-runlog.jsonl`
    in the fixture root before Gate 0.
 8. **Re-check the 0.1.0 notes** — the `## 0.1.0` entry in `CHANGELOG.md` was drafted and approved
@@ -129,6 +127,7 @@ re-runs only the affected eval cases if it changes docs only. It re-runs the who
 | **#87** `chore(repo): run the full-repo review and triage findings before 0.1.0` | 2026-10-04 (`7abeddc`) | `/review-repo` full run: 3 areas + consolidator, 4/4 at opus-5-5/high, the conductor ran the final measurement on its own (#86 wait rule proven); $11.61 vs the $28.35 baseline (#92 proven). 65 findings in `review-20261004.md`. 0.1.0: #93 (A-1); B-1, C-6 folded into #89. All other findings (incl. A-2, B-3) target 0.2.0 and are filed as issues when 0.2.0 starts. |
 | **#93** `fix(guard-hook): the guard writes every tool call to if-runlog.jsonl in every project's root` | 2026-10-04 (`f9a1c48`) | `/fix` run, reproduced at T2 (4 guard subprocess tests red): with no `.active-run` and no `$IF_RUNLOG` the guard writes no audit line (project-dir and `/tmp` fallbacks gone). Every deny rule stays global (AC 3); with no handoff dir, confined critics write only to scratch. `.gitignore` lines keep `if-runlog.jsonl`. Gate 8 9/9 (`gate-0-model-plan-pins` failed once on its regex grader, then passed twice). T3 check folded into step 7. |
 | **#89** `feat(release): changelog, evergreen README and release-notes step` | 2026-10-04 (`f5ad946`) | By hand (docs + shell; `/feature` declines, pre-#70): `CHANGELOG.md` with the approved 0.1.0 entry (Update from 0.0.9 says to run `/sdlc-init`); `RELEASING.md` §4 notes step; `release.sh` stops with no `## <version>` section and publishes it via `gh release create --notes-file` (`release.test.sh` 31/31); README CLI-form Quick start, Updating section, no version line (B-1, X-1, B-2 + C-22, C-6). Clean-room + update proof moves to step 9. |
+| **#88** `chore(repo): record a by-hand eval baseline for 0.1.0` | 2026-10-05 (`c688f1f`) | By hand: 18 cases × 3 runs at `d10db81` (claude 2.1.281), split in two parts to fit a usage window. 13 cases 3/3; 5 at 2/3, labeled flaky (`gate-0-model-plan-pins`, `gate-1-interview-entry`, `gate-3-raises-match`, `gate-6-concurrency-policy`, `gate-7-mutation-skip-deviation`), each one grader missed once. `gate-0-lock-stop` (#58) 3/3. The file states the regression and re-run rules. Flaky cases are triaged with 0.2.0. |
 
 ## Next release — `0.2.0` (the planning suite)
 
