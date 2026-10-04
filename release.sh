@@ -2,7 +2,7 @@
 #
 # release.sh — cut a versioned release of the sdlc-lite plugin (cross-repo).
 #
-# Automates dev-docs/RELEASING.md §4 steps 2–4 and hands off to the verify gate (step 5).
+# Automates dev-docs/RELEASING.md §4 steps 1–6 and hands off to the verify gate.
 # Background + rationale: dev-docs/adr/ADR-13-one-plugin-two-channels.md (two-channel distribution).
 #
 # Two channels live in TWO repos (ADR-13):
@@ -17,6 +17,10 @@
 # umbrella entry's ref/sha to that tag. All are required: /plugin update compares the
 # plugin.json "version" and SKIPS if it is unchanged.
 #
+# The release notes come first (RELEASING.md §4): CHANGELOG.md must already have a
+# `## <version>` section, or the script stops before it changes anything. After the push,
+# that section becomes the GitHub Release body (`gh release create --notes-file`).
+#
 # Usage:
 #   ./release.sh <version> --umbrella <path-to-local-clone-of-Sdaas/claude-plugins>
 #   ./release.sh <version>                # no --umbrella: prints the manual umbrella edit
@@ -25,13 +29,14 @@
 #   --umbrella <dir> may also be supplied via the UMBRELLA_DIR environment variable.
 #
 # This script does NOT verify the release. Verification is a human-run gate in an
-# ISOLATED clean-room environment (no dev marketplace) — see dev-docs/RELEASING.md §4 step 5.
+# ISOLATED clean-room environment (no dev marketplace) — see dev-docs/RELEASING.md §4, after step 6.
 #
 set -euo pipefail
 
 # ── config ───────────────────────────────────────────────────────────────────
 DEFAULT_BRANCH="main"
 PLUGIN_JSON="sdlc-lite-plugin/.claude-plugin/plugin.json"
+CHANGELOG="CHANGELOG.md"                   # release notes; one `## <version>` section per release
 REPO_SLUG="Sdaas/sdlc-lite"                 # this repo (the product)
 UMBRELLA_SLUG="Sdaas/claude-plugins"        # the release-channel umbrella repo
 UMBRELLA_MARKETPLACE="sdaas"                # catalog name inside the umbrella
@@ -81,6 +86,11 @@ git diff --quiet && git diff --cached --quiet \
 
 git rev-parse -q --verify "refs/tags/$TAG" >/dev/null \
   && die "tag $TAG already exists"
+
+# The notes must exist before anything is tagged (RELEASING.md §4, §7).
+[[ -f "$CHANGELOG" ]] || die "missing $CHANGELOG — write the release notes first (dev-docs/RELEASING.md §4)"
+grep -qE "^## ${VERSION//./\\.}( |$)" "$CHANGELOG" \
+  || die "$CHANGELOG has no '## $VERSION' section — write the release notes first (dev-docs/RELEASING.md §4)"
 
 # ── preflight (umbrella clone, if given) ─────────────────────────────────────
 # Validate BEFORE we mutate this repo, so a bad umbrella path fails fast (no half-cut).
@@ -184,7 +194,25 @@ if [[ "$PUSH" -eq 1 ]]; then
   fi
 fi
 
-# ── verify handoff (THE GATE — dev-docs/RELEASING.md §4 step 5) ───────────────────────
+# ── step 6: publish the GitHub Release (body = the CHANGELOG section) ─────────
+# The section body, without its heading, up to the next `## ` heading.
+NOTES_FILE="$(mktemp "${TMPDIR:-/tmp}/sdlc-lite-$TAG-notes.XXXXXX")"
+awk -v h="## $VERSION" '
+  $0 == h || index($0, h " ") == 1 { on = 1; next }
+  on && /^## / { exit }
+  on { print }
+' "$CHANGELOG" > "$NOTES_FILE"
+GH_CMD="gh release create $TAG --repo $REPO_SLUG --title \"sdlc-lite $TAG\" --notes-file $NOTES_FILE"
+if [[ "$PUSH" -eq 1 ]] && command -v gh >/dev/null \
+   && gh release create "$TAG" --repo "$REPO_SLUG" --title "sdlc-lite $TAG" --notes-file "$NOTES_FILE"; then
+  rm -f "$NOTES_FILE"
+  echo "→ published the GitHub Release $TAG"
+else
+  echo "→ GitHub Release NOT published. After the tag is pushed, run:"
+  echo "     $GH_CMD"
+fi
+
+# ── verify handoff (THE GATE — dev-docs/RELEASING.md §4, after step 6) ───────────────────────
 PUSHED_MSG=""; [[ "$PUSH" -eq 1 ]] && PUSHED_MSG=" and pushed"
 cat <<EOF
 
@@ -199,6 +227,7 @@ Clean-room verify (isolated env, NO dev marketplace — see ADR-13 / dev-docs/RE
      (NOT a local directory source), and the cached version is $VERSION.
   3. Run /implement-feature end-to-end on test-fixtures/python-starter — it must pass.
   4. Only after that passes is $TAG a real release. If it fails: fix, delete the
+     GitHub Release (gh release delete $TAG --repo $REPO_SLUG --yes), delete the
      tag (git tag -d $TAG && git push origin :$TAG), revert the umbrella commit,
      and re-run release.sh.
 ────────────────────────────────────────────────────────────────────────────
