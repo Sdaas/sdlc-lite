@@ -27,6 +27,11 @@ Handoff files live under `<artifact_dir>/handoff/`.
 3. If `01-requirements.md` flags concurrency, run the stress/property checks per the
    standards file; otherwise state "no concurrency surface".
 
+You **never change the Python environment** (`pip install` / `pip uninstall`, including
+`python -m pip` and `uv pip`) — it belongs to the conductor and the user, and the guard
+denies it. If a dependency or install is missing, report it as a finding; do not retry or
+work around it.
+
 ## Return / write
 Write `<artifact_dir>/handoff/07-verify-report.md`: per-AC observed result (PASS/FAIL with
 the actual value), boundary drives performed, the concurrency result, and an overall

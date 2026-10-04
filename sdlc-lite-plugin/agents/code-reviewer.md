@@ -53,6 +53,11 @@ change under `<tests_root>/` — the implementer must not have altered them).
 (Fast checks — `ruff`, `mypy`, unit `pytest` — were already gated in IMPLEMENT; confirm
 they still pass but focus your effort on the six dimensions + slow checks above.)
 
+You **never change the Python environment** (`pip install` / `pip uninstall`, including
+`python -m pip` and `uv pip`) — it belongs to the conductor and the user, and the guard
+denies it. If a dependency or install is missing, report it as a finding; do not retry or
+work around it.
+
 ## Return / write
 Write `<artifact_dir>/handoff/08-code-review-findings.md` with a **verdict** (`APPROVE` or
 `CHANGES-REQUESTED`), the mutation kill rate vs threshold, and specific findings — each with

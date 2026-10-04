@@ -52,6 +52,10 @@ Then judge:
   may write only your `handoff/` findings outbox and probes in a scratch/temp dir; any write
   into the product tree (`<code_root>`/`<tests_root>`) is denied. Do not edit the tests you
   are reviewing.
+- You **never change the Python environment** (`pip install` / `pip uninstall`, including
+  `python -m pip` and `uv pip`) — it belongs to the conductor and the user, and the guard
+  denies it. If a dependency or install is missing, report it as a finding; do not retry or
+  work around it.
 
 ## Return / write
 Write `<artifact_dir>/handoff/06-test-review-findings.md` with a **verdict** (`APPROVE` or
