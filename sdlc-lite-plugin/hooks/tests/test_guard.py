@@ -74,10 +74,39 @@ def test_runlog_resolved_via_active_run_pointer(tmp_path):
     assert json.loads(derived.read_text().strip())["target"] == "x.py"
 
 
-def test_runlog_falls_back_to_project_dir_when_no_pointer(tmp_path):
+TMP_RUNLOG = Path("/tmp/if-runlog.jsonl")
+
+
+def _tmp_runlog_size() -> int:
+    return TMP_RUNLOG.stat().st_size if TMP_RUNLOG.exists() else -1
+
+
+def test_no_audit_written_outside_a_run(tmp_path):
+    # #93: the hook is plugin-wide; with no .active-run and no $IF_RUNLOG it must leave
+    # nothing in the user's project (nor in /tmp) — and still allow the call.
+    before = _tmp_runlog_size()
     rc, _ = run_guard(call("Read", "x.py"), project_dir=str(tmp_path))
     assert rc == 0
-    assert (tmp_path / "if-runlog.jsonl").is_file()
+    assert list(tmp_path.iterdir()) == []
+    assert _tmp_runlog_size() == before
+
+
+def test_denied_call_outside_a_run_writes_no_audit(tmp_path):
+    # #93: the deny path writes nothing either; the denial itself still holds.
+    before = _tmp_runlog_size()
+    rc, out = run_guard(call("Read", "/repo/.env"), project_dir=str(tmp_path))
+    assert rc == 2
+    assert json.loads(out)["hookSpecificOutput"]["permissionDecision"] == "deny"
+    assert list(tmp_path.iterdir()) == []
+    assert _tmp_runlog_size() == before
+
+
+def test_no_audit_written_without_project_dir():
+    # #93: no CLAUDE_PROJECT_DIR either -> no /tmp/if-runlog.jsonl fallback.
+    before = _tmp_runlog_size()
+    rc, _ = run_guard(call("Read", "x.py"))
+    assert rc == 0
+    assert _tmp_runlog_size() == before
 
 
 # --- draft-confinement (#11) -----------------------------------------------
@@ -319,6 +348,15 @@ REVIEWER = "sdlc-lite:test-reviewer"
 # `_handoff_dir()`), so confinement tests that write into "the outbox" must point
 # IF_RUNLOG at a run-log.jsonl that actually sits alongside the write target.
 HANDOFF_RUNLOG = "/repo/.implement-feature/r/handoff/run-log.jsonl"
+
+
+def test_confined_critic_cannot_write_project_root_outside_a_run():
+    # #93: no run -> no handoff dir; the project root is not a critic outbox. The root is
+    # /repo, not tmp_path: under /tmp (Linux) a write would pass as a scratch-dir write.
+    rc, out = run_guard(call("Write", "/repo/notes.md", agent_type=REVIEWER),
+                        project_dir="/repo")
+    assert rc == 2
+    assert json.loads(out)["hookSpecificOutput"]["permissionDecision"] == "deny"
 
 
 def test_reviewer_may_write_its_handoff_outbox(tmp_path):

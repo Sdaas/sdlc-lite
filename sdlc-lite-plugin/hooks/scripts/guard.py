@@ -2,11 +2,12 @@
 """PreToolUse guard hook for /implement-feature.
 
 Does two jobs on every Read/Bash/Grep/Glob/Edit/Write/NotebookEdit/Task/Agent/Skill call
-(conductor AND every subagent): AUDIT (append one JSONL line per tool call) and ENFORCE
-(deny unauthorized access). The deny decision is computed FIRST so the audit line can record it truthfully;
-the audit still logs every call regardless of the decision.
+(conductor AND every subagent): AUDIT (inside a run, append one JSONL line per tool call) and
+ENFORCE (deny unauthorized access, inside and outside a run). The deny decision is computed
+FIRST so the audit line can record it truthfully; inside a run the audit logs every call
+regardless of the decision.
 
-  1. AUDIT  — append one JSONL line per tool call (agent_id/agent_type/tool/target +
+  1. AUDIT  — inside a run, append one JSONL line per tool call (agent_id/agent_type/tool/target +
      `guard_decision: allow|deny`, the guard's own pre-execution decision — #31 R4).
   2. ENFORCE — the allow/deny rules now live in ONE place: `policy.py` (the #30 SSOT that
      the analyzer's detective leg also imports). This hook is the tool-aware, real-time,
@@ -36,8 +37,8 @@ exported env, hence the pointer file rather than an env var):
   1. $IF_RUNLOG (explicit override), else
   2. the pointer file $CLAUDE_PROJECT_DIR/.implement-feature/.active-run — its contents
      are the active <artifact_dir>; the run-log is <artifact_dir>/handoff/run-log.jsonl, else
-  3. today's fallback $CLAUDE_PROJECT_DIR/if-runlog.jsonl, else
-  4. /tmp/if-runlog.jsonl.
+  3. neither -> no audit line (#93): the hook is plugin-wide, so outside a run it must leave
+     nothing in the user's project. The deny rules still apply.
 """
 import json, os, sys, datetime
 
@@ -67,17 +68,16 @@ def _active_run_runlog():
 
 
 def runlog_path():
-    return (os.environ.get("IF_RUNLOG")
-            or _active_run_runlog()
-            or (os.path.join(os.environ["CLAUDE_PROJECT_DIR"], "if-runlog.jsonl")
-                if os.environ.get("CLAUDE_PROJECT_DIR") else None)
-            or "/tmp/if-runlog.jsonl")
+    """The run-log path, or None outside a run (#93: no audit line is written then)."""
+    return os.environ.get("IF_RUNLOG") or _active_run_runlog()
 
 
-def _handoff_dir() -> str:
+def _handoff_dir() -> str | None:
     """The run's real handoff dir: the directory containing run-log.jsonl (by convention
-    <artifact_dir>/handoff/run-log.jsonl — see runlog_path()). Anchors write-confinement."""
-    return os.path.normpath(os.path.dirname(runlog_path()))
+    <artifact_dir>/handoff/run-log.jsonl — see runlog_path()). Anchors write-confinement.
+    None outside a run (no run-log): policy then treats nothing as inside the handoff dir."""
+    path = runlog_path()
+    return os.path.normpath(os.path.dirname(path)) if path else None
 
 
 # --- secret DIRECTORY scan (guard-only I/O; the policy stays pure) ----------
@@ -166,7 +166,7 @@ def _deny_reason(tool: str, ti: dict, agent_type: str, target: str) -> str | Non
     return None
 
 
-def _bash_deny_reason(agent_type: str, command: str, handoff: str) -> str | None:
+def _bash_deny_reason(agent_type: str, command: str, handoff: str | None) -> str | None:
     """Best-effort Bash enforcement. The Bash target is the whole command string, so this
     can't just hand a path to decide(): it (a) scans path-like tokens for secrets, (b)
     substring-tests the command for the design-internal / draft READ invariants, and (c)
@@ -228,26 +228,29 @@ def main():
     # Decide FIRST (job #2), so the audit line can record the guard's own decision.
     reason = _deny_reason(tool, ti, agent_type, target)
 
-    # 1. AUDIT (best-effort; never fail the tool because of logging). A denied call has no
+    # 1. AUDIT — only inside a run (#93: outside one the hook writes nothing into the user's
+    #    project). Best-effort; never fail the tool because of logging. A denied call has no
     #    transcript effect, so `guard_decision` here is the ONLY record that a denial happened.
     #    The target is logged AT FULL LENGTH (the intent record — #30 R3): the transcript-based
     #    auditor needs the whole command string, not a 300-char prefix.
-    try:
-        with open(runlog_path(), "a") as f:
-            f.write(json.dumps({
-                # UTC + tz-aware ("…+00:00") on purpose: the observability analyzer
-                # correlates this run-log against the Claude Code session transcript
-                # (which stamps UTC/"Z"). A naive local time would be off by the tz
-                # offset and break the time-window match. See analyzer/transcript.py.
-                "ts": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
-                "agent_type": agent_type, "agent_id": agent_id,
-                "tool": tool, "target": target,
-                # #31 R4: the guard's OWN pre-execution decision — not the platform's final
-                # verdict or the command's exit status.
-                "guard_decision": "deny" if reason else "allow",
-            }) + "\n")
-    except Exception:
-        pass
+    log = runlog_path()
+    if log is not None:
+        try:
+            with open(log, "a") as f:
+                f.write(json.dumps({
+                    # UTC + tz-aware ("…+00:00") on purpose: the observability analyzer
+                    # correlates this run-log against the Claude Code session transcript
+                    # (which stamps UTC/"Z"). A naive local time would be off by the tz
+                    # offset and break the time-window match. See analyzer/transcript.py.
+                    "ts": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
+                    "agent_type": agent_type, "agent_id": agent_id,
+                    "tool": tool, "target": target,
+                    # #31 R4: the guard's OWN pre-execution decision — not the platform's final
+                    # verdict or the command's exit status.
+                    "guard_decision": "deny" if reason else "allow",
+                }) + "\n")
+        except Exception:
+            pass
 
     if reason:
         print(json.dumps({"hookSpecificOutput": {

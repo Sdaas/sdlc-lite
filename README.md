@@ -255,7 +255,7 @@ transcript.
 
 **How do I uninstall it?**
 `claude plugin uninstall sdlc-lite`, and optionally
-`claude plugin marketplace remove sdaas`. Everything is reversible.
+`claude plugin marketplace remove sdaas`. Outside an `/implement-feature` run, the guard hook writes no file into your repo. A run leaves `.implement-feature/` (gitignored). You can delete it.
 
 ---
 

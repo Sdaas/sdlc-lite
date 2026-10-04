@@ -55,8 +55,8 @@
 #                 Transcripts: only those newer than $START_MARKER — the projects dir
 #                 is on the volume and keeps earlier runs' sessions, which are not
 #                 replayed (nor deleted). No marker = every transcript, with a warning.
-#                 Logs: the guard writes <fixture>/if-runlog.jsonl until the .active-run
-#                 pointer exists, then .implement-feature/<run>/handoff/run-log.jsonl.
+#                 Logs: the guard writes no log until the .active-run pointer exists
+#                 (Gate 0), then .implement-feature/<run>/handoff/run-log.jsonl.
 #   stop          Kill the tmux session. The container stays; the next clean-run removes it.
 #
 # Usage (on the Mac, from anywhere in the repo; Docker Desktop must be running):

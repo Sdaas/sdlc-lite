@@ -79,8 +79,9 @@ Limits, by design:
 - **Earlier runs are not replayed.** Their transcripts stay in `~/.claude/projects/` (on the
   volume, kept for post-mortems); `watch` reads only those newer than the marker `t3-start` touches
   (`/tmp/t3-start.marker` in the container).
-- The guard writes to `<fixture>/if-runlog.jsonl` until the conductor writes the `.active-run`
-  pointer at Gate 0, then to `.implement-feature/<run>/handoff/run-log.jsonl`. `watch` reads both.
+- The guard writes no log until the conductor writes the `.active-run` pointer at Gate 0. Then it
+  writes `.implement-feature/<run>/handoff/run-log.jsonl`. `watch` also reads a legacy
+  `if-runlog.jsonl` if one exists.
 
 ## 4. tmux in five minutes
 
