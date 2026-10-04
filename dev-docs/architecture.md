@@ -147,8 +147,9 @@ disallowedTools: Write, Edit
 
 **How the hook finds the run.** A hook doesn't inherit the conductor's env.
 - It reads `.implement-feature/.active-run` to find the run-log.
-- Before Gate 0 writes it / after Gate 11 removes it → falls back to `if-runlog.jsonl` at the repo
-  root (gitignored at Gate 0).
+- No pointer (before Gate 0 writes it, after Gate 11 removes it) → the guard writes no audit line.
+- Outside a run, every deny rule above still applies. With no handoff dir, write-confined roles
+  may write only to a scratch dir.
 
 **Why a plugin hook.** A project `.claude/settings.json` hook did not fire in headless (`claude -p`)
 runs; the plugin hook does (ADR-1).

@@ -228,9 +228,9 @@ Gate 0 below is the first application of this style; later STOP gates follow the
      (this is both the guard's run-log pointer **and** the single-run lock);
    - ensure the repo `.gitignore` ignores **both** `.implement-feature/` **and**
      `if-runlog.jsonl` (append whichever is missing; create `.gitignore` if absent).
-     Process artifacts must never be committed — `if-runlog.jsonl` is the guard's fallback
-     audit file, written to the repo root before this workdir exists and after the lock is
-     cleared (the pointer only routes to `handoff/run-log.jsonl` while `.active-run` lives).
+     Process artifacts must never be committed — the guard logs only while `.active-run`
+     lives (to `handoff/run-log.jsonl`); `if-runlog.jsonl` covers a file an older plugin
+     version left behind and an `$IF_RUNLOG` override that names it.
 5. **Per-gate model/effort plan (canonical).** The invariant: **design and every review use
    a higher model than implementation.** Effort is uniform (`medium`) across every gate —
    real-world config differentiates on model, not effort (#35). This is the reference plan
