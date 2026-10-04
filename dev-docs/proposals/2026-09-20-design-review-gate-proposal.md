@@ -67,7 +67,7 @@ Additive and inert until `SKILL.md` dispatches it. Follows the house shape of
 ---
 name: design-reviewer
 description: Reviews the design artifacts (interface, internal, test plan) against the approved requirements, BEFORE any tests or code exist. Spawned at the DESIGN-REVIEW gate of /implement-feature. A different agent than the conductor that authored them.
-model: claude-opus-4-8
+model: claude-opus-5-5
 effort: medium
 tools: Read, Grep, Glob, Bash
 disallowedTools: Write, Edit
@@ -320,10 +320,10 @@ Slots between Gate 2 (author drafts) and Gate 2's promotion step — i.e. the de
 
 | Gate | Runs as | Model / effort | Why |
 |---|---|---|---|
-| DESIGN-REVIEW | `[I]` `design-reviewer` | **`claude-opus-4-8`** (pinned), medium | review > the thing reviewed |
+| DESIGN-REVIEW | `[I]` `design-reviewer` | **`claude-opus-5-5`** (pinned), medium | review > the thing reviewed |
 
 This strengthens the Gate 0 clean-path summary line: reviews now read
-"test / design / code reviews on `claude-opus-4-8` (pinned)."
+"test / design / code reviews on `claude-opus-5-5` (pinned)."
 
 ### 4.4 Rules section — one addition
 
@@ -365,7 +365,7 @@ Beyond "it ran green":
 4. **No doubt theatre.** Across a run where the reviewer surfaced substantive findings, at least
    some were classified actionable. Two rounds of findings with zero actionable is a signal the
    framing is wrong, not that the design was perfect.
-5. **The receipt shows the pin.** `05` produced by `claude-opus-4-8`, verified actual-vs-pinned.
+5. **The receipt shows the pin.** `05` produced by `claude-opus-5-5`, verified actual-vs-pinned.
 6. **Cost.** One more Opus gate per run. Measure it — the argument for the gate is that it
    prevents downstream rework, and `/analyze-run` has the token data to test that claim over a
    few runs.

@@ -34,7 +34,7 @@ Paths are under `sdlc-lite-plugin/`. Tiers: T1 = eval, T2 = pytest, T3 = contain
 | Gate behavior (routing, loops, STOPs) | `SKILL.md` | [`architecture.md`](architecture.md) §2 if gates/loops change | T1 + T3 |
 | "Green" or a threshold | `references/quality-standards.md` (only there) | — | T1 |
 | A gate's model / effort / tools | `agents/<role>.md` frontmatter (effort is frontmatter-only) | [`architecture.md`](architecture.md) §2, §4 | T1 + T2, receipt on T3 |
-| Bump the dated reviewer pin | `agents/test-reviewer.md`, `agents/code-reviewer.md` | ADR-2, architecture §2/§4 | T3 + receipt shows the exact id (#63) |
+| Bump a dated model pin | `agents/<role>.md` frontmatter (all five gates) | SKILL.md model table + Gate 0 render line, `tests/test_agentdefs.py` `EXPECTED`, ADR-2, architecture §2/§4 | T3 + receipt shows the exact id (#63) |
 | What an agent may read / write | the agent's prose inbox **and** `policy.py` | [`architecture.md`](architecture.md) §3 inbox table, §5 rules | T2 (`tests/test_policy.py`) + T1 |
 | A new guard rule | `policy.py` (+ `hooks/scripts/guard.py` / `hooks.json` matcher for a new tool) | architecture §5 rules table | T2 (+ T3 if `hooks.json`) |
 | Add or rename a skill / command | `skills/<x>/` — **never** a `commands/<x>.md` of the same name (ADR-14) | `policy.PLUGIN_SKILL_NAMES` | T2 (`tests/test_entry_points.py`) + `verify-entry-points.py` |

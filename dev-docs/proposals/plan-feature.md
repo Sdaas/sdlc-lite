@@ -150,7 +150,7 @@ It ships as a **second skill inside the existing plugin** (shared hooks/agents/t
 model), turning the plugin into a small SDLC suite with two entry points.
 
 Planning is the **highest-leverage design work in the whole system**, so by the repo's own "design
-uses a higher model/effort than implementation" invariant it runs on **Opus 4.8 high**. But the
+uses a higher model/effort than implementation" invariant it runs on **Opus 5.5 high**. But the
 planning conductor is **human-interactive** (requirements interview, design decisions) and therefore
 **cannot be an isolated subagent** — subagents can't talk to the human. So the conductor runs
 interactively on the strong model and the skill **warns the user if a weaker model is active**.
@@ -242,8 +242,8 @@ anyway."
 *Why:* the honest signal exists only once use cases are enumerated; the human is accountable.
 *Discarded:* blocking (fights the human); silent-advisory (ignored); firing at raw intake (guessy).
 
-### D12 — Mirror the declarative architecture; run planning on Opus 4.8 high (interactive)
-*Decision:* skill + pinned agent-defs + shared guard; conductor is interactive on Opus 4.8 high and
+### D12 — Mirror the declarative architecture; run planning on Opus 5.5 high (interactive)
+*Decision:* skill + pinned agent-defs + shared guard; conductor is interactive on Opus 5.5 high and
 warns on a weaker model; only non-interactive bias-sensitive gates are isolated subagents.
 *Why:* planning is the highest-leverage design step; but a subagent can't interview the human.
 *Discarded:* running the whole planner as an isolated subagent (can't talk to the human).
@@ -263,7 +263,7 @@ warns on a weaker model; only non-interactive bias-sensitive gates are isolated 
 ## 6. Scope
 
 ### In scope (v1)
-- Interactive conductor on Opus 4.8 high, with a model warning.
+- Interactive conductor on Opus 5.5 high, with a model warning.
 - Functional **and** non-functional requirement elicitation.
 - System-design doc + requirement→test matrix committed to `docs/plans/<X>/`.
 - Decompose into structured-contract child issues + a terminal `Z` issue.

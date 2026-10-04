@@ -295,7 +295,7 @@ everything downstream is weak by construction._
 
 The pipeline's core claim is that **every bias-sensitive gate has a fresh, independent,
 higher-model critic**. Gates 3, 5 and 6 produce; Gates 4 and 7 review with a pinned
-`claude-opus-4-8`. **Gate 2 is the one gate that breaks this, twice:**
+`claude-opus-5-5`. **Gate 2 is the one gate that breaks this, twice:**
 
 - **No reviewer.** `SKILL.md` Gate 2 says only: *"(For a complex feature, optionally spawn a
   fresh design-review subagent first.)"* Optional, unnamed, no agent def, no model pin, no
@@ -414,7 +414,7 @@ a surface.
 
 ### 4.2 Making design review a real gate
 
-**Recommendation: Gate 2.5 DESIGN-REVIEW `[I]` `design-reviewer`, pinned `claude-opus-4-8`,
+**Recommendation: Gate 2.5 DESIGN-REVIEW `[I]` `design-reviewer`, pinned `claude-opus-5-5`,
 with the same contract shape as Gates 4 and 7.** Inbox `01`+`02`+`03`+`04` plus repo read
 access; outbox a numbered findings file with a verdict; bounded loop back to Gate 2; the human
 sees findings *before* approving.

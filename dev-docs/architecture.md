@@ -40,11 +40,11 @@ behavior; this file is the map.
 | 0 | CLASSIFY + model plan + preflight | [C] | session | human |
 | 1 | INTERVIEW | [C] | session (wants Opus) | human |
 | 2 | DESIGN / SPEC | [C] | session (wants Opus) | human |
-| 3 | WRITE-TESTS | [I] `test-writer` | `sonnet` / medium | machine (suite red) |
-| 4 | TEST-REVIEW | [I] `test-reviewer` | `claude-opus-4-8` / medium | machine (verdict) |
-| 5 | IMPLEMENT | [I] `implementer` | `sonnet` / medium | machine (green) |
-| 6 | VERIFY | [I] `verifier` | `sonnet` / medium | machine (observed pass) |
-| 7 | CODE-REVIEW | [I] `code-reviewer` | `claude-opus-4-8` / medium | machine (verdict) |
+| 3 | WRITE-TESTS | [I] `test-writer` | `claude-sonnet-5-5` / medium | machine (suite red) |
+| 4 | TEST-REVIEW | [I] `test-reviewer` | `claude-opus-5-5` / medium | machine (verdict) |
+| 5 | IMPLEMENT | [I] `implementer` | `claude-sonnet-5-5` / medium | machine (green) |
+| 6 | VERIFY | [I] `verifier` | `claude-sonnet-5-5` / medium | machine (observed pass) |
+| 7 | CODE-REVIEW | [I] `code-reviewer` | `claude-opus-5-5` / medium | machine (verdict) |
 | 8 | REVIEW-GUIDE | [C] | session (Sonnet/Haiku ok) | — |
 | 9 | HUMAN REVIEW | [C] | session | **human (ship)** |
 | 10 | COMMIT | [C] | session (Sonnet/Haiku ok) | — |
@@ -101,7 +101,7 @@ per-run paths.
 ```yaml
 ---
 name: code-reviewer
-model: claude-opus-4-8        # dated pin (ADR-2)
+model: claude-opus-5-5        # dated pin (ADR-2)
 effort: medium
 tools: Read, Grep, Glob, Bash
 disallowedTools: Write, Edit
@@ -116,7 +116,7 @@ disallowedTools: Write, Edit
 | Conductor model | nowhere (plugin can't pin it) | Gate 0 warns if below design-grade |
 
 - **Invariant:** design and every review run on a higher model than implementation.
-- Reviewers pin dated `claude-opus-4-8`; producers pin `sonnet` (ADR-2). Effort is `medium`
+- Reviewers pin dated `claude-opus-5-5`; producers pin dated `claude-sonnet-5-5` (ADR-2). Effort is `medium`
   everywhere (#28, #35).
 - Gates are dispatched **bare** (no inline `model`) so the pin holds; the receipt verifies it
   (ADR-12).
@@ -182,7 +182,7 @@ best-effort (ADR-11). It is a record, with an **untrusted** mark on any violatio
 | `report.py`, `_util.py` | — | Markdown rendering; tolerant UTC parsing |
 
 - No transcript → auditor reports **UNKNOWN**, never PASS.
-- Alias pin (`sonnet`) accepts any same-family id; dated pin demands an exact id.
+- Dated pin demands an exact id (alias pins, if ever used, accept any same-family id).
 - Run-log and transcript share no code; they join on the run-log's `[min ts, max ts]` window ±5 min.
 
 **When it runs**
