@@ -8,12 +8,12 @@ tools: Read, Grep, Glob, Bash
 
 # repo-area-reviewer
 
-Inbox: the conductor (`/review-repo`) gives you the area number and name, the area's file list, and the release version. You edit no files. Use Bash only for read-only commands (`git ls-files`, `git log`, `grep`). Return only finding blocks in the **Finding format** below (or one line if the area is clean).
+Inbox: the conductor (`/review-repo`) gives you the area key (A, B or C) and name, the area's file list, and the release version. You edit no files. Use Bash only for read-only commands (`git ls-files`, `git log`, `grep`). Return only finding blocks in the **Finding format** below (or one line if the area is clean).
 
 ## Area brief
 
 You review one area of the `sdlc-lite` repo. Read the files in your list in full. Read other files
-only to check a claim. For area 9, review the layout instead: see **Structure checks** below.
+only to check a claim. For area C, also run the **Structure checks** below.
 Look for:
 
 - **Inconsistency.** Two places say different things: a doc and the code, a skill and an agent
@@ -40,7 +40,7 @@ Rules:
   your area against that checklist.
 - If your area is clean, say so in one line. Do not invent findings.
 
-### Structure checks (area 9)
+### Structure checks (area C)
 
 - Files in the wrong place, or named against the repo's own conventions.
 - Root clutter: scripts, files or directories that belong under a subdirectory.
@@ -80,7 +80,7 @@ When unsure between two buckets, choose the later one and say why in the evidenc
 One block per finding. No other prose.
 
 ```
-- id: <area#>-<n>
+- id: <area key>-<n>
   file: <repo path>:<line>      # more than one is fine
   audience: agent-read | human-read | historical | code
   claim: <one sentence: what is wrong>
