@@ -65,8 +65,7 @@ Current milestone: **`0.1.0`**.
 
 ### Open — in execution order
 
-1. **#63** — `chore(skill): move all gate pins to the latest dated models`
-   *Last, so the gate pins are re-checked against the final prose.*
+_None — every `0.1.0` issue is closed._
 
 ### Closed
 
@@ -97,6 +96,7 @@ Current milestone: **`0.1.0`**.
 | **#68** `fix(guard-hook): read-only critics can run pip install and repoint the user's environment` | 2026-10-03 (`ad9c486`) | `/fix` run, reproduced at T2 (guard subprocess test, 6/6 red): `policy.changes_environment()` denies critics `pip`/`pip3`/`pipX.Y` install/uninstall, `python -m pip`, `uv pip install/uninstall/sync` (rule `critic-env-change`, architecture.md §5 row 9); conductor and implementer unaffected. Gate 8 smoke 3/3. No T3; critic briefs don't mention pip yet. |
 | **#19** `feat(skill): /sdlc-init — set a Python repo up for /implement-feature` | 2026-10-03 (`4e4f110`) | `/feature` run: `/sdlc-init` measures with read-only `toolchain/setup_check.py` (found / floor / action table + missing config), shows one plan, applies it after approval, runs a `mutmut run "*__mutmut_1"` smoke test, never commits; a 2nd run is a no-op. Gate 0 checks all seven pins + mutmut config and stops with "run `/sdlc-init`". `mutmut>=3`; both fixtures carry exactly its config. T3 `roman-numeral` (`ENTRY=/sdlc-init VENV=1`): install + upgrade, no-op re-run, `/implement-feature` through Gate 7 (mutmut 90.9%), #68 import check held; `git init` offer attested in a non-git copy (T1 can't stage "not a repo"). |
 | **#81** `fix(skill): critic briefs don't state the pip install/uninstall guard rule` | 2026-10-04 (`1d1995d`) | `/fix` run, reproduced at T2 (`test_inbox_parity.py` red): `code-reviewer`, `verifier`, `test-reviewer` briefs state guard rule 9 in the deny reason's words (never change the Python environment; a missing dependency is a finding, not retried or worked around); a host test fails if a brief drops it. T1 waived (guard-enforced). Gate 8 5/5 run, `guard-secret-read-denied` failed once (unrelated; filed separately). |
+| **#63** `chore(skill): move all gate pins to the latest dated models` | 2026-10-04 (`d26e5cd`) | `/feature` run: all five `[I]` gates pin dated ids — reviewers `claude-opus-5-5`, producers `claude-sonnet-5-5` (the `sonnet` alias still resolved to `claude-sonnet-5`); ADR-2 is "every isolated gate pins a dated model", frontmatter the SSOT; `test_agentdefs.py` tripwires keep SKILL.md's ids equal to the pins. T3 `roman-numeral` receipt: all five ✅ exact. Gate 8 found the test-writer skipping its `pytest.raises` grep self-check on sonnet-5-5 (3/5) → the grep output is now a `## Self-check` deliverable in `05-test-intent.md` (3/3 green). Filed #84, #85; evidence added to #80. |
 
 ## Next release — `0.2.0` (the planning suite)
 
