@@ -135,7 +135,7 @@ the first task when 0.2.0 starts (not before), and each child then runs through 
 |---|---|
 | Customer-visible features | #47, #32 |
 | Customer-visible fixes / hardening | #78 |
-| Internal SDLC improvements | #70, #64, #62, #90, #77 |
+| Internal SDLC improvements | #70, #64, #94, #62, #90, #77 |
 | Internal SDLC fixes / hardening | — |
 
 **Execution order:**
@@ -147,6 +147,8 @@ the first task when 0.2.0 starts (not before), and each child then runs through 
    *First, so every non-docs issue in this release — tooling included — runs through `/feature` or `/fix`.*
 2. **#64** — `feat(repo): add a /regression skill that runs the full eval suite, 3 runs per case`
    *Before the planning-suite prose lands, so regressions in the existing cases show up early.*
+2b. **#94** — `feat(repo): per-agent run statistics in /review-repo, /feature and /fix reports`
+   *After #70, so it runs through `/feature`; every later run then reports its own cost.*
 3. **#62** — agent-facing prose pass (retitled; #83 folded in) — *one pass over `SKILL.md`, agent
    files and references: precise wording plus Opus 5.5 practices. Gated by the 0.1.0 baseline
    and `/regression`; lands before the planning-suite prose so the new skills start in the cleaned style.*
