@@ -67,6 +67,15 @@ only in `release-plan.md` — not labels — and backlog issues get none.
 
 ## 4. Cutting a release — procedure
 
+**First, write the release notes** (principles: §7):
+
+1. Ask an agent to draft the notes from the milestone's closed issues
+   (`gh issue list --milestone "<version>" --state closed`). It writes the draft to
+   `release-notes.md.tmp` at the repo root, in the entry format of §7.
+2. Review the draft. Check every claim against its issue. Approve it or ask for changes.
+3. Copy the approved text into `CHANGELOG.md` as a new `## <version>` section, above the previous
+   release. Commit it on `main`.
+
 `release.sh` is **cross-repo**: it tags in this repo **and** repoints the umbrella catalog. Run it
 from a clean `main`:
 
@@ -78,12 +87,18 @@ from a clean `main`:
 
 What it does (each push is confirmation-gated):
 
-1. **Validate:** clean tree, on `main`, `<version>` is valid semver, tag `v<version>` absent.
+1. **Validate:** clean tree, on `main`, `<version>` is valid semver, tag `v<version>` absent,
+   `CHANGELOG.md` has a `## <version>` section.
 2. **Bump** `sdlc-lite-plugin/.claude-plugin/plugin.json` `version` → `<version>`; commit.
 3. **Tag** `v<version>` (annotated) on the release commit; resolve its `sha`.
 4. **Repoint the umbrella:** in the `--umbrella` clone, edit the `sdlc-lite` **git-subdir** entry's
    `ref`/`sha` to the new tag; commit. (Without `--umbrella` it prints the exact manual edit.)
-5. **Push both repos** (confirmation-gated), then print the clean-room verify handoff.
+5. **Push both repos** (confirmation-gated).
+6. **Publish the GitHub Release** for `v<version>`. Its body is the `## <version>` section of
+   `CHANGELOG.md` (`gh release create --notes-file`). Without a push, or without `gh`, it prints
+   the command for you to run. Then it prints the clean-room verify handoff.
+
+Delete `release-notes.md.tmp` after the release.
 
 Then **verify (the gate)** with `./release-verify.sh` — the automated clean-room install, Gate 0/1
 smoke, `/plugin update` proof and milestone eval suite, described in
@@ -99,8 +114,15 @@ claude plugin install sdlc-lite@sdaas                # version-pinned to the rel
 ```
 
 Then run `/sdlc-init` in your repo (pinned toolchain + config) and `/implement-feature` — full walkthrough in the
-[README](../README.md). To update to a newer release: refresh the marketplace, then
-`claude plugin update sdlc-lite`.
+[README](../README.md). To update to a newer release:
+
+```bash
+claude plugin marketplace update sdaas
+claude plugin update sdlc-lite
+```
+
+Then run `/reload-plugins` in the session, or restart it. What changed in each release:
+[`CHANGELOG.md`](../CHANGELOG.md).
 
 ## 6. Roadmap
 
@@ -113,23 +135,23 @@ also get a branch-scoped **`<NN>-plan.md`** working plan (checked in, deleted at
 
 ## 7. Release principles
 
-These rules govern the release text. Items marked **not built yet** are policy today and become
-procedure when #89 ships.
+These rules govern the release text. The procedure is in §4.
 
-- **`CHANGELOG.md` is the source.** The GitHub Release body is the same text. *(Not built yet.)*
+- **`CHANGELOG.md` is the source.** The GitHub Release body is the same text.
 - **The notes summarize.** List the key use cases and features delivered and the key bugs fixed.
   Do not list every closed issue. Write them from the closed issues of the milestone, in the
   customer-visible themes (§3).
 - **Leave internal work out.** Internal SDLC items appear only as a link to the milestone's closed
   issues.
 - **Each release entry has these parts:** New features · Fixed bugs · Install · Update · Link to
-  the milestone's closed issues. The first release says there is no earlier release to update from.
+  the milestone's closed issues. The Update part says which release it updates from. `0.0.9` was
+  published without notes; `0.1.0` is the first entry and updates from `0.0.9`.
 - **The README is evergreen.** It holds install and update steps with no version numbers, and links
   to `CHANGELOG.md` for what changed. A release does not edit the README. The release checks that
   the README commands still work. `release-verify.sh` runs them in a clean room.
 - **An agent drafts, a human approves.** The agent writes the draft to `release-notes.md.tmp`.
   Nothing is committed or published before you approve it. `release.sh` stops when `CHANGELOG.md`
-  has no `## <version>` section. *(Not built yet.)*
+  has no `## <version>` section.
 - **Release text follows the human-read style** (`developer-guide.md` §5).
 - **Hold a retrospective after each release.** Review the release work and propose changes to this
   procedure. Record them as issues.
