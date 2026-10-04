@@ -104,6 +104,7 @@ Gates, STOPs, when each fires and why they diverge from `sdlc-lite`:
 | `/issue` | Files one GitHub issue per [`issue-template.md`](issue-template.md), after you approve the draft | available |
 | `/feature` | Implements an issue through gates 0–11; you approve scope, design, tests and implementation | available |
 | `/fix` | Fixes a `bug` issue: reproduces it first, runs `/feature`'s gates, and commits the reproducing case with the fix | available |
+| `/review-repo` | Reviews the whole repo before a release with nine area agents and one consolidator, pinned to Opus 5.5 / high and measured | available |
 | `/regression` | Runs the whole eval suite, 3 runs per case | planned — #64 |
 
 ---
