@@ -293,6 +293,6 @@ def test_legacy_gate_record_with_guessed_model_still_not_a_tool_call(tmp_path):
     # A pre-m-09 gate record that still carries a guessed model/effort is STILL orchestration
     # (discriminated on `gate` + no `tool`), never a tool call — the fix is robust to old logs.
     a = parse_runlog(str(write_runlog(tmp_path / "rl.jsonl", [
-        gate("TEST-REVIEW", "test-reviewer", model="claude-opus-4-8", effort="low"),
+        gate("TEST-REVIEW", "test-reviewer", model="claude-opus-5-5", effort="low"),
     ])))
     assert a.total_entries == 0 and a.orchestration_entries == 1

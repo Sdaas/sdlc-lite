@@ -4,7 +4,7 @@ The pins live in the agent-definition frontmatter (`agents/<role>.md`):
 
     ---
     name: code-reviewer
-    model: claude-opus-4-8
+    model: claude-opus-5-5
     effort: medium
     ...
     ---
@@ -16,13 +16,13 @@ deviation = WARN, either direction). This is authoritative — it proves what th
 actually did. Same seam-not-two-copies discipline as `policy.py` for the isolation rules.
 
 Pinned gates are DISPATCHED BARE (no inline `model`); the frontmatter pin — including
-the dated reviewer pin — is honored, and the receipt verifies the actual resolved model
+a dated pin — is honored, and the receipt verifies the actual resolved model
 against it. #22 originally also had the guard DENY a dispatch that named no model (the
 "Witt" deny-if-unnamed technique) on the premise that a frontmatter pin is "silently
 droppable"; that premise is FALSE on this platform (a bare-dispatch frontmatter pin IS
 honored) and the hook BROKE the dated reviewer pins — the inline `model` lever accepts
 only family aliases {sonnet,opus,haiku,fable}, so a forced inline name could only be the
-`opus` alias, which (rank-1) overrode the dated `claude-opus-4-8` pin -> `claude-opus-5`.
+`opus` alias, which (rank-1) overrode the dated `claude-opus-5-5` pin -> `claude-opus-5`.
 #36 reverted it. See dev-docs/findings/model-pinning-findings.md §7 and dev-docs/adr/ADR-12-model-effort-integrity.md.
 
 Effort asymmetry (verified against the current Claude Code platform, 2026-09): the

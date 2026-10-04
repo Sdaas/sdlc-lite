@@ -32,9 +32,9 @@ the turn — no further tool call:
 - **Dispatch every `[I]` gate bare — never name a model inline (#22, #36).** Do **not** pass a
   `model` argument on the dispatch. The gate's pinned `model` lives in its `agents/*.md`
   frontmatter and **is honored on a bare dispatch** (verified across real sessions); naming a
-  model inline is not only unnecessary, it **breaks the dated reviewer pins** — the inline `model`
-  slot accepts only family aliases `{sonnet, opus, haiku, fable}`, so naming a `claude-opus-4-8`
-  reviewer inline collapses it to the `opus` alias → the floating `claude-opus-5`, losing the
+  model inline is not only unnecessary, it **breaks the dated pins** — the inline `model`
+  slot accepts only family aliases `{sonnet, opus, haiku, fable}`, so naming a `claude-opus-5-5`
+  reviewer inline collapses it to the `opus` alias → whatever that alias currently resolves to, losing the
   exact-version reproducibility the dated pin exists for. Let the frontmatter pin govern; the
   post-run receipt **verifies** the actual resolved model against the pin (a mismatch is a FAIL).
   (`effort` likewise has no dispatch lever; it stays frontmatter-only and is audited, not enforced.)
@@ -240,19 +240,18 @@ Gate 0 below is the first application of this style; later STOP gates follow the
    |---|---|---|---|
    | INTERVIEW | [C] | Opus (session), medium | requirements reasoning = strong model |
    | DESIGN / SPEC | [C] | Opus (session), medium | design = strong model |
-   | WRITE-TESTS | [I] `test-writer` | `sonnet` alias, medium | writing tests = implementation |
-   | TEST-REVIEW | [I] `test-reviewer` | **`claude-opus-4-8`** (pinned), medium | review > implementation |
-   | IMPLEMENT | [I] `implementer` | `sonnet` alias, medium | implementation |
-   | VERIFY | [I] `verifier` | `sonnet` alias, medium | verification |
-   | CODE-REVIEW | [I] `code-reviewer` | **`claude-opus-4-8`** (pinned), medium | review > implementation |
+   | WRITE-TESTS | [I] `test-writer` | `claude-sonnet-5-5` (pinned), medium | writing tests = implementation |
+   | TEST-REVIEW | [I] `test-reviewer` | **`claude-opus-5-5`** (pinned), medium | review > implementation |
+   | IMPLEMENT | [I] `implementer` | `claude-sonnet-5-5` (pinned), medium | implementation |
+   | VERIFY | [I] `verifier` | `claude-sonnet-5-5` (pinned), medium | verification |
+   | CODE-REVIEW | [I] `code-reviewer` | **`claude-opus-5-5`** (pinned), medium | review > implementation |
    | REVIEW-GUIDE / COMMIT | [C] | Sonnet or Haiku (session) | mechanical presentation + commit |
 
-   The `[I]` subagent models are pinned in `agents/*.md`, in two different ways: the two
-   **reviewers** (`test-reviewer`, `code-reviewer`) pin the **explicit, dated** `claude-opus-4-8`
-   — on purpose, for **reproducible review behavior** (a floating alias would silently change the
-   reviewer as new Opus tiers ship); `test-writer` / `implementer` / `verifier` pin the **`sonnet`
-   alias** (whatever the latest Sonnet tier is). Both are **dispatched bare** so the frontmatter
-   pin — including the dated one — is honored (#36). The pin is **verified** (#22): the post-run
+   All five `[I]` gates pin an **explicit, dated** model id in `agents/*.md`: the two
+   **reviewers** (`test-reviewer`, `code-reviewer`) pin `claude-opus-5-5` for **reproducible
+   review behavior**; `test-writer` / `implementer` / `verifier` pin `claude-sonnet-5-5` — dated
+   too, so every model bump is deliberate and re-verified. All are **dispatched bare** so the
+   frontmatter pin is honored (#36). The pin is **verified** (#22): the post-run
    receipt compares the transcript's *actual* model against the pin — a mismatch is a **FAIL**.
    (Effort has no dispatch lever, so it is verified only — a deviation is a WARN, not enforced.)
    **Conductor `[C]` gates run on the
@@ -306,11 +305,11 @@ Gate 0 below is the first application of this style; later STOP gates follow the
    >   or proceed as-is.`
    > - **Branch:** `<working-branch>` `<(new — <reason>) only if forced/atypical>`
    > - `<model-plan line>` — **when the conductor is Opus-tier (clean):** ✅ `Model plan:
-   >   reviews on claude-opus-4-8 (pinned) · impl/tests/verify on Sonnet · design/interview on
+   >   reviews on claude-opus-5-5 (pinned) · impl/tests/verify on claude-sonnet-5-5 (pinned) · design/interview on
    >   this Opus session.` **when the conductor is below Opus-tier:** print the full table
    >   instead, showing the *actual* conductor model on the three `[C]` rows and a `⚠️` marker
    >   on the INTERVIEW & DESIGN rows only (no second remedy — it's on the conductor line). The
-   >   two reviewer rows always read `claude-opus-4-8` (pinned), never the `opus` alias.
+   >   reviewer rows always read `claude-opus-5-5` (pinned) and producer rows `claude-sonnet-5-5` (pinned), never an alias.
    >
    > **STOP — confirm layout, model plan, and branch before I begin.**
 

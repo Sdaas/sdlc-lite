@@ -8,16 +8,19 @@ frontmatter parser's edge cases.
 """
 from __future__ import annotations
 
+import re
+from pathlib import Path
+
 import agentdefs
 
 # The shipped pins, per the SKILL model plan (Gate 0 step 5). If an agent-def changes, this
 # test is the tripwire — update it deliberately, together with the SKILL table.
 EXPECTED = {
-    "test-writer":   ("sonnet", "medium"),
-    "test-reviewer": ("claude-opus-4-8", "medium"),
-    "implementer":   ("sonnet", "medium"),
-    "verifier":      ("sonnet", "medium"),
-    "code-reviewer": ("claude-opus-4-8", "medium"),
+    "test-writer":   ("claude-sonnet-5-5", "medium"),
+    "test-reviewer": ("claude-opus-5-5", "medium"),
+    "implementer":   ("claude-sonnet-5-5", "medium"),
+    "verifier":      ("claude-sonnet-5-5", "medium"),
+    "code-reviewer": ("claude-opus-5-5", "medium"),
 }
 
 
@@ -30,7 +33,7 @@ def test_load_pins_matches_shipped_agent_defs():
 
 
 def test_pin_for_strips_plugin_namespace():
-    assert agentdefs.pin_for("sdlc-lite:code-reviewer").model == "claude-opus-4-8"
+    assert agentdefs.pin_for("sdlc-lite:code-reviewer").model == "claude-opus-5-5"
     assert agentdefs.pin_for("code-reviewer").effort == "medium"
 
 
@@ -39,10 +42,36 @@ def test_pin_for_unknown_or_conductor_is_none():
     assert agentdefs.pin_for("some-other-agent") is None
 
 
+def test_product_prose_names_only_pinned_models():
+    # The frontmatter is the pin SSOT (#63): every dated model id the shipped prose names
+    # (SKILL.md tables and render templates, agent bodies, references) must be a current pin,
+    # so a bump that misses a prose copy fails here instead of shipping a stale id.
+    root = Path(agentdefs.__file__).parent
+    pinned = {p.model for p in agentdefs.load_pins().values()}
+    named = {
+        (str(f.relative_to(root)), m)
+        for pattern in ("skills/**/*.md", "agents/*.md")
+        for f in root.glob(pattern)
+        for m in re.findall(r"claude-(?:opus|sonnet|haiku|fable)-\d[\w-]*", f.read_text())
+    }
+    assert {(f, m) for f, m in named if m not in pinned} == set()
+
+
+def test_skill_model_table_rows_name_each_pin():
+    # Each `[I]` row of the SKILL.md model plan (Gate 0 step 5) names that gate's pin.
+    skill = Path(agentdefs.__file__).parent / "skills/implement-feature/SKILL.md"
+    rows = re.findall(r"^\s*\|[^|\n]*\| \[I\] `([\w-]+)` \|([^\n]*)$", skill.read_text(), re.M)
+    pins = agentdefs.load_pins()
+    assert {role for role, _ in rows} == set(EXPECTED)
+    assert "`sonnet` alias" not in skill.read_text()   # producers pin a dated id (#63)
+    for role, rest in rows:
+        assert pins[role].model in rest, f"SKILL.md model-table row for {role} names a stale model"
+
+
 def test_parse_frontmatter_flat_keys():
     fm = agentdefs._parse_frontmatter(
-        "---\nname: x\nmodel: claude-opus-4-8\neffort: high\ntools: Read, Bash\n---\nbody\n")
-    assert fm == {"name": "x", "model": "claude-opus-4-8", "effort": "high",
+        "---\nname: x\nmodel: claude-opus-5-5\neffort: high\ntools: Read, Bash\n---\nbody\n")
+    assert fm == {"name": "x", "model": "claude-opus-5-5", "effort": "high",
                   "tools": "Read, Bash"}
 
 
