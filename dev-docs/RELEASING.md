@@ -110,3 +110,26 @@ plus the **execution order** of the milestone's issues (GitHub is the SSOT for *
 issues** and the **ADRs** (Developer Guide), not in `release-plan.md`. Large, plan-mode-worthy issues
 also get a branch-scoped **`<NN>-plan.md`** working plan (checked in, deleted at merge) — see
 `CLAUDE.md` → Working conventions.
+
+## 7. Release principles
+
+These rules govern the release text. Items marked **not built yet** are policy today and become
+procedure when #89 ships.
+
+- **`CHANGELOG.md` is the source.** The GitHub Release body is the same text. *(Not built yet.)*
+- **The notes summarize.** List the key use cases and features delivered and the key bugs fixed.
+  Do not list every closed issue. Write them from the closed issues of the milestone, in the
+  customer-visible themes (§3).
+- **Leave internal work out.** Internal SDLC items appear only as a link to the milestone's closed
+  issues.
+- **Each release entry has these parts:** New features · Fixed bugs · Install · Update · Link to
+  the milestone's closed issues. The first release says there is no earlier release to update from.
+- **The README is evergreen.** It holds install and update steps with no version numbers, and links
+  to `CHANGELOG.md` for what changed. A release does not edit the README. The release checks that
+  the README commands still work. `release-verify.sh` runs them in a clean room.
+- **An agent drafts, a human approves.** The agent writes the draft to `release-notes.md.tmp`.
+  Nothing is committed or published before you approve it. `release.sh` stops when `CHANGELOG.md`
+  has no `## <version>` section. *(Not built yet.)*
+- **Release text follows the human-read style** (`developer-guide.md` §5).
+- **Hold a retrospective after each release.** Review the release work and propose changes to this
+  procedure. Record them as issues.

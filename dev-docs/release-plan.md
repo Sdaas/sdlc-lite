@@ -10,7 +10,7 @@ Titles can drift — GitHub wins; re-check with `gh issue list --milestone "<tit
 Decision history lives in the issues and the ADRs (`adr/`);
 release conventions live in `RELEASING.md`._
 
-_Last updated: 2026-10-03._
+_Last updated: 2026-10-04._
 
 ---
 
@@ -53,7 +53,7 @@ proves the tooling before later releases depend on it.
 |---|---|
 | Customer-visible features | #19 |
 | Customer-visible fixes / hardening | #75, #40, #68, #81, #63 |
-| Internal SDLC improvements | — |
+| Internal SDLC improvements | #89, #86, #87, #88 |
 | Internal SDLC fixes / hardening | — |
 
 On 2026-10-02 **#43 and #74 were parked to the backlog**: textual shell parsing in the guard proved
@@ -65,7 +65,32 @@ Current milestone: **`0.1.0`**.
 
 ### Open — in execution order
 
-_None — every `0.1.0` issue is closed._
+_Product work is done. The release now runs through this exit checklist, in order. A fix after step 6
+re-runs only the affected eval cases if it changes docs only. It re-runs the whole suite if it touches
+`SKILL.md`, an agent file, `guard.py` or `policy.py`._
+
+1. ~~#63 — latest model pins.~~ Done.
+2. **#86** — `feat(repo): /review-repo skill — full-repo review pinned to Opus 5.5 at high effort` (via `/feature`). — a repo-local skill that runs the review
+   below with `claude-opus-5-5` at high effort pinned in agent files. A measurement script checks
+   the actual model and effort in the transcripts. A wrong or unknown value stops the run: the
+   report is marked INVALID and nothing is triaged.
+3. **#87** — `chore(repo): run the full-repo review and triage findings before 0.1.0` — parallel Opus 5.5 high-effort agents, one per area, plus one
+   consolidator, with `/review-repo` (spec: `dev-docs/proposals/full-repo-review-prompt.md`). Output: `review-YYYYMMDD.md` (repo root, committed),
+   with each finding in a bucket: fix in 0.1.0 · 0.2.0 · backlog. A finding is 0.1.0 only if a
+   stranger following the README would hit a failure, wrong output, or a doc/code contradiction.
+   If it finds the README too confusing to install from, the README rewrite moves into 0.1.0.
+4. **Fix the 0.1.0 findings.**
+5. **#89** — `feat(release): changelog, evergreen README and release-notes step` — `CHANGELOG.md` template, README install/update section,
+   the `release.sh` guard, the notes-drafting step (principles: `RELEASING.md` §7).
+6. **#88** — `chore(repo): record a by-hand eval baseline for 0.1.0` — the whole suite, 3 runs per case, at the release commit.
+   Record it in `sdlc-lite-plugin/evals/BASELINE-0.1.0.md` (model, claude version, commit, date at
+   the top; known flakes labeled, e.g. #58). A regression later = any single case below its baseline
+   rate. (The file lives outside `evals/results/`, which is gitignored.)
+7. **Green dry run** in the dev container (`DEVCONTAINER.md`).
+8. **Draft the 0.1.0 notes** from the closed issues and approve them.
+9. **Run `release.sh`** — it bumps the version, tags `v0.1.0` and repoints the umbrella.
+10. **Retrospective** — after the tag, review the whole release work and propose changes to the
+   release process (`RELEASING.md` §7). File them as issues.
 
 ### Closed
 
@@ -109,7 +134,7 @@ the first task when 0.2.0 starts (not before), and each child then runs through 
 |---|---|
 | Customer-visible features | #47, #32 |
 | Customer-visible fixes / hardening | #78 |
-| Internal SDLC improvements | #70, #64, #77 |
+| Internal SDLC improvements | #70, #64, #62, #90, #77 |
 | Internal SDLC fixes / hardening | — |
 
 **Execution order:**
@@ -118,17 +143,26 @@ the first task when 0.2.0 starts (not before), and each child then runs through 
    *First, so every non-docs issue in this release — tooling included — runs through `/feature` or `/fix`.*
 2. **#64** — `feat(repo): add a /regression skill that runs the full eval suite, 3 runs per case`
    *Before the planning-suite prose lands, so regressions in the existing cases show up early.*
-3. **#77** — `chore(skill): drive a large decomposable feature through /implement-feature and record how it fails`
+3. **#62** — agent-facing prose pass (retitled; #83 folded in) — *one pass over `SKILL.md`, agent
+   files and references: precise wording plus Opus 5.5 practices. Gated by the 0.1.0 baseline
+   and `/regression`; lands before the planning-suite prose so the new skills start in the cleaned style.*
+4. **#90** — `docs(docs): rewrite human-read docs in ASD-STE100 style` — ASD-STE100 rewrite of README and dev-docs (`developer-guide.md` §5).
+   *No eval gate (link check only), so it can run at any point in the release.*
+5. **#77** — `chore(skill): drive a large decomposable feature through /implement-feature and record how it fails`
    *Before #32 is split: its design is pinned to the observed failure, not an imagined one.*
-4. **#47** — `feat(skill): /design-system — model a system into durable capability specs`
+6. **#47** — `feat(skill): /design-system — model a system into durable capability specs`
    *Split into child issues, then built child by child through `/feature`.*
-5. **#32** — `feat(skill): /plan-feature — decompose one capability into a buildable A/B/C/Z DAG`
+7. **#32** — `feat(skill): /plan-feature — decompose one capability into a buildable A/B/C/Z DAG`
    *After #47: it decomposes a capability `/design-system` produced. Split, then built the same way.*
-6. **#78** — `feat(skill): every terminal STOP ends with one exact command the user can run`
+8. **#78** — `feat(skill): every terminal STOP ends with one exact command the user can run`
    *Covers `/sdlc-init`'s STOPs too, so after #19.*
 
 **Moved on 2026-10-02:** #63, #44 and #19 to 0.1.0; #62 to the backlog (no prose rewrite right
-before a release). Earlier: #45 and #21 to 0.1.0 (2026-09-26).
+before a release). **On 2026-10-04** #62 moved to 0.2.0, after #64 and the 0.1.0 baseline; #83 was folded into it and closed.
+Earlier: #45 and #21 to 0.1.0 (2026-09-26).
+
+**Proposed for 0.3.0:** a retrospective analyzer — where the conductor and the isolated agents spend
+time and tokens, loops, waste (epic **#91** `feat(analyzer): retrospective analysis…`, no milestone yet; children #65, #69, #80). 0.2.0 stays the planning suite.
 
 **Closed early:** **#37** `feat(skill): add a mechanical pytest.raises match= check at gates 3 and 4`
 — 2026-09-26 (`e2a33e7`), as the `/feature` proof run; its T3 reached Gate 7 with no loop.
@@ -136,8 +170,7 @@ before a release). Earlier: #45 and #21 to 0.1.0 (2026-09-26).
 ## Backlog
 
 Everything else — **open issues with no milestone**, including work that was previously milestoned
-here but isn't committed now (e.g. **#43**, **#74**, parked 2026-10-02; **#62**, moved
-2026-10-02; **#79**, filed 2026-10-03). Not tracked here; query GitHub: `gh issue list --state open --search "no:milestone"`.
+here but isn't committed now (e.g. **#43**, **#74**, parked 2026-10-02; **#79**, filed 2026-10-03). Not tracked here; query GitHub: `gh issue list --state open --search "no:milestone"`.
 Promote an issue into a milestone when it's committed to a release.
 
 ---

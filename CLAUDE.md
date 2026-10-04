@@ -48,6 +48,15 @@ This file provides guidance to Claude Code when working in this repository.
     is plan-mode-worthy** (multiple sessions, multiple phases, or structurally complex; otherwise the
     GitHub issue is the plan). It carries the locked decisions, the phased plan with testing, and a
     progress tracker. **Checked in on the feature branch, `git rm`'d in the merge/close commit.**
+- **Two audiences — write each file for its reader** (detail: `dev-docs/developer-guide.md` §5):
+  - **Agent-read** (`SKILL.md`, `agents/*.md`, `references/*`, `.claude/skills/`,
+    `.claude/sdlc/gates.md`, `CLAUDE.md`): precise, and tuned for the pinned model.
+  - **Human-read** (`README.md`, `tutorial.md`, `developer-guide.md`, `architecture.md`,
+    `DEVCONTAINER.md`, `RELEASING.md`, `CHANGELOG.md`): **ASD-STE100 at about 80%** — short
+    sentences, active voice, one word for one meaning, imperative steps. A mermaid diagram only for
+    the gate flow and the isolation model. No HTML pages.
+  - ADRs, `findings/`, `proposals/` and `review-YYYYMMDD.md` are historical records. Do not rewrite
+    their prose.
 - **Temp files:** throwaway working files (scripts, intermediate data) go to `/tmp/` or the session
   scratchpad, or end in `.tmp`, and are deleted when done. **Anything the user is meant to read**
   (reports, findings, drafts, diffs, command output) is written to the **repo root** as

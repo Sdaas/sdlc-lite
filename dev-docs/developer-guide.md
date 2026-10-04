@@ -79,6 +79,10 @@ Check a change against these before approving it.
 - [ ] A critic may probe, never build a reference implementation.
 - [ ] No agent can edit the files its own acceptance depends on.
 
+**Human-read docs** (§5)
+- [ ] Short sentences, active voice, imperative steps; one word for one meaning.
+- [ ] No version numbers in `README.md`; it links to `CHANGELOG.md` for releases.
+
 **Enforcement & observability**
 - [ ] A prose rule the guard should enforce has a `policy.py` rule **and** a T2 test.
 - [ ] Reliability-critical config ships in the plugin, not project settings (ADR-1).
@@ -101,3 +105,27 @@ Gates, STOPs, when each fires and why they diverge from `sdlc-lite`:
 | `/feature` | Implements an issue through gates 0–11; you approve scope, design, tests and implementation | available |
 | `/fix` | Fixes a `bug` issue: reproduces it first, runs `/feature`'s gates, and commits the reproducing case with the fix | available |
 | `/regression` | Runs the whole eval suite, 3 runs per case | planned — #64 |
+
+---
+
+## 5. Writing: two audiences
+
+Write each file for its reader. The cleanup that fits one reader harms the other.
+
+| Audience | Files | Rule |
+|---|---|---|
+| **Agent-read** | `skills/*/SKILL.md`, `agents/*.md`, `references/*`, `.claude/skills/`, `.claude/sdlc/gates.md`, `CLAUDE.md` | Precise and unambiguous. Tuned for the pinned model. A prose change here changes behavior, so verify it with the eval suite against the baseline. |
+| **Human-read** | `README.md`, `tutorial.md`, `developer-guide.md`, `architecture.md`, `DEVCONTAINER.md`, `RELEASING.md`, `CHANGELOG.md` | **ASD-STE100 at about 80%.** A prose change here changes no behavior, so the link check is enough. |
+| **Historical** | `adr/`, `findings/`, `proposals/`, `review-YYYYMMDD.md` (repo root) | Do not rewrite the prose. Fix a broken link only. |
+
+**The human-read style.** The ASD-STE100 standard is a controlled language for maintenance
+documentation. We follow about 80% of it. This is a target, not a lint rule.
+
+- Keep sentences short. One idea in each sentence.
+- Use the active voice. Write "Run `/sdlc-init`", not "`/sdlc-init` should be run".
+- Write steps as commands (imperative), one action in each step.
+- Use one word for one meaning. Do not swap "gate", "step" and "stage" for the same thing.
+- Prefer a plain word to a clever one. Do not use idioms.
+
+**Diagrams.** Add a mermaid diagram only where a picture shows a mechanism that prose cannot show
+fast: the gate flow and the subagent isolation model. Do not add HTML pages.
