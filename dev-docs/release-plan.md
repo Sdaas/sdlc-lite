@@ -53,7 +53,7 @@ proves the tooling before later releases depend on it.
 |---|---|
 | Customer-visible features | #19 |
 | Customer-visible fixes / hardening | #75, #40, #68, #81, #63 |
-| Internal SDLC improvements | #89, #86, #87, #88 |
+| Internal SDLC improvements | #89, #86, #92, #87, #88 |
 | Internal SDLC fixes / hardening | — |
 
 On 2026-10-02 **#43 and #74 were parked to the backlog**: textual shell parsing in the guard proved
@@ -70,12 +70,13 @@ re-runs only the affected eval cases if it changes docs only. It re-runs the who
 `SKILL.md`, an agent file, `guard.py` or `policy.py`._
 
 1. ~~#63 — latest model pins.~~ Done.
-2. **#86** — `feat(repo): /review-repo skill — full-repo review pinned to Opus 5.5 at high effort` (via `/feature`). — a repo-local skill that runs the review
-   below with `claude-opus-5-5` at high effort pinned in agent files. A measurement script checks
-   the actual model and effort in the transcripts. A wrong or unknown value stops the run: the
-   report is marked INVALID and nothing is triaged.
+2. ~~#86 — `/review-repo` skill.~~ Done.
+   2b. **#92** — `feat(repo): cut the cost of a /review-repo run` (via `/feature`). — 3 area agents
+   plus the consolidator, review only the areas changed since a given point, optional canary. One
+   run of 9 + 1 agents cost about $28. Before #87, so #87's run is its end-to-end proof.
 3. **#87** — `chore(repo): run the full-repo review and triage findings before 0.1.0` — parallel Opus 5.5 high-effort agents, one per area, plus one
-   consolidator, with `/review-repo` (spec: `dev-docs/proposals/full-repo-review-prompt.md`). Output: `review-YYYYMMDD.md` (repo root, committed),
+   consolidator, with `/review-repo` (spec: `.claude/skills/review-repo/SKILL.md`). It also proves
+   #86's wait rule (the conductor runs the final measurement on its own) and #92's cost cut. Output: `review-YYYYMMDD.md` (repo root, committed),
    with each finding in a bucket: fix in 0.1.0 · 0.2.0 · backlog. A finding is 0.1.0 only if a
    stranger following the README would hit a failure, wrong output, or a doc/code contradiction.
    If it finds the README too confusing to install from, the README rewrite moves into 0.1.0.
@@ -122,6 +123,7 @@ re-runs only the affected eval cases if it changes docs only. It re-runs the who
 | **#19** `feat(skill): /sdlc-init — set a Python repo up for /implement-feature` | 2026-10-03 (`4e4f110`) | `/feature` run: `/sdlc-init` measures with read-only `toolchain/setup_check.py` (found / floor / action table + missing config), shows one plan, applies it after approval, runs a `mutmut run "*__mutmut_1"` smoke test, never commits; a 2nd run is a no-op. Gate 0 checks all seven pins + mutmut config and stops with "run `/sdlc-init`". `mutmut>=3`; both fixtures carry exactly its config. T3 `roman-numeral` (`ENTRY=/sdlc-init VENV=1`): install + upgrade, no-op re-run, `/implement-feature` through Gate 7 (mutmut 90.9%), #68 import check held; `git init` offer attested in a non-git copy (T1 can't stage "not a repo"). |
 | **#81** `fix(skill): critic briefs don't state the pip install/uninstall guard rule` | 2026-10-04 (`1d1995d`) | `/fix` run, reproduced at T2 (`test_inbox_parity.py` red): `code-reviewer`, `verifier`, `test-reviewer` briefs state guard rule 9 in the deny reason's words (never change the Python environment; a missing dependency is a finding, not retried or worked around); a host test fails if a brief drops it. T1 waived (guard-enforced). Gate 8 5/5 run, `guard-secret-read-denied` failed once (unrelated; filed separately). |
 | **#63** `chore(skill): move all gate pins to the latest dated models` | 2026-10-04 (`d26e5cd`) | `/feature` run: all five `[I]` gates pin dated ids — reviewers `claude-opus-5-5`, producers `claude-sonnet-5-5` (the `sonnet` alias still resolved to `claude-sonnet-5`); ADR-2 is "every isolated gate pins a dated model", frontmatter the SSOT; `test_agentdefs.py` tripwires keep SKILL.md's ids equal to the pins. T3 `roman-numeral` receipt: all five ✅ exact. Gate 8 found the test-writer skipping its `pytest.raises` grep self-check on sonnet-5-5 (3/5) → the grep output is now a `## Self-check` deliverable in `05-test-intent.md` (3/3 green). Filed #84, #85; evidence added to #80. |
+| **#86** `feat(repo): /review-repo skill — full-repo review pinned to Opus 5.5 at high effort` | 2026-10-04 (`59176bf`) | `/feature` run in an ad-hoc tooling lane (#70 not built): 9 area agents + 1 consolidator in `.claude/agents/`, pinned `claude-opus-5-5` / `high`; `measure.py` checks the pins before any spawn (a wrong pin costs $0) and the transcripts after the areas and after the consolidator, against fixed values. Real run: 10/10 at opus-5-5/high, but ~$28 → #92; the conductor didn't wait for the consolidator (fixed in prose, proven by #87). Wrong-pin run: INVALID at pre-flight, 0 agents. |
 
 ## Next release — `0.2.0` (the planning suite)
 
