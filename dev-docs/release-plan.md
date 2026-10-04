@@ -77,16 +77,20 @@ re-runs only the affected eval cases if it changes docs only. It re-runs the who
    *Other 0.1.0-bucket findings:* B-1, B-2 + C-22, X-1 and C-6 are folded into #89. A-2 (wrong
    transcript folder name for paths with `.`; the receipt degrades to UNKNOWN, no damage) and B-3
    (`SKILL.md` says "dev container", the README is right) move to 0.2.0.
-5. **#89** — `feat(release): changelog, evergreen README and release-notes step` — `CHANGELOG.md` template, README install/update section,
-   the `release.sh` guard, the notes-drafting step (principles: `RELEASING.md` §7).
+5. ~~#89 — changelog, evergreen README and release-notes step.~~ Done. The 0.1.0 entry is already
+   in `CHANGELOG.md`.
 6. **#88** — `chore(repo): record a by-hand eval baseline for 0.1.0` — the whole suite, 3 runs per case, at the release commit.
    Record it in `sdlc-lite-plugin/evals/BASELINE-0.1.0.md` (model, claude version, commit, date at
    the top; known flakes labeled, e.g. #58). A regression later = any single case below its baseline
    rate. (The file lives outside `evals/results/`, which is gitignored.)
 7. **Green dry run** in the dev container (`DEVCONTAINER.md`). Also check #93: no `if-runlog.jsonl`
    in the fixture root before Gate 0.
-8. **Draft the 0.1.0 notes** from the closed issues and approve them.
-9. **Run `release.sh`** — it bumps the version, tags `v0.1.0` and repoints the umbrella.
+8. **Re-check the 0.1.0 notes** — the `## 0.1.0` entry in `CHANGELOG.md` was drafted and approved
+   with #89. Update it for anything that closed since, add the release date to the heading if
+   wanted, and commit.
+9. **Run `release.sh`** — it checks the `CHANGELOG.md` section, bumps the version, tags `v0.1.0`,
+   repoints the umbrella and publishes the GitHub Release. Then run `release-verify.sh`: its
+   clean-room install and `/plugin update` proof (0.0.9 → 0.1.0) are #89's last verification.
 10. **Retrospective** — after the tag, review the whole release work and propose changes to the
    release process (`RELEASING.md` §7). File them as issues.
 
@@ -124,6 +128,7 @@ re-runs only the affected eval cases if it changes docs only. It re-runs the who
 | **#92** `feat(repo): cut the cost of a /review-repo run` | 2026-10-04 (`5ca71db`) | `/feature` run, tooling lane: 9 areas → 3 (A product · B install path and evals · C docs, history, process, structure) + consolidator; `measure.py` owns the area table, adds a `plan` phase and `--since <ref>` (only changed areas are reviewed; the expected count is derived from the diff, never passed in). A since-ref run checks structure only when area C changed, so the pre-release run is a full one. Canary dropped. T2 only (305 passed, $0); #87's run is the T3 proof and the "after" cost. |
 | **#87** `chore(repo): run the full-repo review and triage findings before 0.1.0` | 2026-10-04 (`7abeddc`) | `/review-repo` full run: 3 areas + consolidator, 4/4 at opus-5-5/high, the conductor ran the final measurement on its own (#86 wait rule proven); $11.61 vs the $28.35 baseline (#92 proven). 65 findings in `review-20261004.md`. 0.1.0: #93 (A-1); B-1, C-6 folded into #89. All other findings (incl. A-2, B-3) target 0.2.0 and are filed as issues when 0.2.0 starts. |
 | **#93** `fix(guard-hook): the guard writes every tool call to if-runlog.jsonl in every project's root` | 2026-10-04 (`f9a1c48`) | `/fix` run, reproduced at T2 (4 guard subprocess tests red): with no `.active-run` and no `$IF_RUNLOG` the guard writes no audit line (project-dir and `/tmp` fallbacks gone). Every deny rule stays global (AC 3); with no handoff dir, confined critics write only to scratch. `.gitignore` lines keep `if-runlog.jsonl`. Gate 8 9/9 (`gate-0-model-plan-pins` failed once on its regex grader, then passed twice). T3 check folded into step 7. |
+| **#89** `feat(release): changelog, evergreen README and release-notes step` | 2026-10-04 (`f5ad946`) | By hand (docs + shell; `/feature` declines, pre-#70): `CHANGELOG.md` with the approved 0.1.0 entry (Update from 0.0.9 says to run `/sdlc-init`); `RELEASING.md` §4 notes step; `release.sh` stops with no `## <version>` section and publishes it via `gh release create --notes-file` (`release.test.sh` 31/31); README CLI-form Quick start, Updating section, no version line (B-1, X-1, B-2 + C-22, C-6). Clean-room + update proof moves to step 9. |
 
 ## Next release — `0.2.0` (the planning suite)
 
