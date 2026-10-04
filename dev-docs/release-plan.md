@@ -73,8 +73,7 @@ re-runs only the affected eval cases if it changes docs only. It re-runs the who
 2. ~~#86 — `/review-repo` skill.~~ Done.
    2b. ~~#92 — cut the cost of a `/review-repo` run.~~ Done.
 3. ~~#87 — full-repo review.~~ Done: `review-20261004.md`, 65 findings (7 in the 0.1.0 bucket).
-4. **#93** — `fix(guard-hook): the guard writes every tool call to if-runlog.jsonl in every project's root`
-   — review finding A-1, the only `high`. The only 0.1.0 finding fixed on its own (`/fix`).
+4. ~~#93 — the guard writes every tool call to `if-runlog.jsonl`.~~ Done. Its T3 check moves to step 7.
    *Other 0.1.0-bucket findings:* B-1, B-2 + C-22, X-1 and C-6 are folded into #89. A-2 (wrong
    transcript folder name for paths with `.`; the receipt degrades to UNKNOWN, no damage) and B-3
    (`SKILL.md` says "dev container", the README is right) move to 0.2.0.
@@ -84,7 +83,8 @@ re-runs only the affected eval cases if it changes docs only. It re-runs the who
    Record it in `sdlc-lite-plugin/evals/BASELINE-0.1.0.md` (model, claude version, commit, date at
    the top; known flakes labeled, e.g. #58). A regression later = any single case below its baseline
    rate. (The file lives outside `evals/results/`, which is gitignored.)
-7. **Green dry run** in the dev container (`DEVCONTAINER.md`).
+7. **Green dry run** in the dev container (`DEVCONTAINER.md`). Also check #93: no `if-runlog.jsonl`
+   in the fixture root before Gate 0.
 8. **Draft the 0.1.0 notes** from the closed issues and approve them.
 9. **Run `release.sh`** — it bumps the version, tags `v0.1.0` and repoints the umbrella.
 10. **Retrospective** — after the tag, review the whole release work and propose changes to the
@@ -123,6 +123,7 @@ re-runs only the affected eval cases if it changes docs only. It re-runs the who
 | **#86** `feat(repo): /review-repo skill — full-repo review pinned to Opus 5.5 at high effort` | 2026-10-04 (`59176bf`) | `/feature` run in an ad-hoc tooling lane (#70 not built): 9 area agents + 1 consolidator in `.claude/agents/`, pinned `claude-opus-5-5` / `high`; `measure.py` checks the pins before any spawn (a wrong pin costs $0) and the transcripts after the areas and after the consolidator, against fixed values. Real run: 10/10 at opus-5-5/high, but ~$28 → #92; the conductor didn't wait for the consolidator (fixed in prose, proven by #87). Wrong-pin run: INVALID at pre-flight, 0 agents. |
 | **#92** `feat(repo): cut the cost of a /review-repo run` | 2026-10-04 (`5ca71db`) | `/feature` run, tooling lane: 9 areas → 3 (A product · B install path and evals · C docs, history, process, structure) + consolidator; `measure.py` owns the area table, adds a `plan` phase and `--since <ref>` (only changed areas are reviewed; the expected count is derived from the diff, never passed in). A since-ref run checks structure only when area C changed, so the pre-release run is a full one. Canary dropped. T2 only (305 passed, $0); #87's run is the T3 proof and the "after" cost. |
 | **#87** `chore(repo): run the full-repo review and triage findings before 0.1.0` | 2026-10-04 (`7abeddc`) | `/review-repo` full run: 3 areas + consolidator, 4/4 at opus-5-5/high, the conductor ran the final measurement on its own (#86 wait rule proven); $11.61 vs the $28.35 baseline (#92 proven). 65 findings in `review-20261004.md`. 0.1.0: #93 (A-1); B-1, C-6 folded into #89. All other findings (incl. A-2, B-3) target 0.2.0 and are filed as issues when 0.2.0 starts. |
+| **#93** `fix(guard-hook): the guard writes every tool call to if-runlog.jsonl in every project's root` | 2026-10-04 (`f9a1c48`) | `/fix` run, reproduced at T2 (4 guard subprocess tests red): with no `.active-run` and no `$IF_RUNLOG` the guard writes no audit line (project-dir and `/tmp` fallbacks gone). Every deny rule stays global (AC 3); with no handoff dir, confined critics write only to scratch. `.gitignore` lines keep `if-runlog.jsonl`. Gate 8 9/9 (`gate-0-model-plan-pins` failed once on its regex grader, then passed twice). T3 check folded into step 7. |
 
 ## Next release — `0.2.0` (the planning suite)
 
