@@ -121,3 +121,28 @@ def test_code_reviewer_never_told_to_run_quality_tools():
 def test_skill_shows_mutation_skip_at_gates_8_and_11():
     assert "mutation: SKIPPED" in _gate_section("Gate 8 — REVIEW-GUIDE")
     assert "mutation: SKIPPED" in _gate_section("Gate 11 — REPORT")
+
+
+# --- #81: each critic brief states guard rule 9 (critic-env-change) ----------
+
+CRITICS = ("code-reviewer", "verifier", "test-reviewer")
+
+
+def _block_with(agent: str, needle: str) -> str:
+    """The bullet or paragraph of the agent's brief that mentions `needle`."""
+    text = (PLUGIN / "agents" / f"{agent}.md").read_text()
+    blocks = re.split(r"\n\s*\n|\n(?=\s*(?:- |\d+\. ))", text)
+    hits = [b for b in blocks if needle in b]
+    assert hits, f"{agent}.md never mentions {needle!r}"
+    return " ".join(hits[0].split()).lower()
+
+
+def test_critic_briefs_state_env_change_rule():
+    for agent in CRITICS:
+        block = _block_with(agent, "pip install")
+        assert "pip uninstall" in block or "install/uninstall" in block, agent
+        assert "python environment" in block, agent
+        assert "never" in block and block.index("never") < block.index("pip install"), agent
+        assert "conductor" in block, agent
+        assert "missing" in block and "finding" in block, agent
+        assert "retry" in block and "work around" in block, agent
