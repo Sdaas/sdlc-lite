@@ -22,7 +22,7 @@ when it and `gates.md` disagree, `gates.md` wins.
 | An idea or a bug, no conforming issue | any | `/issue` — files one issue per [`issue-template.md`](issue-template.md) | — |
 | An issue labelled `enhancement` | prose · hook · code | `/feature #NN` | a `bug` → `/feature` sends you to `/fix` |
 | An issue labelled `bug` | prose · hook · code | `/fix #NN` | not a `bug` → `/fix` sends you to `/feature` |
-| A release to cut (exit checklist) | — | `/review-repo <version>` — see [below](#review-repo--full-repo-review) | — |
+| A release to cut (exit checklist) | — | `/review-repo <version> [<since-ref>]` — see [below](#review-repo--full-repo-review) | — |
 | A docs-only or shell-only change | — | none — edit directly, normal review-before-commit | both skills decline at Gate 0 |
 
 `/feature` and `/fix` both hand off to `/issue` when the `#NN` is missing or does not conform to the
@@ -71,13 +71,20 @@ Because the plugin's spine rests on assumptions this repo breaks — the argumen
 
 ## `/review-repo` — full-repo review
 
-`/review-repo <version>` runs the full-repo review before each release. It is a step of the release
+`/review-repo <version> [<since-ref>]` runs the full-repo review before each release. It is a step of the release
 exit checklist. It is not part of the `/feature` spine: it has no gates and no STOPs.
 
-- It spawns nine `repo-area-reviewer` agents and one `repo-review-consolidator`. Both agent files
-  pin `claude-opus-5-5` at effort `high`.
+- It spawns three `repo-area-reviewer` agents (A Product, B Install path and evals, C Docs, history,
+  process and structure) and one `repo-review-consolidator`. Both agent files pin `claude-opus-5-5`
+  at effort `high`.
+- With a since-ref, only areas with a file changed since that ref get a reviewer. The report lists
+  the other areas as not reviewed.
+- A since-ref run checks the repo structure only when area C changed. Run a full review (no
+  since-ref) before a release.
+- Cost: the #86 run (9 areas) cost $28.35 — 10 agents, 546 turns. The 3-area figure is recorded by #87.
 - `.claude/skills/review-repo/measure.py` reads the session transcripts and checks every agent
-  against those fixed values. It runs three times: on the agent files before any agent
+  against those fixed values. It also owns the area table (`AREAS`) and has a `plan` phase that
+  lists the files per area. It measures three times: on the agent files before any agent
   starts (a wrong pin stops the run at no cost), after the area reviewers, and after the consolidator.
 - **Hard stop.** A wrong pin stops the run before any agent starts. A wrong model, a wrong effort,
   an unknown effort or a wrong agent count makes the report start with
