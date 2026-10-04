@@ -52,7 +52,7 @@ proves the tooling before later releases depend on it.
 | Theme | Issues |
 |---|---|
 | Customer-visible features | #19 |
-| Customer-visible fixes / hardening | #75, #40, #68, #81, #63 |
+| Customer-visible fixes / hardening | #75, #40, #68, #81, #63, #93 |
 | Internal SDLC improvements | #89, #86, #92, #87, #88 |
 | Internal SDLC fixes / hardening | — |
 
@@ -72,14 +72,12 @@ re-runs only the affected eval cases if it changes docs only. It re-runs the who
 1. ~~#63 — latest model pins.~~ Done.
 2. ~~#86 — `/review-repo` skill.~~ Done.
    2b. ~~#92 — cut the cost of a `/review-repo` run.~~ Done.
-3. **#87** — `chore(repo): run the full-repo review and triage findings before 0.1.0` — parallel Opus 5.5 high-effort agents, one per area, plus one
-   consolidator, with `/review-repo` (spec: `.claude/skills/review-repo/SKILL.md`). It also proves
-   #86's wait rule (the conductor runs the final measurement on its own) and #92's cost cut: a full
-   run is 3 + 1 agents; record its cost next to the $28.35 baseline in `repo-local-skills.md`. Output: `review-YYYYMMDD.md` (repo root, committed),
-   with each finding in a bucket: fix in 0.1.0 · 0.2.0 · backlog. A finding is 0.1.0 only if a
-   stranger following the README would hit a failure, wrong output, or a doc/code contradiction.
-   If it finds the README too confusing to install from, the README rewrite moves into 0.1.0.
-4. **Fix the 0.1.0 findings.**
+3. ~~#87 — full-repo review.~~ Done: `review-20261004.md`, 65 findings (7 in the 0.1.0 bucket).
+4. **#93** — `fix(guard-hook): the guard writes every tool call to if-runlog.jsonl in every project's root`
+   — review finding A-1, the only `high`. The only 0.1.0 finding fixed on its own (`/fix`).
+   *Other 0.1.0-bucket findings:* B-1, B-2 + C-22, X-1 and C-6 are folded into #89. A-2 (wrong
+   transcript folder name for paths with `.`; the receipt degrades to UNKNOWN, no damage) and B-3
+   (`SKILL.md` says "dev container", the README is right) move to 0.2.0.
 5. **#89** — `feat(release): changelog, evergreen README and release-notes step` — `CHANGELOG.md` template, README install/update section,
    the `release.sh` guard, the notes-drafting step (principles: `RELEASING.md` §7).
 6. **#88** — `chore(repo): record a by-hand eval baseline for 0.1.0` — the whole suite, 3 runs per case, at the release commit.
@@ -124,6 +122,7 @@ re-runs only the affected eval cases if it changes docs only. It re-runs the who
 | **#63** `chore(skill): move all gate pins to the latest dated models` | 2026-10-04 (`d26e5cd`) | `/feature` run: all five `[I]` gates pin dated ids — reviewers `claude-opus-5-5`, producers `claude-sonnet-5-5` (the `sonnet` alias still resolved to `claude-sonnet-5`); ADR-2 is "every isolated gate pins a dated model", frontmatter the SSOT; `test_agentdefs.py` tripwires keep SKILL.md's ids equal to the pins. T3 `roman-numeral` receipt: all five ✅ exact. Gate 8 found the test-writer skipping its `pytest.raises` grep self-check on sonnet-5-5 (3/5) → the grep output is now a `## Self-check` deliverable in `05-test-intent.md` (3/3 green). Filed #84, #85; evidence added to #80. |
 | **#86** `feat(repo): /review-repo skill — full-repo review pinned to Opus 5.5 at high effort` | 2026-10-04 (`59176bf`) | `/feature` run in an ad-hoc tooling lane (#70 not built): 9 area agents + 1 consolidator in `.claude/agents/`, pinned `claude-opus-5-5` / `high`; `measure.py` checks the pins before any spawn (a wrong pin costs $0) and the transcripts after the areas and after the consolidator, against fixed values. Real run: 10/10 at opus-5-5/high, but ~$28 → #92; the conductor didn't wait for the consolidator (fixed in prose, proven by #87). Wrong-pin run: INVALID at pre-flight, 0 agents. |
 | **#92** `feat(repo): cut the cost of a /review-repo run` | 2026-10-04 (`5ca71db`) | `/feature` run, tooling lane: 9 areas → 3 (A product · B install path and evals · C docs, history, process, structure) + consolidator; `measure.py` owns the area table, adds a `plan` phase and `--since <ref>` (only changed areas are reviewed; the expected count is derived from the diff, never passed in). A since-ref run checks structure only when area C changed, so the pre-release run is a full one. Canary dropped. T2 only (305 passed, $0); #87's run is the T3 proof and the "after" cost. |
+| **#87** `chore(repo): run the full-repo review and triage findings before 0.1.0` | 2026-10-04 (`7abeddc`) | `/review-repo` full run: 3 areas + consolidator, 4/4 at opus-5-5/high, the conductor ran the final measurement on its own (#86 wait rule proven); $11.61 vs the $28.35 baseline (#92 proven). 65 findings in `review-20261004.md`. 0.1.0: #93 (A-1); B-1, C-6 folded into #89. All other findings (incl. A-2, B-3) target 0.2.0 and are filed as issues when 0.2.0 starts. |
 
 ## Next release — `0.2.0` (the planning suite)
 
@@ -141,6 +140,9 @@ the first task when 0.2.0 starts (not before), and each child then runs through 
 
 **Execution order:**
 
+0. **File issues from `review-20261004.md`** (#87) — every next-release and backlog finding, plus
+   A-2 and B-3 from the 0.1.0 bucket; skip the ones #93 and #89 closed. Group by root cause, follow
+   `issue-template.md`, then place them in this order. *First, together with splitting #47 and #32.*
 1. **#70** — `feat(repo): widen /feature Gate 0 to accept tooling issues`
    *First, so every non-docs issue in this release — tooling included — runs through `/feature` or `/fix`.*
 2. **#64** — `feat(repo): add a /regression skill that runs the full eval suite, 3 runs per case`

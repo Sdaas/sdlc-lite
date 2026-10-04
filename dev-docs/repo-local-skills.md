@@ -81,7 +81,8 @@ exit checklist. It is not part of the `/feature` spine: it has no gates and no S
   the other areas as not reviewed.
 - A since-ref run checks the repo structure only when area C changed. Run a full review (no
   since-ref) before a release.
-- Cost: the #86 run (9 areas) cost $28.35 — 10 agents, 546 turns. The 3-area figure is recorded by #87.
+- Cost: the #86 run (9 areas) cost $28.35 — 10 agents, 546 turns. The #87 run (3 areas, the
+  full pre-0.1.0 review) cost $11.61 for the whole session — 4 agents, 24 minutes.
 - `.claude/skills/review-repo/measure.py` reads the session transcripts and checks every agent
   against those fixed values. It also owns the area table (`AREAS`) and has a `plan` phase that
   lists the files per area. It measures three times: on the agent files before any agent
