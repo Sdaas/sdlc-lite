@@ -1,6 +1,7 @@
 # Repo-local skills — the SDLC for changing `sdlc-lite` itself
 
-Three slash commands govern work on **this repo**: `/issue`, `/feature`, `/fix`. They live in
+Four slash commands govern work on **this repo**: `/issue`, `/feature`, `/fix`, and `/review-repo`
+for the full-repo review before a release. They live in
 `.claude/skills/`, are **not shipped** with the plugin, and are **human-typed only**
 (`disable-model-invocation: true`) — the model never starts one on its own.
 
@@ -21,6 +22,7 @@ when it and `gates.md` disagree, `gates.md` wins.
 | An idea or a bug, no conforming issue | any | `/issue` — files one issue per [`issue-template.md`](issue-template.md) | — |
 | An issue labelled `enhancement` | prose · hook · code | `/feature #NN` | a `bug` → `/feature` sends you to `/fix` |
 | An issue labelled `bug` | prose · hook · code | `/fix #NN` | not a `bug` → `/fix` sends you to `/feature` |
+| A release to cut (exit checklist) | — | `/review-repo <version>` — see [below](#review-repo--full-repo-review) | — |
 | A docs-only or shell-only change | — | none — edit directly, normal review-before-commit | both skills decline at Gate 0 |
 
 `/feature` and `/fix` both hand off to `/issue` when the `#NN` is missing or does not conform to the
@@ -66,6 +68,22 @@ no fifth STOP is needed. First real run: #61.
 Because the plugin's spine rests on assumptions this repo breaks — the argument is
 [`verification-ladder.md`](verification-ladder.md) §6. The gate-by-gate correspondence is the
 *Mapping to `implement-feature`* table in `gates.md`. The two are not expected to converge.
+
+## `/review-repo` — full-repo review
+
+`/review-repo <version>` runs the full-repo review before each release. It is a step of the release
+exit checklist. It is not part of the `/feature` spine: it has no gates and no STOPs.
+
+- It spawns nine `repo-area-reviewer` agents and one `repo-review-consolidator`. Both agent files
+  pin `claude-opus-5-5` at effort `high`.
+- `.claude/skills/review-repo/measure.py` reads the session transcripts and checks every agent
+  against those fixed values. It runs three times: on the agent files before any agent
+  starts (a wrong pin stops the run at no cost), after the area reviewers, and after the consolidator.
+- **Hard stop.** A wrong pin stops the run before any agent starts. A wrong model, a wrong effort,
+  an unknown effort or a wrong agent count makes the report start with
+  `INVALID — not Opus 5.5 / high`. Nothing from that report is triaged.
+- Run it in a fresh session, on a clean `main`. The skill files are the source of truth;
+  [the proposal](proposals/full-repo-review-prompt.md) is a historical record.
 
 ## Planned
 

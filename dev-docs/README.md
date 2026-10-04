@@ -18,8 +18,8 @@ here — the root [`README.md`](../README.md) is the complete user-facing doc. E
 - **[`verification-ladder.md`](verification-ladder.md)** — how much proof a change owes before it
   counts as done: the T1/T2/T3 tiers, which tier each kind of change needs, and the budget. Start
   here before changing any of the plugin's prose.
-- **[`repo-local-skills.md`](repo-local-skills.md)** — `/issue`, `/feature`, `/fix`: the slash
-  commands that govern changes to this repo — their gates, STOPs, and when each one fires.
+- **[`repo-local-skills.md`](repo-local-skills.md)** — `/issue`, `/feature`, `/fix`, `/review-repo`: the
+  slash commands that govern changes to this repo — their gates, STOPs, and when each one fires.
 - **[`DEVCONTAINER.md`](DEVCONTAINER.md)** — the dev-container test harness lifecycle, and the
   problems you meet when running `claude plugin eval` (T1 on that ladder) and their fixes.
 - **[`t3-runs.md`](t3-runs.md)** — hands-off T3 dry runs: the agent launches and watches the session

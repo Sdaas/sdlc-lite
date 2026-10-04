@@ -1,11 +1,8 @@
 # Full-repo review — spec for `/review-repo`
 
-> **Status:** this file is the spec for the repo-local skill `/review-repo` (#86). The
-> skill runs the review below with the area agents and the consolidator pinned to
-> `claude-opus-5-5` at `effort: high` in `.claude/agents/`. A measurement script reads the
-> transcripts and confirms the actual model and effort. A wrong or UNKNOWN value is a hard stop:
-> the report is headed `INVALID — not Opus 5.5 / high` and nothing is triaged. Until the skill
-> exists, this file is not a safe way to run the review.
+> **Status:** built as the repo-local skill `/review-repo` (#86). `.claude/skills/review-repo/SKILL.md`
+> and `.claude/agents/repo-*.md` are now the source of truth. This file is a historical record.
+> **Do not run this file.** Its `model: opus` dispatch runs at effort `medium`. Use `/review-repo`.
 
 Run this before each release. It reviews every tracked file with parallel area agents and one
 consolidator. The output is one ranked file, `review-YYYYMMDD.md` (today's date), in the repo root.
