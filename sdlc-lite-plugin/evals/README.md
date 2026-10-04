@@ -22,6 +22,9 @@ claude plugin eval sdlc-lite-plugin --ablation none \
 
 Results land in `results/<timestamp>/` (`aggregate-result.json`, `report.html`) — gitignored.
 
+The recorded per-case pass rates, the regression rule and the re-run rule are in
+[`BASELINE-0.1.0.md`](BASELINE-0.1.0.md).
+
 ## Cases
 
 | Case | Tags | Asserts |
