@@ -1,0 +1,3 @@
+# mypackage
+
+Small text helpers.

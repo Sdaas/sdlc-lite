@@ -103,8 +103,12 @@ Delete `release-notes.md.tmp` after the release.
 Then **verify (the gate)** with `./release-verify.sh` — the automated clean-room install, Gate 0/1
 smoke, `/plugin update` proof and milestone eval suite, described in
 [`verification-ladder.md`](verification-ladder.md) §8 — and confirm the milestone's issues are closed
-or explicitly punted before announcing the release. The full human-driven `/implement-feature` run
-to green + commit is the final belt-and-suspenders check.
+or explicitly punted before announcing the release.
+
+Last, do the **human run in the acceptance container** (`./acceptance.sh up`; steps and pass
+criteria in [`ACCEPTANCE.md`](ACCEPTANCE.md) §4–§5). A human installs the release from GitHub with
+the README as the only guide, runs `/sdlc-init`, then runs `/implement-feature` to a commit. Close
+the milestone only after this run passes.
 
 ## 5. Consuming a release (customer)
 

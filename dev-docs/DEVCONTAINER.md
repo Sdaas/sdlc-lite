@@ -337,7 +337,10 @@ profile on the same filesystem and toolchain. That lets one container be two env
 | Python toolchain | shared — installed system-wide | shared — the same one |
 
 `release-verify.sh` builds the clean-room profile fresh each run
-([`verification-ladder.md`](verification-ladder.md) §8). No second container is needed.
+([`verification-ladder.md`](verification-ladder.md) §8). The clean-room profile still shares this
+container's toolchain. The human run of a release uses a second container with nothing
+pre-installed: the **acceptance container** ([`ACCEPTANCE.md`](ACCEPTANCE.md)). Do not use it for
+development.
 
 ## Entry-point check — `verify-entry-points.py`
 
