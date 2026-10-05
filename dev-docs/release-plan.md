@@ -49,7 +49,7 @@ run (`ACCEPTANCE.md`).
 | Customer-visible fixes / hardening | #101, #102, #103, #104 |
 
 **Execution order:**
-1. **#101** — `fix(skill): /sdlc-init smoke test fails on a stranger's first run`
+1. ~~**#101** — `fix(skill): /sdlc-init smoke test fails on a stranger's first run`~~ ✅ done (`b028c3e`)
    *First: it sets the step order that #104 documents.*
 2. **#102** — `fix(skill): /sdlc-init changes land in the first feature commit`
    *Touches `/sdlc-init`'s finish message and Gate 0, after #101.*
