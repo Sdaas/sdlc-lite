@@ -85,12 +85,14 @@ re-runs only the affected eval cases if it changes docs only. It re-runs the who
    rebuild, Gates 0–11 green, attested by the human; #93 and #75 held. Two loops back to earlier
    gates, each a test that passes under pytest but fails under a later gate's tool, filed for 0.2.0
    (#96, #97), with #95 and #98.
-8. **Re-check the 0.1.0 notes** — the `## 0.1.0` entry in `CHANGELOG.md` was drafted and approved
-   with #89. Update it for anything that closed since, add the release date to the heading if
-   wanted, and commit.
-9. **Run `release.sh`** — it checks the `CHANGELOG.md` section, bumps the version, tags `v0.1.0`,
-   repoints the umbrella and publishes the GitHub Release. Then run `release-verify.sh`: its
-   clean-room install and `/plugin update` proof (0.0.9 → 0.1.0) are #89's last verification.
+8. ~~**Re-check the 0.1.0 notes.**~~ Done 2026-10-05 (`dee04c3`): no content change (only #88,
+   internal, closed since #89); heading dated `## 0.1.0 — 2026-10-05`. `main` pushed.
+9. **Run `release.sh`** — **resume here.** It checks the `CHANGELOG.md` section, bumps the
+   version, tags `v0.1.0`, repoints the umbrella and publishes the GitHub Release. Then run
+   `release-verify.sh`: its clean-room install and `/plugin update` proof (0.0.9 → 0.1.0) are #89's
+   last verification. The script asks before each push, so run it in two parts: first
+   `./release.sh 0.1.0 --umbrella /Users/sdaas/dev/claude-plugins --no-push`, review the two
+   commits and the tag, then push both repos and run the `gh release create` command it prints.
 10. **Retrospective** — after the tag, review the whole release work and propose changes to the
    release process (`RELEASING.md` §7). File them as issues.
 
