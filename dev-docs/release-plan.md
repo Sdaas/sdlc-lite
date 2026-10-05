@@ -81,8 +81,10 @@ re-runs only the affected eval cases if it changes docs only. It re-runs the who
    in `CHANGELOG.md`.
 6. ~~#88 — by-hand eval baseline.~~ Done: `sdlc-lite-plugin/evals/BASELINE-0.1.0.md`, 13 cases
    3/3 and 5 flaky at 2/3. A regression later = any single case below its baseline rate.
-7. **Green dry run** in the dev container (`DEVCONTAINER.md`). Also check #93: no `if-runlog.jsonl`
-   in the fixture root before Gate 0.
+7. ~~**Green dry run** in the dev container.~~ Done 2026-10-05: `roman-numeral` from a clean image
+   rebuild, Gates 0–11 green, attested by the human; #93 and #75 held. Two loops back to earlier
+   gates, each a test that passes under pytest but fails under a later gate's tool, filed for 0.2.0
+   (#96, #97), with #95 and #98.
 8. **Re-check the 0.1.0 notes** — the `## 0.1.0` entry in `CHANGELOG.md` was drafted and approved
    with #89. Update it for anything that closed since, add the release date to the heading if
    wanted, and commit.
@@ -138,10 +140,10 @@ the first task when 0.2.0 starts (not before), and each child then runs through 
 
 | Theme | Issues |
 |---|---|
-| Customer-visible features | #47, #32 |
-| Customer-visible fixes / hardening | #78 |
+| Customer-visible features | #47, #32, #98 |
+| Customer-visible fixes / hardening | #78, #96, #97 |
 | Internal SDLC improvements | #70, #64, #94, #62, #90, #77 |
-| Internal SDLC fixes / hardening | — |
+| Internal SDLC fixes / hardening | #95 |
 
 **Execution order:**
 
@@ -154,6 +156,13 @@ the first task when 0.2.0 starts (not before), and each child then runs through 
    *Before the planning-suite prose lands, so regressions in the existing cases show up early.*
 2b. **#94** — `feat(repo): per-agent run statistics in /review-repo, /feature and /fix reports`
    *After #70, so it runs through `/feature`; every later run then reports its own cost.*
+2c. **#95** — `fix(repo): dev container runs the base image's tool copies instead of the installed toolchain`
+   *Before the next T3 run, so every dry run checks with the toolchain preflight measured.*
+2d. **#96** — `fix(gate-3): a test file that passes ruff before the module exists fails I001 at IMPLEMENT`
+   and **#97** — `fix(gate-3): a test that lists a module's names aborts mutmut at Gate 7`
+   *Both cost a loop in the 0.1.0 dry run. After #64, so `/regression` gates them; before #62.*
+2e. **#98** — `feat(skill): declare test-only libraries as dev dependencies`
+   *Touches `/sdlc-init` and `/implement-feature`; before #62.*
 3. **#62** — agent-facing prose pass (retitled; #83 folded in) — *one pass over `SKILL.md`, agent
    files and references: precise wording plus Opus 5.5 practices. Gated by the 0.1.0 baseline
    and `/regression`; lands before the planning-suite prose so the new skills start in the cleaned style.*

@@ -3,7 +3,7 @@
 What changed in each `sdlc-lite` release, newest first. Install and update steps: [README](README.md).
 The GitHub Release for each version carries the same text.
 
-## 0.1.0
+## 0.1.0 — 2026-10-05
 
 The first release that sets your repo up for you and leaves your environment alone.
 
