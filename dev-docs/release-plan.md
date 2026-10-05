@@ -54,7 +54,16 @@ run (`ACCEPTANCE.md`).
 4. **#104** — `docs(docs): README Quick start matches what a stranger actually does`
    *Last: documents the flow #101 and #102 leave behind, and `ACCEPTANCE.md` §4's exact user steps.*
 
-The 0.1.0 retrospective (step 10 of the 0.1.0 record below) runs before #101 starts.
+**How 0.1.1 runs** (human decisions, 2026-10-05):
+- #101–#103 each run through `/fix #NN` (human-typed), one per fresh session. #104 (docs) by hand.
+- No eval spend (the procedure is unsound until #99): `/fix` Gate 8 is waived; each fix rests on
+  its REPRODUCE test and the final acceptance run.
+- **Before the cut:** host tests (`python3 -m pytest sdlc-lite-plugin -q`) and a green dry run in
+  the dev container on `main` with all four fixes in.
+- **Cut:** `CHANGELOG.md` `## 0.1.1`, then `release.sh 0.1.1`.
+- **After the cut** (the acceptance container installs only released tags):
+  `release-verify.sh --no-evals`, then a fresh acceptance run (`ACCEPTANCE.md` §4–§5). Close the
+  milestone only when both pass.
 
 ## Previous release — `0.1.0` (a usable `/implement-feature`) — shipped 2026-10-05
 
@@ -85,7 +94,7 @@ to be whack-a-mole, and the write policy will be rethought first (rationale on #
 
 ## 0.1.0 execution record
 
-Milestone **`0.1.0`**: closed 2026-10-05. Only step 10 (the retrospective) is still open.
+Milestone **`0.1.0`**: closed 2026-10-05. Complete (step 10 waived).
 
 ### Exit checklist — in execution order
 
@@ -129,8 +138,7 @@ re-runs only the affected eval cases if it changes docs only. It re-runs the who
      7 findings; the stranger-visible ones are filed into **0.1.1** (#101–#104). The first attempt
      (dev-container fixture) was stopped at Gate 0: `BRIEF.md` was read as a spec. Milestone
      `0.1.0` closed.
-10. **Retrospective** — **resume here.** After the tag, review the whole release work and propose changes to the
-   release process (`RELEASING.md` §7). File them as issues.
+10. ~~**Retrospective.**~~ Waived (human decision, 2026-10-05): focus moves to 0.1.1.
 
 ### Closed
 
