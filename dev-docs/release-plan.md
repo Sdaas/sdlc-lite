@@ -99,9 +99,11 @@ re-runs only the affected eval cases if it changes docs only. It re-runs the who
      passed; `gate-1-interview-entry` failed 0/3 (`no-requirements-yet`). Fix filed as
      **#99**, first in 0.2.0. No more eval spend until then. 0.1.0 rests on 9b, the step 7 dry
      run (Opus conductor) and 9d.
-   - 9d. **Resume here.** The human's full gated `/implement-feature` run on the installed copy
-     in the dev container (`release-verify.sh --no-evals --keep` prints the attach command), then
-     close milestone `0.1.0`.
+   - 9d. **Resume here.** The human's acceptance run in the **acceptance container** (#100):
+     `./acceptance.sh up`, then the steps and pass criteria in `ACCEPTANCE.md` §4–§5 (README-only
+     install, `/sdlc-init`, `/implement-feature` to a commit). Then close milestone `0.1.0`. The
+     first attempt (in the dev container) was stopped at Gate 0: the fixture's `BRIEF.md` was read
+     as a spec, and the pre-installed toolchain left `/sdlc-init` nothing to do.
 10. **Retrospective** — after the tag, review the whole release work and propose changes to the
    release process (`RELEASING.md` §7). File them as issues.
 
@@ -153,7 +155,7 @@ the first task when 0.2.0 starts (not before), and each child then runs through 
 |---|---|
 | Customer-visible features | #47, #32, #98 |
 | Customer-visible fixes / hardening | #78, #96, #97 |
-| Internal SDLC improvements | #70, #64, #94, #62, #90, #77 |
+| Internal SDLC improvements | #70, #64, #94, #62, #90, #77, #100 |
 | Internal SDLC fixes / hardening | #99, #95 |
 
 **Execution order:**
@@ -197,7 +199,8 @@ Earlier: #45 and #21 to 0.1.0 (2026-09-26).
 **Proposed for 0.3.0:** a retrospective analyzer — where the conductor and the isolated agents spend
 time and tokens, loops, waste (epic **#91** `feat(analyzer): retrospective analysis…`, no milestone yet; children #65, #69, #80). 0.2.0 stays the planning suite.
 
-**Closed early:** **#37** `feat(skill): add a mechanical pytest.raises match= check at gates 3 and 4`
+**Closed early:** **#100** `feat(repo): acceptance container — a stranger's machine for the release's human run`
+— 2026-10-05, built for 0.1.0's step 9d. **#37** `feat(skill): add a mechanical pytest.raises match= check at gates 3 and 4`
 — 2026-09-26 (`e2a33e7`), as the `/feature` proof run; its T3 reached Gate 7 with no loop.
 
 ## Backlog
