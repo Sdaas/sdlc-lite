@@ -1,8 +1,9 @@
 """Measure-only half of `/sdlc-init` (#19): reports what a repo lacks for `/implement-feature`.
 
 Reads the pinned floors (`requirements-dev.txt`), compares them with what the running Python
-has installed, and lists the config items the target repo is missing. It never writes a file
-and never installs anything; the `/sdlc-init` skill renders this output and does the writing.
+has installed, says whether the project's package imports, and lists the config items the
+target repo is missing. It never writes a file and never installs anything; the `/sdlc-init`
+skill renders this output and does the writing.
 
     python setup_check.py [--repo DIR] [--requirements FILE]
 
@@ -15,6 +16,7 @@ import argparse
 import configparser
 import importlib.util
 import re
+import subprocess
 import sys
 import tomllib
 from importlib.metadata import PackageNotFoundError, version
@@ -121,6 +123,24 @@ def missing_config(repo: Path) -> list[str]:
     return missing
 
 
+def package_dir(repo: Path) -> Path | None:
+    """The one project package dir: under `src/` if it exists, else at the root (not `tests/`).
+
+    None when there is no candidate or more than one — the skill asks; this never guesses."""
+    base = repo / "src" if (repo / "src").is_dir() else repo
+    found = [d for d in sorted(base.iterdir())
+             if d.is_dir() and d.name not in ("tests", "test") and (d / "__init__.py").is_file()]
+    return found[0] if len(found) == 1 else None
+
+
+def importable(pkg: str, repo: Path) -> bool:
+    """Does `import pkg` work in the running Python, from the repo dir (#101)?
+
+    A real import, not a layout guess: after `pip install -e .` a src-layout package says yes."""
+    r = subprocess.run([sys.executable, "-c", f"import {pkg}"], cwd=repo, capture_output=True)
+    return r.returncode == 0
+
+
 def main(argv: list[str] | None = None) -> int:
     here = Path(__file__).resolve().parent
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
@@ -142,6 +162,11 @@ def main(argv: list[str] | None = None) -> int:
     for name, found, floor in rows:
         print(f"{name:<16} {found or '-':<10} {floor or '-':<8} {action(found, floor)}")
     print(f"\npip available: {'yes' if importlib.util.find_spec('pip') else 'no'} ({sys.executable})")
+    pkg = package_dir(args.repo)
+    if pkg is None:
+        print("package importable: unknown (no single package dir)")
+    else:
+        print(f"package importable: {'yes' if importable(pkg.name, args.repo) else 'no'} ({pkg.name})")
     print("\nMissing config:")
     for item in missing:
         print(f"  {item}")

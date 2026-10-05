@@ -36,9 +36,8 @@ What that buys you:
    ```
 2. In your Claude Code session, type `/reload-plugins` to load it.
 3. Make sure your target project is a git repo.
-4. Run `/sdlc-init` in that repo: it installs the required toolchain and adds the test/coverage/mutation config (see Prerequisites below).
-5. If your project uses a src-layout, run `pip install -e .` in it ([setup step 4](#4-make-your-source-package-importable)).
-6. Run `/implement-feature` and point it at a GitHub issue, a file, or a 1-2 line description of the feature.
+4. Run `/sdlc-init` in that repo: it installs the required toolchain, makes your package importable and adds the test/coverage/mutation config (see Prerequisites below).
+5. Run `/implement-feature` and point it at a GitHub issue, a file, or a 1-2 line description of the feature.
 
 To update to a newer release, see [Updating](#updating). What changed in each release:
 [`CHANGELOG.md`](CHANGELOG.md).
@@ -156,10 +155,12 @@ path needs no such read even without this rule; the rule just removes the prompt
 
 ### 4. Make your source package importable
 
-If your project uses a **src-layout** (`src/yourpkg/`), install it editable so the tests can import it:
+If your project uses a **src-layout** (`src/yourpkg/`), the tests can import it only when it is
+installed. `/sdlc-init` checks this. If the package does not import, its plan includes an editable
+install, which runs after you approve:
 
 ```bash
-pip install -e .
+python -m pip install -e .
 ```
 
 Gate 0 checks this and stops with a clear message if your package isn't importable — see the
@@ -228,8 +229,9 @@ in your repo (it installs into the same Python environment Claude Code runs comm
 
 **"`<pkg>` is not importable — a src-layout package that isn't installed."**
 Your source package isn't on `sys.path`, so the test suite would go *falsely* red and could never reach
-green. Run `pip install -e .` in your repo root, then re-run. The plugin deliberately **won't** install
-it for you — your environment is yours to own.
+green. Run `/sdlc-init` (its plan offers the install), or run `python -m pip install -e .` in your repo
+root, then re-run. `/implement-feature` deliberately **won't** install it for you. Your environment is
+yours to own.
 
 **"A run is already in flight" (active-run lock).**
 `.implement-feature/.active-run` exists from a previous run that didn't finish (or was interrupted

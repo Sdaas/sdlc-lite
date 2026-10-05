@@ -207,6 +207,62 @@ def test_cli_on_a_set_up_repo_reports_no_missing_config(tmp_path):
     assert not any(item in out for item in ALL_MISSING)
 
 
+def _src_layout(tmp_path: Path) -> Path:
+    repo = _repo(tmp_path, CONFIGURED_PYPROJECT, FULL_GITIGNORE)
+    (repo / "src" / "sdlclitexyzpkg").mkdir(parents=True)
+    (repo / "src" / "sdlclitexyzpkg" / "__init__.py").write_text("")
+    return repo
+
+
+def test_cli_reports_an_uninstalled_src_layout_package_as_not_importable(tmp_path):
+    """#101: an uninstalled src-layout package must reach the plan as `pip install -e .`,
+    not surface later as a red smoke test or a Gate 0 stop."""
+    out = subprocess.run([sys.executable, str(SCRIPT), "--repo", str(_src_layout(tmp_path))],
+                         capture_output=True, text=True, check=True).stdout
+    assert "package importable: no (sdlclitexyzpkg)" in out
+
+
+def test_cli_reports_an_installed_src_layout_package_as_importable(tmp_path):
+    """The answer comes from a real import in the active Python, not from the layout — after
+    `pip install -e .` the next run must say yes and not offer the install again."""
+    import os
+    repo = _src_layout(tmp_path)
+    env = {**os.environ, "PYTHONPATH": str(repo / "src")}
+    out = subprocess.run([sys.executable, str(SCRIPT), "--repo", str(repo)],
+                         capture_output=True, text=True, check=True, env=env).stdout
+    assert "package importable: yes (sdlclitexyzpkg)" in out
+
+
+def test_cli_reports_a_flat_layout_package_as_importable(tmp_path):
+    """A package at the repo root imports from the repo dir; it needs no install."""
+    repo = _repo(tmp_path, CONFIGURED_PYPROJECT, FULL_GITIGNORE)
+    (repo / "sdlclitexyzpkg").mkdir()
+    (repo / "sdlclitexyzpkg" / "__init__.py").write_text("")
+    out = subprocess.run([sys.executable, str(SCRIPT), "--repo", str(repo)],
+                         capture_output=True, text=True, check=True).stdout
+    assert "package importable: yes (sdlclitexyzpkg)" in out
+
+
+def test_package_dir_skips_the_tests_dir(tmp_path):
+    repo = _repo(tmp_path)
+    for d in ("pkg", "tests"):
+        (repo / d).mkdir()
+        (repo / d / "__init__.py").write_text("")
+    assert setup_check.package_dir(repo) == repo / "pkg"
+
+
+def test_more_than_one_package_dir_is_unknown_not_a_guess(tmp_path):
+    """The skill asks about an ambiguous layout; the script must not pick one for it."""
+    repo = _repo(tmp_path, CONFIGURED_PYPROJECT, FULL_GITIGNORE)
+    for d in ("pkg_a", "pkg_b"):
+        (repo / "src" / d).mkdir(parents=True)
+        (repo / "src" / d / "__init__.py").write_text("")
+    assert setup_check.package_dir(repo) is None
+    out = subprocess.run([sys.executable, str(SCRIPT), "--repo", str(repo)],
+                         capture_output=True, text=True, check=True).stdout
+    assert "package importable: unknown" in out
+
+
 def test_no_pyproject_is_a_stop_not_a_list_of_missing_tables(tmp_path):
     """Scope: no pyproject.toml -> stop with a message (creating a project layout is out of scope)."""
     with pytest.raises(FileNotFoundError):

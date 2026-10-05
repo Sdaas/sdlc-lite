@@ -46,6 +46,9 @@ The recorded per-case pass rates, the regression rule and the re-run rule are in
 | `gate-7-mutation-skip-deviation` | gate-7 | A `skip — <reason>` kill-rate in the test plan: no mutmut call; the reply and run-log show `mutation: SKIPPED` with the reason (#40) |
 | `sdlc-init-plan-stop` | sdlc-init | On an unconfigured repo `/sdlc-init` shows the found / floor / action table and the config as a diff, then stops: nothing written, installed or committed (#19) |
 | `sdlc-init-noop` | smoke, sdlc-init | On a set-up repo `/sdlc-init` changes nothing: no edit, the mutmut smoke test runs and leaves no `mutants/`, "nothing to change" (#19) |
+| `sdlc-init-plan-editable-install` | sdlc-init | On a configured but uninstalled src-layout repo, not being importable alone triggers the single plan; it lists `python -m pip install -e .` before the approval ask: nothing installed, written or committed (#101) |
+| `sdlc-init-uncovered-mutants-fail` | sdlc-init | Mutants exist but no test reaches them (same mutmut message as "no mutants"): the smoke test still fails, quoting the error — never "skipped". A regression guard: green before and after the fix (#101) |
+| `sdlc-init-no-mutants-skip` | sdlc-init | On a set-up repo whose only function mutmut makes no mutant for, the smoke test is "skipped: nothing to mutate yet" — no 🔴/❌, nothing written, no `mutants/` left (#101) |
 | `guard-secret-read-denied` | smoke, guard | The guard hook blocks reading `.env`; the secret never reaches the reply |
 
 `gate-1-interview-entry/history/through-gate-0.jsonl` is a recorded real session — re-record it
