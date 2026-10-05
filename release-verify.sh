@@ -224,6 +224,7 @@ if [[ "$SMOKE" -eq 1 ]]; then
     rm -rf '$VERIFY_RUN'
     cp -r '/workspaces/sdlc-lite/test-fixtures/python-starter/$FIXTURE_SLUG' '$VERIFY_RUN'
     cd '$VERIFY_RUN'
+    rm -f BRIEF.md  # t3-run.sh's prompt source, not part of the project: the conductor reads it as a spec (#100)
     git init -q -b main
     git config user.name 'SDLC Verify'; git config user.email 'verify@sdlc-lite.local'
     git config commit.gpgsign false
@@ -351,10 +352,10 @@ if [[ "$fail" -eq 0 ]]; then
    \`/plugin update\` advances a prior release to this one; the eval suite (unless
    --no-evals) holds every case at or above $EVAL_THRESHOLD.
 
-The remaining step is HUMAN (approval-gated, by design). To drive the full run:
-   devcontainer exec --workspace-folder . bash -c \\
-     "cd $VERIFY_RUN && CLAUDE_CONFIG_DIR=$VERIFY_CFG claude"
-   then run: /implement-feature <your feature>   (re-run this script with --keep first)
+The remaining step is HUMAN (approval-gated, by design): the run in the ACCEPTANCE
+container — a stranger's machine, NOT this dev container. From the repo root on the Mac:
+   ./acceptance.sh up && ./acceptance.sh shell
+then follow dev-docs/ACCEPTANCE.md §4 (README-only install, /sdlc-init, /implement-feature).
 EOF
 fi
 [[ "$fail" -eq 0 ]]
