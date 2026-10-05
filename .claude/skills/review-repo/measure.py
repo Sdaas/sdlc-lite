@@ -49,7 +49,7 @@ AREAS = (
         "sdlc-lite-plugin/evals/*", "test-fixtures/*", ".devcontainer/*", "README.md",
         ".claude-plugin/*", "sdlc-lite-plugin/.claude-plugin/*", "release*.sh", "Makefile",
         "clean-run.sh", "t3-run.sh", "verify-entry-points.py", ".gitignore", ".env.example",
-        "LICENSE",
+        "LICENSE", "CHANGELOG.md", "acceptance.sh", "acceptance/*",
     )),
     ("C", "Docs, history, process and structure", (
         "dev-docs/*", "review-*.md", ".claude/*", "CLAUDE.md", "toy-greet-plugin/*",

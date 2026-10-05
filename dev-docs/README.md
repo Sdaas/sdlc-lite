@@ -22,6 +22,8 @@ here — the root [`README.md`](../README.md) is the complete user-facing doc. E
   slash commands that govern changes to this repo — their gates, STOPs, and when each one fires.
 - **[`DEVCONTAINER.md`](DEVCONTAINER.md)** — the dev-container test harness lifecycle, and the
   problems you meet when running `claude plugin eval` (T1 on that ladder) and their fixes.
+- **[`ACCEPTANCE.md`](ACCEPTANCE.md)** — the acceptance container: a stranger's machine (no
+  toolchain, no plugin, no mounts) for the human run of a release. Not the dev container.
 - **[`t3-runs.md`](t3-runs.md)** — hands-off T3 dry runs: the agent launches and watches the session
   in tmux, you attach and answer the STOPs. Includes a short tmux primer.
 - **[`RELEASING.md`](RELEASING.md)** — versioning, issue triage, and how a release is cut and

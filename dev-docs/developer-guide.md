@@ -116,7 +116,7 @@ Write each file for its reader. The cleanup that fits one reader harms the other
 | Audience | Files | Rule |
 |---|---|---|
 | **Agent-read** | `skills/*/SKILL.md`, `agents/*.md`, `references/*`, `.claude/skills/`, `.claude/sdlc/gates.md`, `CLAUDE.md` | Precise and unambiguous. Tuned for the pinned model. A prose change here changes behavior, so verify it with the eval suite against the baseline. |
-| **Human-read** | `README.md`, `tutorial.md`, `developer-guide.md`, `architecture.md`, `DEVCONTAINER.md`, `RELEASING.md`, `CHANGELOG.md` | **ASD-STE100 at about 80%.** A prose change here changes no behavior, so the link check is enough. |
+| **Human-read** | `README.md`, `tutorial.md`, `developer-guide.md`, `architecture.md`, `DEVCONTAINER.md`, `ACCEPTANCE.md`, `RELEASING.md`, `CHANGELOG.md` | **ASD-STE100 at about 80%.** A prose change here changes no behavior, so the link check is enough. |
 | **Historical** | `adr/`, `findings/`, `proposals/`, `review-YYYYMMDD.md` (repo root) | Do not rewrite the prose. Fix a broken link only. |
 
 **The human-read style.** The ASD-STE100 standard is a controlled language for maintenance

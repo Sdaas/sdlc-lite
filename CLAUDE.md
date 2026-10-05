@@ -15,7 +15,7 @@ This file provides guidance to Claude Code when working in this repository.
   - `developer-guide.md` — the hub: change → edit → verify table, review checklist, repo-local skills.
   - `repo-local-skills.md` — `/issue`, `/feature`, `/fix`, `/review-repo`: gates, STOPs, when each fires.
   - `architecture.md` — gates, handoff, model pins, guard rules, analyzer. `adr/` — the ADRs.
-  - `DEVCONTAINER.md`, `verification-ladder.md`, `RELEASING.md`, `release-plan.md`,
+  - `DEVCONTAINER.md`, `ACCEPTANCE.md` (the acceptance container), `verification-ladder.md`, `RELEASING.md`, `release-plan.md`,
     `issue-template.md`; `findings/` (settled investigations) and `proposals/` (unbuilt sketches).
 - **Two channels (ADR-13):** this repo's root `.claude-plugin/marketplace.json` is the **dev**
   catalog (`sdlc-lite-dev`, live directory source; also holds the tutorial-only `toy-greet`). The
@@ -52,7 +52,7 @@ This file provides guidance to Claude Code when working in this repository.
   - **Agent-read** (`SKILL.md`, `agents/*.md`, `references/*`, `.claude/skills/`,
     `.claude/sdlc/gates.md`, `CLAUDE.md`): precise, and tuned for the pinned model.
   - **Human-read** (`README.md`, `tutorial.md`, `developer-guide.md`, `architecture.md`,
-    `DEVCONTAINER.md`, `RELEASING.md`, `CHANGELOG.md`): **ASD-STE100 at about 80%** — short
+    `DEVCONTAINER.md`, `ACCEPTANCE.md`, `RELEASING.md`, `CHANGELOG.md`): **ASD-STE100 at about 80%** — short
     sentences, active voice, one word for one meaning, imperative steps. A mermaid diagram only for
     the gate flow and the isolation model. No HTML pages.
   - ADRs, `findings/`, `proposals/` and `review-YYYYMMDD.md` are historical records. Do not rewrite
@@ -73,6 +73,12 @@ This file provides guidance to Claude Code when working in this repository.
   devcontainer exec --workspace-folder . bash -c \
     "set -a; source /workspaces/sdlc-lite/.env; set +a; claude"
   ```
+- **Two containers — never conflate them.** The **dev container** (`sdlc-lite-test`,
+  `.devcontainer/`) is for all development and testing. The **acceptance container**
+  (`sdlc-lite-acceptance`, `./acceptance.sh`, `acceptance/`) is a stranger's machine for a release's
+  human run only: no mounts, no toolchain, no plugin, latest claude. Never develop, run evals or T3 in
+  it, and never pre-install anything a user step should do. Its evidence: `./acceptance.sh logs` →
+  `acceptance-logs.tmp/`. Purpose, user steps, rules: `dev-docs/ACCEPTANCE.md`.
 - **Host unit tests** (guard, policy, agentdefs, analyzer): `python3 -m pytest sdlc-lite-plugin -q`.
   The full pinned toolchain (ruff/mypy/mutmut) runs only in the container.
 - **Link check:** `./release-verify.sh --links-only`. Test tiers: `dev-docs/verification-ladder.md`.

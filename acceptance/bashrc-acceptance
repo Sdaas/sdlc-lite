@@ -1,0 +1,12 @@
+# Sourced by ~/.bashrc in the acceptance container (#100). Marks every shell so a human or an
+# agent can never mistake this container for the dev container.
+PS1='\[\e[1;33m\][ACCEPTANCE]\[\e[0m\] \u:\w\$ '
+
+cat <<'EOF'
+════════════════════════════════════════════════════════════════════════
+ ACCEPTANCE CONTAINER — a stranger's machine. NOT the dev container.
+ • Nothing from the sdlc-lite repo is here. Install the plugin from GitHub only.
+ • Follow README.md (github.com/Sdaas/sdlc-lite) and nothing else.
+ • Your repo: ~/mypackage.  Steps: dev-docs/ACCEPTANCE.md §4.
+════════════════════════════════════════════════════════════════════════
+EOF
