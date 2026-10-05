@@ -69,8 +69,9 @@ only in `release-plan.md` — not labels — and backlog issues get none.
 
 **First, write the release notes** (principles: §7):
 
-1. Ask an agent to draft the notes from the milestone's closed issues
-   (`gh issue list --milestone "<version>" --state closed`). It writes the draft to
+1. Ask an agent to draft the notes from the release's **Closed** table in
+   [`release-plan.md`](release-plan.md). It checks the table against the milestone's closed issues
+   (`gh issue list --milestone "<version>" --state closed`) and reports any difference. It writes the draft to
    `release-notes.md.tmp` at the repo root, in the entry format of §7.
 2. Review the draft. Check every claim against its issue. Approve it or ask for changes.
 3. Copy the approved text into `CHANGELOG.md` as a new `## <version>` section, above the previous
@@ -109,6 +110,12 @@ Last, do the **human run in the acceptance container** (`./acceptance.sh up`; st
 criteria in [`ACCEPTANCE.md`](ACCEPTANCE.md) §4–§5). A human installs the release from GitHub with
 the README as the only guide, runs `/sdlc-init`, then runs `/implement-feature` to a commit. Close
 the milestone only after this run passes.
+
+Then **clean up the release plan.** Delete the release's whole section from
+[`release-plan.md`](release-plan.md), including its Closed table: `CHANGELOG.md` is now the
+permanent record. Make the next milestone the current release. Commit on `main` as
+`docs(repo): release plan — <version> shipped`. If `release-verify.sh` or the acceptance run fails,
+do not delete the section: the fix goes into the same section.
 
 ## 5. Consuming a release (customer)
 
