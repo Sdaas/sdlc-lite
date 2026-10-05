@@ -10,7 +10,7 @@ Titles can drift — GitHub wins; re-check with `gh issue list --milestone "<tit
 Decision history lives in the issues and the ADRs (`adr/`);
 release conventions live in `RELEASING.md`._
 
-_Last updated: 2026-10-05._
+_Last updated: 2026-10-05 (0.1.0 accepted; 0.1.1 opened)._
 
 ---
 
@@ -32,7 +32,31 @@ _Last updated: 2026-10-05._
 
 --- 
 
-## Current release — `0.1.0` (a usable `/implement-feature`)
+## Current release — `0.1.1` (first-run fixes from the 0.1.0 acceptance run)
+
+Current milestone: **`0.1.1`** (patch release).
+
+Theme: **a stranger's first run has no red errors on the normal path.** The 0.1.0 acceptance
+run (#100) passed, but a stranger who follows the README saw failures and alarms that read as "the
+plugin is broken". 0.1.1 removes them. Cut it with `release.sh`; accept it with a new acceptance
+run (`ACCEPTANCE.md`).
+
+| Theme | Issues |
+|---|---|
+| Customer-visible fixes / hardening | #101, #102, #103, #104 |
+
+**Execution order:**
+1. **#101** — `fix(skill): /sdlc-init smoke test fails on a stranger's first run`
+   *First: it sets the step order that #104 documents.*
+2. **#102** — `fix(skill): /sdlc-init changes land in the first feature commit`
+   *Touches `/sdlc-init`'s finish message and Gate 0, after #101.*
+3. **#103** — `fix(guard-hook): the verifier's scratchpad writes show as a breach`
+4. **#104** — `docs(docs): README Quick start matches what a stranger actually does`
+   *Last: documents the flow #101 and #102 leave behind, and `ACCEPTANCE.md` §4's exact user steps.*
+
+The 0.1.0 retrospective (step 10 of the 0.1.0 record below) runs before #101 starts.
+
+## Previous release — `0.1.0` (a usable `/implement-feature`) — shipped 2026-10-05
 
 Theme: **the first release a stranger can rely on.** `/sdlc-init` sets their Python repo up the
 right way from day one (toolchain, coverage and mutation config), and no `/implement-feature` run
@@ -59,11 +83,11 @@ proves the tooling before later releases depend on it.
 On 2026-10-02 **#43 and #74 were parked to the backlog**: textual shell parsing in the guard proved
 to be whack-a-mole, and the write policy will be rethought first (rationale on #43).
 
-## Execution order (current release)
+## 0.1.0 execution record
 
-Current milestone: **`0.1.0`**.
+Milestone **`0.1.0`**: closed 2026-10-05. Only step 10 (the retrospective) is still open.
 
-### Open — in execution order
+### Exit checklist — in execution order
 
 _Product work is done. The release now runs through this exit checklist, in order. A fix after step 6
 re-runs only the affected eval cases if it changes docs only. It re-runs the whole suite if it touches
@@ -99,12 +123,13 @@ re-runs only the affected eval cases if it changes docs only. It re-runs the who
      passed; `gate-1-interview-entry` failed 0/3 (`no-requirements-yet`). Fix filed as
      **#99**, first in 0.2.0. No more eval spend until then. 0.1.0 rests on 9b, the step 7 dry
      run (Opus conductor) and 9d.
-   - 9d. **Resume here.** The human's acceptance run in the **acceptance container** (#100):
-     `./acceptance.sh up`, then the steps and pass criteria in `ACCEPTANCE.md` §4–§5 (README-only
-     install, `/sdlc-init`, `/implement-feature` to a commit). Then close milestone `0.1.0`. The
-     first attempt (in the dev container) was stopped at Gate 0: the fixture's `BRIEF.md` was read
-     as a spec, and the pre-installed toolchain left `/sdlc-init` nothing to do.
-10. **Retrospective** — after the tag, review the whole release work and propose changes to the
+   - 9d. ~~Acceptance run.~~ Done 2026-10-05 in the **acceptance container** (#100): README-only
+     install (in-session `/plugin install`), `/sdlc-init` ×2, `/implement-feature` (`factorial`) to a
+     commit on `feature/00-factorial`. All 5 pass criteria (`ACCEPTANCE.md` §5) met, no damage.
+     7 findings; the stranger-visible ones are filed into **0.1.1** (#101–#104). The first attempt
+     (dev-container fixture) was stopped at Gate 0: `BRIEF.md` was read as a spec. Milestone
+     `0.1.0` closed.
+10. **Retrospective** — **resume here.** After the tag, review the whole release work and propose changes to the
    release process (`RELEASING.md` §7). File them as issues.
 
 ### Closed
