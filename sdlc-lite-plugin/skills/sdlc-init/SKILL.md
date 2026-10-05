@@ -20,17 +20,24 @@ approval, then apply it. Idempotent: a second run on a set-up repo changes nothi
    directory for this skill: `<root>/skills/sdlc-init`" → `<root>` = that path minus the trailing
    `/skills/sdlc-init`). Run, in the user's active Python:
    `python <root>/toolchain/setup_check.py --repo .`
-   Its package table (package · found · floor · action) goes into **the turn's final message** —
+   Its package table (package · found · floor · action) and its `package importable:` line go
+   into **the turn's final message** —
    the step-4 plan, the step-6 finish, or a step-3 stop — once, in full, every row even when all
    are `ok`; never summarized. Tool output is not the reply the human reads. Exit 2 (no `pyproject.toml`, or a config file
-   does not parse) → quote its message and stop. Pip not available **and** a row needs
-   `install`/`upgrade` → stop and say so (🔴 `python -m pip` is missing; pip-less environments such
-   as uv-only are out of scope — install the toolchain by hand, then re-run). Pip missing but every
-   row `ok` → carry on; nothing needs pip.
-4. **Plan — one STOP.** If any row is `install`/`upgrade` or any config item is missing, show a single
-   plan message that **opens with the step-3 table**, then:
+   does not parse) → quote its message and stop. `package importable: unknown` → take the package
+   from an existing `[tool.mutmut] source_paths` and run `python -c "import <pkg>"` in the repo root:
+   it fails → treat as `no`; no `source_paths` → the plan (step 4) asks for the package in its
+   Layout item and offers `python -m pip install -e .` as conditional: after approval, run the
+   import first and install only if it fails.
+   Pip not available **and** a row needs `install`/`upgrade` or the package is not importable → stop
+   and say so (🔴 `python -m pip` is missing; pip-less environments such as uv-only are out of
+   scope — install by hand, then re-run). Pip missing but every row `ok` and the package
+   importable → carry on; nothing needs pip.
+4. **Plan — one STOP.** If any row is `install`/`upgrade`, any config item is missing, or the
+   package is not importable, show a single plan message that **opens with the step-3 table**, then:
    - **Install:** `python -m pip install "<name>>=<floor>" …` for every `install`/`upgrade` row
-     (bare `"<name>"` when the floor is `-`).
+     (bare `"<name>"` when the floor is `-`). Package not importable → also
+     `python -m pip install -e .` (the project, editable), run after the toolchain install.
    - **Layout:** the package dir — `src/<pkg>/` (src-layout) or `<pkg>/` at the root, the one with
      `__init__.py` — and the tests dir (`tests/`). None found or more than one candidate → name what
      you found and ask in the same STOP; never guess silently.
@@ -44,14 +51,20 @@ approval, then apply it. Idempotent: a second run on a set-up repo changes nothi
    After an explicit yes: run the pip command(s), write the files with Edit/Write, re-run the check
    and show its table as in step 3. A pip error is shown verbatim and the run stops — no workaround, no downgrade, no venv.
 5. **Smoke test (always, even when nothing was missing).** Run `mutmut run "*__mutmut_1"` (one mutant
-   per function — fast), then `rm -rf mutants/`. On failure quote mutmut's error and name the cause + fix:
+   per function — fast). On every outcome, end with `rm -rf mutants/`. If it fails with "could not
+   find any test case for any mutant", run `mutmut results --all true` **before** that cleanup: it
+   prints nothing → mutmut made no mutant (the code is too small to mutate yet). That is not a
+   failure: report one plain line, `skipped: nothing to mutate yet`, with no 🔴. On any other failure —
+   that same message included, when `mutmut results` lists mutants — quote mutmut's error and name
+   the cause + fix:
 
    | Error | Cause · fix |
    |---|---|
+   | "could not find any test case for any mutant" and `mutmut results` lists mutants | the tests never reach the mutated code · check that `source_paths` points at the package dir and the tests import the package |
    | "Could not figure out where the code to mutate is" | `[tool.mutmut] source_paths` is wrong or missing · point it at the package dir |
-   | `ModuleNotFoundError` for the package | package not installed · `pip install -e .` |
+   | `ModuleNotFoundError` for the package | package not installed · `python -m pip install -e .` |
    | clean test run fails | the suite itself is red · run `pytest`, fix it first |
-6. **Finish.** Nothing missing and smoke green → the step-3 table, then "✅ Nothing to change — this repo is set up for
+6. **Finish.** Nothing missing and smoke green or skipped → the step-3 table, then "✅ Nothing to change — this repo is set up for
    /implement-feature." (no approval STOP). Otherwise a 2–3 line summary of what changed (uncommitted —
    the user reviews with `git diff`). Next step: `/implement-feature <feature>`.
 
