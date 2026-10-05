@@ -189,8 +189,11 @@ own commit; if the issue has a parent issue, tick its box in the parent's checkl
 - **PR** — `git push -u origin <NN>-<slug>`, then `gh pr create`.
 
 Push `main` only when the human asks. Then
-`gh issue close NN` with a one-line comment naming the merge or PR. Do not edit
-`dev-docs/release-plan.md` — roadmap ordering is the human's call.
+`gh issue close NN` with a one-line comment naming the merge or PR. Then add exactly one row for
+#NN to the current release's **Closed** table in `dev-docs/release-plan.md`
+(`| **#NN** \`<title>\` | <date> (\`<merge sha>\`) | <one line: what it settled> |`), show it, and
+commit it on `main` as `docs(repo): release plan — #NN closed` only after the human approves.
+Edit nothing else in that file — ordering and narrative are the human's call.
 
 ## Diffing the change (Gates 6, 9)
 
