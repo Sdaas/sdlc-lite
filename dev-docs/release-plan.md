@@ -72,6 +72,7 @@ run (`ACCEPTANCE.md`).
 
 | Issue | Done | What it settled |
 |---|---|---|
+| **#101** `fix(skill): /sdlc-init smoke test fails on a stranger's first run` | 2026-10-05 (`b028c3e`) | `/sdlc-init` offers `pip install -e .` in its plan when the package won't import; a smoke test with no mutants is a plain skip, not a failure |
 
 _0.1.0 shipped 2026-10-05 (milestone closed); its record is the `## 0.1.0` entry in
 `CHANGELOG.md`._
