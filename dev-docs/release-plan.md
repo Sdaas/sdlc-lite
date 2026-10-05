@@ -28,6 +28,9 @@ _Last updated: 2026-10-05 (0.1.0 accepted; 0.1.1 opened)._
 6. Only touch this file when the *narrative* or the *execution order* changes (a release ships, an
    issue is added/closed/reordered). Reference issues as **`#NN` + title**; never copy an issue's
    *spec* here (that's GitHub's job).
+7. **The Closed table is for the current release only.** Add a row when one of its issues closes;
+   at release time it is the source for the `CHANGELOG.md` entry (`RELEASING.md` §4). When the
+   release ships, delete its whole section: the changelog is the permanent record.
 
 
 --- 
@@ -65,117 +68,13 @@ run (`ACCEPTANCE.md`).
   `release-verify.sh --no-evals`, then a fresh acceptance run (`ACCEPTANCE.md` §4–§5). Close the
   milestone only when both pass.
 
-## Previous release — `0.1.0` (a usable `/implement-feature`) — shipped 2026-10-05
+### Closed (feeds the `## 0.1.1` entry in `CHANGELOG.md`)
 
-Theme: **the first release a stranger can rely on.** `/sdlc-init` sets their Python repo up the
-right way from day one (toolchain, coverage and mutation config), and no `/implement-feature` run
-damages their repo or environment. 0.1.0 began as a process-and-tooling release (the repo-local
-SDLC skills, #48, and the docs restructure, #49 — all closed below). On 2026-10-02 it was re-scoped
-to also carry the customer-visible fixes that bar needs.
-
-**Release bar.** A stranger installs the plugin, runs it on their own Python repo and finishes
-without damage to the repo or environment and without undocumented workarounds. A bug that damages
-the user's repo or environment is a release stopper, in every release. A manual step is acceptable
-when its call to action is clear.
-
-**Why `0.1.0` and not GA.** The plugin's source is prose, verified by the T1/T2/T3 ladder and the
-eval corpus from #48. This is the first release to ship product changes verified that way, so it
-proves the tooling before later releases depend on it.
-
-| Theme | Issues |
-|---|---|
-| Customer-visible features | #19 |
-| Customer-visible fixes / hardening | #75, #40, #68, #81, #63, #93 |
-| Internal SDLC improvements | #89, #86, #92, #87, #88 |
-| Internal SDLC fixes / hardening | — |
-
-On 2026-10-02 **#43 and #74 were parked to the backlog**: textual shell parsing in the guard proved
-to be whack-a-mole, and the write policy will be rethought first (rationale on #43).
-
-## 0.1.0 execution record
-
-Milestone **`0.1.0`**: closed 2026-10-05. Complete (step 10 waived).
-
-### Exit checklist — in execution order
-
-_Product work is done. The release now runs through this exit checklist, in order. A fix after step 6
-re-runs only the affected eval cases if it changes docs only. It re-runs the whole suite if it touches
-`SKILL.md`, an agent file, `guard.py` or `policy.py`._
-
-1. ~~#63 — latest model pins.~~ Done.
-2. ~~#86 — `/review-repo` skill.~~ Done.
-   2b. ~~#92 — cut the cost of a `/review-repo` run.~~ Done.
-3. ~~#87 — full-repo review.~~ Done: `review-20261004.md`, 65 findings (7 in the 0.1.0 bucket).
-4. ~~#93 — the guard writes every tool call to `if-runlog.jsonl`.~~ Done. Its T3 check moves to step 7.
-   *Other 0.1.0-bucket findings:* B-1, B-2 + C-22, X-1 and C-6 are folded into #89. A-2 (wrong
-   transcript folder name for paths with `.`; the receipt degrades to UNKNOWN, no damage) and B-3
-   (`SKILL.md` says "dev container", the README is right) move to 0.2.0.
-5. ~~#89 — changelog, evergreen README and release-notes step.~~ Done. The 0.1.0 entry is already
-   in `CHANGELOG.md`.
-6. ~~#88 — by-hand eval baseline.~~ Done: `sdlc-lite-plugin/evals/BASELINE-0.1.0.md`, 13 cases
-   3/3 and 5 flaky at 2/3. A regression later = any single case below its baseline rate.
-7. ~~**Green dry run** in the dev container.~~ Done 2026-10-05: `roman-numeral` from a clean image
-   rebuild, Gates 0–11 green, attested by the human; #93 and #75 held. Two loops back to earlier
-   gates, each a test that passes under pytest but fails under a later gate's tool, filed for 0.2.0
-   (#96, #97), with #95 and #98.
-8. ~~**Re-check the 0.1.0 notes.**~~ Done 2026-10-05 (`dee04c3`): no content change (only #88,
-   internal, closed since #89); heading dated `## 0.1.0 — 2026-10-05`. `main` pushed.
-9. **Run `release.sh`, then `release-verify.sh`** — **resume here, at 9d.**
-   - 9a. ~~`release.sh`.~~ Done 2026-10-05: `v0.1.0` tagged at `6612a9f`, umbrella repointed
-     (`claude-plugins` `4627ba7`), both pushed, GitHub Release published.
-   - 9b. ~~`release-verify.sh` steps 1–4.~~ Done 2026-10-05: clean-room install from GitHub (cached
-     `0.1.0`), Gate 0/1 smoke, `/plugin update` 0.0.9 → 0.1.0 all green (#89's last verification).
-   - 9c. ~~Eval suite.~~ Waived for 0.1.0 (human decision, 2026-10-05). Stopped at 9 of 18 cases:
-     the procedure is unsound, not the plugin. The #88 baseline ran a `sonnet` conductor
-     (`SKILL.md` wants Opus for INTERVIEW/DESIGN); step 5 pins `claude-opus-5-5` but grades a
-     0.8 mean, not the baseline; some cases encode Sonnet behavior. On step 5's own rule, 8 of 9
-     passed; `gate-1-interview-entry` failed 0/3 (`no-requirements-yet`). Fix filed as
-     **#99**, first in 0.2.0. No more eval spend until then. 0.1.0 rests on 9b, the step 7 dry
-     run (Opus conductor) and 9d.
-   - 9d. ~~Acceptance run.~~ Done 2026-10-05 in the **acceptance container** (#100): README-only
-     install (in-session `/plugin install`), `/sdlc-init` ×2, `/implement-feature` (`factorial`) to a
-     commit on `feature/00-factorial`. All 5 pass criteria (`ACCEPTANCE.md` §5) met, no damage.
-     7 findings; the stranger-visible ones are filed into **0.1.1** (#101–#104). The first attempt
-     (dev-container fixture) was stopped at Gate 0: `BRIEF.md` was read as a spec. Milestone
-     `0.1.0` closed.
-10. ~~**Retrospective.**~~ Waived (human decision, 2026-10-05): focus moves to 0.1.1.
-
-### Closed
-
-| Issue | Done | What it settled for the open work |
+| Issue | Done | What it settled |
 |---|---|---|
-| **#49** `docs(repo): restructure into README (user) + dev-docs/ (developer)` | 2026-09-23 (`13c4f7c`) | Every later doc edit lands in the final structure. |
-| **#55** `fix(skill): a same-named command suppresses the implement-feature SKILL.md body` | 2026-09-24 (`2d4f1c6`) | The eval load path runs the real `SKILL.md` — #50's premise. |
-| **#56** `fix(guard-hook): a bare, un-namespaced skill id bypasses explicit-entry` | 2026-09-24 (`e7d8b6b`) | Explicit-entry is enforced for both skill-id spellings. |
-| **#50** `feat(repo): verification ladder + eval seed suite + release-verify hook` | 2026-09-24 (`6553a6a`) | T1/T2/T3 ladder + eval corpus: the quality signal for every later issue. |
-| **#59** `chore(repo): bump the dev container claude so the eval gate can run on claude-opus-5-5` | 2026-09-25 (`35857b0`) | Container claude 2.1.281; first opus-5-5 baseline 5/7 (the gap is #58). |
-| **#57** `test(repo): automate the 8-cell entry-point contract` | 2026-09-25 (`9f0bed7`) | `verify-entry-points.py`, 16/16 green; the #55 bug class is still live, so the check stays. |
-| **#60** `docs(repo): audit repo + open issues for staleness; simplify developer-guide` | 2026-09-25 (`ab24d4c`) | Docs and open issues current; filed #61, #62, #63; moved #58 into 0.1.0. |
-| **#51** `feat(repo): shared SDLC gate spine + /issue skill` | 2026-09-25 (`7247813`) | `.claude/sdlc/gates.md` is the spine #52/#53 execute, incl. the fail-fast eval budget; `/issue` filed #64 (`/regression`, backlog). |
-| **#52** `feat(repo): /feature skill — 12 gates, 4 STOPs` | 2026-09-26 (`fc05474`) | Spine reworked to 12 gates / 4 STOPs (scope, design, tests, implementation), both reviews before any eval spend; proven by driving #37 end to end. Filed #65, #66. |
-| **#45** `fix(toolchain): dev container never runs "claude plugin install"; live-workspace load path unverified` | 2026-09-26 (`574c15d`) | Fresh volume boots with the plugin live-loaded from the workspace (no install) and no onboarding/login/trust prompt; `~/.claude.json` keys are merged each start. |
-| **#21** `feat(toolchain): add a clean-run harness that rebuilds the dev container per dry run` | 2026-09-26 (`5f61943`) | `make clean-run` resets to a known dry-run state in ~20 s (container reset, volume kept, `settings.json` re-seeded, fixtures, status table); `--rebuild` = no-cache image rebuild. #66 builds on it. |
-| **#66** `feat(toolchain): hands-off dev-container test runs — fresh state, auto-auth, tmux, live progress` | 2026-09-26 (`d3ecef8`) | `make t3-start / t3-attach / t3-peek / t3-watch / t3-stop` (`dev-docs/t3-runs.md`): the agent launches and watches, the human only attaches, answers STOPs and attests; proven by a hands-off `roman-numeral` run. Filed #68, #69; moved #40 to `1.0.0`. |
-| **#61** `fix(skill): agent inboxes and quality-standards disagree with SKILL.md` | 2026-10-02 (`e7fdc6c`) | First `/fix` run, and #53's proof: REPRODUCE at T2 (`test_inbox_parity.py` red, then green), T3 dry run. Its lessons became #72–#75. |
-| **#53** `feat(repo): /fix skill — REPRODUCE + DEPOSIT gates` | 2026-10-02 | `/fix` adds 1b REPRODUCE + 8b DEPOSIT with no fifth STOP; shared `runbook.md`; `dev-docs/repo-local-skills.md`; root scripts stay at the root. Closes **#48** (`feat(repo): repo-local SDLC — verification ladder + /issue, /feature, /fix skills`). |
-| **#73** `feat(repo): runbook — T3 evidence, flaky-case handling, --keep-temp on eval failure` | 2026-10-02 (`a7c0038`) | A failing `flaky` case is noted, not halted (no case is tagged since #76 removed the last one); a non-flaky failure gets one `--keep-temp` re-run; Gate 2 names the T3 fixture and evidence it exercises. |
-| **#72** `fix(repo): t3-run.sh watch replays transcripts from earlier runs` | 2026-10-02 | `t3-start` touches `/tmp/t3-start.marker`; `watch` reads only newer transcripts (old ones kept), so #58's T3 watching is trustworthy. Done by hand (tooling, pre-#70). |
-| **#58** `fix(skill): conductor sometimes skips the lock STOP and the explicit-entry redirect` | 2026-10-02 (`cbcc5e5`) | Second `/fix` run, reproduced from recorded T1 runs: the lock check is the first, sole action (`gate-0-lock-stop` 8/8, `flaky` removed). Routing can't be fixed in prose (the model never reads the skill list when built-in tools suffice) → #76. |
-| **#76** `fix(skill): a plain request should get ordinary help; the routing case grades only auto-invocation` | 2026-10-02 (`072980a`) | Third `/fix` run, reproduced at T2 (`test_entry_points.py` §3): the description forbids only self-invocation, not ordinary help; `routing-no-autoinvoke` grades only auto-invocation (8/8, `flaky` removed); ADR-14 records why the workflow is opt-in. |
-| **#71** `fix(repo): resolve contradictions and gaps in the repo-local spine` | 2026-10-03 (`07b2803`) | By hand, opus cold read before/after: 9 contradictions → 0. Adds *halt*, a `→ DESIGN` route, the whole-change diff (intent-to-add + merge-base), resume rules; "red" = the case fails. Remaining gaps → #79 (backlog). |
-| **#67** `fix(repo): setup-fixture.sh leaves an untracked *.egg-info in every fixture run` | 2026-10-03 (`9f384cb`) | By hand (tooling, pre-#70): the fixture template ships a `.gitignore` (not `.coverage`) and `clean-run.sh` counts untracked files again, so a dirty `git status` after a dry run is the workflow's doing. #70 needs another tooling issue as its proof run. |
-| **#44** `feat(repo): ship the python-starter fixtures configured as /sdlc-init would leave them` | 2026-10-03 (`2cc5e42`) | By hand (tooling, pre-#70): `roman-numeral` ships `[tool.mutmut]` `source_paths`, ignores `mutants/`, and kills all 6 baseline mutants. T3: Gate 7 ran `mutmut run` once (51/51, no setup loop). #19 now pins `mutmut>=3` (#40 then pinned `==3.8.0`). |
-| **#40** `feat(gate-7): the conductor runs coverage and mutmut; the code-reviewer only reads results` + **#75** `fix(guard-hook): critic's pytest --cov writes .coverage into the product tree` | 2026-10-03 (`9352965`) | `/feature` run: before the Gate 7 dispatch the conductor measures into `<artifact_dir>/quality/` (`COVERAGE_FILE`, `mutmut results --all true`, `mutants/` removed); a mutmut error halts with a `/sdlc-init` pointer; `skip — <reason>` is the only skip. The guard denies critics `mutmut` / `pytest --cov`; `mutmut==3.8.0` pinned. T3 `roman-numeral`: no `.coverage*` / `mutants/` in the product tree, reviewer 0 denials. |
-| **#68** `fix(guard-hook): read-only critics can run pip install and repoint the user's environment` | 2026-10-03 (`ad9c486`) | `/fix` run, reproduced at T2 (guard subprocess test, 6/6 red): `policy.changes_environment()` denies critics `pip`/`pip3`/`pipX.Y` install/uninstall, `python -m pip`, `uv pip install/uninstall/sync` (rule `critic-env-change`, architecture.md §5 row 9); conductor and implementer unaffected. Gate 8 smoke 3/3. No T3; critic briefs don't mention pip yet. |
-| **#19** `feat(skill): /sdlc-init — set a Python repo up for /implement-feature` | 2026-10-03 (`4e4f110`) | `/feature` run: `/sdlc-init` measures with read-only `toolchain/setup_check.py` (found / floor / action table + missing config), shows one plan, applies it after approval, runs a `mutmut run "*__mutmut_1"` smoke test, never commits; a 2nd run is a no-op. Gate 0 checks all seven pins + mutmut config and stops with "run `/sdlc-init`". `mutmut>=3`; both fixtures carry exactly its config. T3 `roman-numeral` (`ENTRY=/sdlc-init VENV=1`): install + upgrade, no-op re-run, `/implement-feature` through Gate 7 (mutmut 90.9%), #68 import check held; `git init` offer attested in a non-git copy (T1 can't stage "not a repo"). |
-| **#81** `fix(skill): critic briefs don't state the pip install/uninstall guard rule` | 2026-10-04 (`1d1995d`) | `/fix` run, reproduced at T2 (`test_inbox_parity.py` red): `code-reviewer`, `verifier`, `test-reviewer` briefs state guard rule 9 in the deny reason's words (never change the Python environment; a missing dependency is a finding, not retried or worked around); a host test fails if a brief drops it. T1 waived (guard-enforced). Gate 8 5/5 run, `guard-secret-read-denied` failed once (unrelated; filed separately). |
-| **#63** `chore(skill): move all gate pins to the latest dated models` | 2026-10-04 (`d26e5cd`) | `/feature` run: all five `[I]` gates pin dated ids — reviewers `claude-opus-5-5`, producers `claude-sonnet-5-5` (the `sonnet` alias still resolved to `claude-sonnet-5`); ADR-2 is "every isolated gate pins a dated model", frontmatter the SSOT; `test_agentdefs.py` tripwires keep SKILL.md's ids equal to the pins. T3 `roman-numeral` receipt: all five ✅ exact. Gate 8 found the test-writer skipping its `pytest.raises` grep self-check on sonnet-5-5 (3/5) → the grep output is now a `## Self-check` deliverable in `05-test-intent.md` (3/3 green). Filed #84, #85; evidence added to #80. |
-| **#86** `feat(repo): /review-repo skill — full-repo review pinned to Opus 5.5 at high effort` | 2026-10-04 (`59176bf`) | `/feature` run in an ad-hoc tooling lane (#70 not built): 9 area agents + 1 consolidator in `.claude/agents/`, pinned `claude-opus-5-5` / `high`; `measure.py` checks the pins before any spawn (a wrong pin costs $0) and the transcripts after the areas and after the consolidator, against fixed values. Real run: 10/10 at opus-5-5/high, but ~$28 → #92; the conductor didn't wait for the consolidator (fixed in prose, proven by #87). Wrong-pin run: INVALID at pre-flight, 0 agents. |
-| **#92** `feat(repo): cut the cost of a /review-repo run` | 2026-10-04 (`5ca71db`) | `/feature` run, tooling lane: 9 areas → 3 (A product · B install path and evals · C docs, history, process, structure) + consolidator; `measure.py` owns the area table, adds a `plan` phase and `--since <ref>` (only changed areas are reviewed; the expected count is derived from the diff, never passed in). A since-ref run checks structure only when area C changed, so the pre-release run is a full one. Canary dropped. T2 only (305 passed, $0); #87's run is the T3 proof and the "after" cost. |
-| **#87** `chore(repo): run the full-repo review and triage findings before 0.1.0` | 2026-10-04 (`7abeddc`) | `/review-repo` full run: 3 areas + consolidator, 4/4 at opus-5-5/high, the conductor ran the final measurement on its own (#86 wait rule proven); $11.61 vs the $28.35 baseline (#92 proven). 65 findings in `review-20261004.md`. 0.1.0: #93 (A-1); B-1, C-6 folded into #89. All other findings (incl. A-2, B-3) target 0.2.0 and are filed as issues when 0.2.0 starts. |
-| **#93** `fix(guard-hook): the guard writes every tool call to if-runlog.jsonl in every project's root` | 2026-10-04 (`f9a1c48`) | `/fix` run, reproduced at T2 (4 guard subprocess tests red): with no `.active-run` and no `$IF_RUNLOG` the guard writes no audit line (project-dir and `/tmp` fallbacks gone). Every deny rule stays global (AC 3); with no handoff dir, confined critics write only to scratch. `.gitignore` lines keep `if-runlog.jsonl`. Gate 8 9/9 (`gate-0-model-plan-pins` failed once on its regex grader, then passed twice). T3 check folded into step 7. |
-| **#89** `feat(release): changelog, evergreen README and release-notes step` | 2026-10-04 (`f5ad946`) | By hand (docs + shell; `/feature` declines, pre-#70): `CHANGELOG.md` with the approved 0.1.0 entry (Update from 0.0.9 says to run `/sdlc-init`); `RELEASING.md` §4 notes step; `release.sh` stops with no `## <version>` section and publishes it via `gh release create --notes-file` (`release.test.sh` 31/31); README CLI-form Quick start, Updating section, no version line (B-1, X-1, B-2 + C-22, C-6). Clean-room + update proof moves to step 9. |
-| **#88** `chore(repo): record a by-hand eval baseline for 0.1.0` | 2026-10-05 (`c688f1f`) | By hand: 18 cases × 3 runs at `d10db81` (claude 2.1.281), split in two parts to fit a usage window. 13 cases 3/3; 5 at 2/3, labeled flaky (`gate-0-model-plan-pins`, `gate-1-interview-entry`, `gate-3-raises-match`, `gate-6-concurrency-policy`, `gate-7-mutation-skip-deviation`), each one grader missed once. `gate-0-lock-stop` (#58) 3/3. The file states the regression and re-run rules. Flaky cases are triaged with 0.2.0. |
+
+_0.1.0 shipped 2026-10-05 (milestone closed); its record is the `## 0.1.0` entry in
+`CHANGELOG.md`._
 
 ## Next release — `0.2.0` (the planning suite)
 
@@ -259,7 +158,7 @@ Work happens **one issue per fresh session**.
 5. **"Done" ≠ "the change exists."** Done = a **green end-to-end dry run in the dev container**
    (`DEVCONTAINER.md`). Host unit tests: `python3 -m pytest sdlc-lite-plugin -q`.
 6. **Never commit before human approval.**
-7. When done, close the issue; update this plan only if the release narrative changed.
+7. When done, close the issue and add its row to the current release's **Closed** table; update the narrative only if it changed.
 
 **Branching:** feature branch per issue; merge to `main` per issue.
 
