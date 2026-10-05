@@ -87,12 +87,21 @@ re-runs only the affected eval cases if it changes docs only. It re-runs the who
    (#96, #97), with #95 and #98.
 8. ~~**Re-check the 0.1.0 notes.**~~ Done 2026-10-05 (`dee04c3`): no content change (only #88,
    internal, closed since #89); heading dated `## 0.1.0 — 2026-10-05`. `main` pushed.
-9. **Run `release.sh`** — **resume here.** It checks the `CHANGELOG.md` section, bumps the
-   version, tags `v0.1.0`, repoints the umbrella and publishes the GitHub Release. Then run
-   `release-verify.sh`: its clean-room install and `/plugin update` proof (0.0.9 → 0.1.0) are #89's
-   last verification. The script asks before each push, so run it in two parts: first
-   `./release.sh 0.1.0 --umbrella /Users/sdaas/dev/claude-plugins --no-push`, review the two
-   commits and the tag, then push both repos and run the `gh release create` command it prints.
+9. **Run `release.sh`, then `release-verify.sh`** — **resume here, at 9d.**
+   - 9a. ~~`release.sh`.~~ Done 2026-10-05: `v0.1.0` tagged at `6612a9f`, umbrella repointed
+     (`claude-plugins` `4627ba7`), both pushed, GitHub Release published.
+   - 9b. ~~`release-verify.sh` steps 1–4.~~ Done 2026-10-05: clean-room install from GitHub (cached
+     `0.1.0`), Gate 0/1 smoke, `/plugin update` 0.0.9 → 0.1.0 all green (#89's last verification).
+   - 9c. ~~Eval suite.~~ Waived for 0.1.0 (human decision, 2026-10-05). Stopped at 9 of 18 cases:
+     the procedure is unsound, not the plugin. The #88 baseline ran a `sonnet` conductor
+     (`SKILL.md` wants Opus for INTERVIEW/DESIGN); step 5 pins `claude-opus-5-5` but grades a
+     0.8 mean, not the baseline; some cases encode Sonnet behavior. On step 5's own rule, 8 of 9
+     passed; `gate-1-interview-entry` failed 0/3 (`no-requirements-yet`). Fix filed as
+     **#99**, first in 0.2.0. No more eval spend until then. 0.1.0 rests on 9b, the step 7 dry
+     run (Opus conductor) and 9d.
+   - 9d. **Resume here.** The human's full gated `/implement-feature` run on the installed copy
+     in the dev container (`release-verify.sh --no-evals --keep` prints the attach command), then
+     close milestone `0.1.0`.
 10. **Retrospective** — after the tag, review the whole release work and propose changes to the
    release process (`RELEASING.md` §7). File them as issues.
 
@@ -145,13 +154,15 @@ the first task when 0.2.0 starts (not before), and each child then runs through 
 | Customer-visible features | #47, #32, #98 |
 | Customer-visible fixes / hardening | #78, #96, #97 |
 | Internal SDLC improvements | #70, #64, #94, #62, #90, #77 |
-| Internal SDLC fixes / hardening | #95 |
+| Internal SDLC fixes / hardening | #99, #95 |
 
 **Execution order:**
 
 0. **File issues from `review-20261004.md`** (#87) — every next-release and backlog finding, plus
    A-2 and B-3 from the 0.1.0 bucket; skip the ones #93 and #89 closed. Group by root cause, follow
    `issue-template.md`, then place them in this order. *First, together with splitting #47 and #32.*
+0b. **#99** — `fix(repo): one eval procedure — Opus-pinned conductor and judge, one pass rule, baseline re-recorded`
+   *Before any issue that spends eval money: every later eval verdict compares against its baseline.*
 1. **#70** — `feat(repo): widen /feature Gate 0 to accept tooling issues`
    *First, so every non-docs issue in this release — tooling included — runs through `/feature` or `/fix`.*
 2. **#64** — `feat(repo): add a /regression skill that runs the full eval suite, 3 runs per case`
