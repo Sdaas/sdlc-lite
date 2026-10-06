@@ -3,6 +3,49 @@
 What changed in each `sdlc-lite` release, newest first. Install and update steps: [README](README.md).
 The GitHub Release for each version carries the same text.
 
+## 0.1.1 — 2026-10-06
+
+A patch release. A first run that follows the README now has no red errors on the normal path.
+
+### Fixed bugs
+
+- **`/sdlc-init` no longer fails its smoke test on a correctly set-up repo.** When your package
+  does not import (for example, a src layout before `pip install -e .`), the plan now includes
+  `python -m pip install -e .`. When the repo has nothing to mutate yet, the smoke test reports a
+  plain skip, not a failure.
+- **Setup and feature changes no longer land in the same commit.** `/sdlc-init` now ends with the
+  exact command to commit its changes. `/implement-feature` stops at Gate 0 when the tree has
+  uncommitted changes. It names the files and lets you commit them first, or include them in the
+  feature on purpose.
+- **The README Quick start matches a real first run.** It shows how to make and activate a
+  virtualenv, install the plugin in the session, check the install, add the read rule, and commit
+  the `/sdlc-init` changes.
+
+### Install
+
+```bash
+claude plugin marketplace add Sdaas/claude-plugins
+claude plugin install sdlc-lite@sdaas
+```
+
+Then type `/reload-plugins` in your Claude Code session, and run `/sdlc-init` in your repo. Full
+setup: [README](https://github.com/Sdaas/sdlc-lite#one-time-setup).
+
+### Update from 0.1.0
+
+```bash
+claude plugin marketplace update sdaas
+claude plugin update sdlc-lite
+```
+
+Then type `/reload-plugins` in your Claude Code session, or restart it. You do not need to run
+`/sdlc-init` again. If your tree has uncommitted changes, `/implement-feature` now stops at Gate 0
+and asks what to do with them.
+
+### All changes
+
+[Closed issues in the 0.1.1 milestone](https://github.com/Sdaas/sdlc-lite/issues?q=milestone%3A0.1.1+is%3Aclosed).
+
 ## 0.1.0 — 2026-10-05
 
 The first release that sets your repo up for you and leaves your environment alone.
