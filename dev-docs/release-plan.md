@@ -10,7 +10,7 @@ Titles can drift — GitHub wins; re-check with `gh issue list --milestone "<tit
 Decision history lives in the issues and the ADRs (`adr/`);
 release conventions live in `RELEASING.md`._
 
-_Last updated: 2026-10-05 (0.1.0 accepted; 0.1.1 opened)._
+_Last updated: 2026-10-06 (0.1.1 issues all closed; ready to cut)._
 
 ---
 
@@ -53,7 +53,7 @@ run (`ACCEPTANCE.md`).
    *First: it sets the step order that #104 documents.*
 2. ~~**#102** — `fix(skill): /sdlc-init changes land in the first feature commit`~~ ✅ done (`02ed86d`)
    *Touches `/sdlc-init`'s finish message and Gate 0, after #101.*
-3. **#104** — `docs(docs): README Quick start matches what a stranger actually does`
+3. ~~**#104** — `docs(docs): README Quick start matches what a stranger actually does`~~ ✅ done (`174b6ac`)
    *Last: documents the flow #101 and #102 leave behind, and `ACCEPTANCE.md` §4's exact user steps.*
 
 **How 0.1.1 runs** (human decisions, 2026-10-05):
@@ -73,6 +73,7 @@ run (`ACCEPTANCE.md`).
 |---|---|---|
 | **#101** `fix(skill): /sdlc-init smoke test fails on a stranger's first run` | 2026-10-05 (`b028c3e`) | `/sdlc-init` offers `pip install -e .` in its plan when the package won't import; a smoke test with no mutants is a plain skip, not a failure |
 | **#102** `fix(skill): /sdlc-init changes land in the first feature commit` | 2026-10-06 (`02ed86d`) | `/sdlc-init`'s finish prints the commit command for its edits; `/implement-feature` Gate 0 stops on a dirty tree (commit first, or `include`), so setup and feature land in separate commits |
+| **#104** `docs(docs): README Quick start matches what a stranger actually does` | 2026-10-06 (`174b6ac`) | Quick start: venv, read rule before `claude`, in-session install + `/plugin` Installed check, `/sdlc-init` then its commit command; `ACCEPTANCE.md` §4 lists the exact user steps |
 
 _0.1.0 shipped 2026-10-05 (milestone closed); its record is the `## 0.1.0` entry in
 `CHANGELOG.md`._
