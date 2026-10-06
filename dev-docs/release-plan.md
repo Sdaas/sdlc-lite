@@ -51,7 +51,7 @@ run (`ACCEPTANCE.md`).
 **Execution order:**
 1. ~~**#101** — `fix(skill): /sdlc-init smoke test fails on a stranger's first run`~~ ✅ done (`b028c3e`)
    *First: it sets the step order that #104 documents.*
-2. **#102** — `fix(skill): /sdlc-init changes land in the first feature commit`
+2. ~~**#102** — `fix(skill): /sdlc-init changes land in the first feature commit`~~ ✅ done (`02ed86d`)
    *Touches `/sdlc-init`'s finish message and Gate 0, after #101.*
 3. **#103** — `fix(guard-hook): the verifier's scratchpad writes show as a breach`
 4. **#104** — `docs(docs): README Quick start matches what a stranger actually does`
@@ -73,6 +73,7 @@ run (`ACCEPTANCE.md`).
 | Issue | Done | What it settled |
 |---|---|---|
 | **#101** `fix(skill): /sdlc-init smoke test fails on a stranger's first run` | 2026-10-05 (`b028c3e`) | `/sdlc-init` offers `pip install -e .` in its plan when the package won't import; a smoke test with no mutants is a plain skip, not a failure |
+| **#102** `fix(skill): /sdlc-init changes land in the first feature commit` | 2026-10-06 (`02ed86d`) | `/sdlc-init`'s finish prints the commit command for its edits; `/implement-feature` Gate 0 stops on a dirty tree (commit first, or `include`), so setup and feature land in separate commits |
 
 _0.1.0 shipped 2026-10-05 (milestone closed); its record is the `## 0.1.0` entry in
 `CHANGELOG.md`._
