@@ -46,23 +46,22 @@ run (`ACCEPTANCE.md`).
 
 | Theme | Issues |
 |---|---|
-| Customer-visible fixes / hardening | #101, #102, #103, #104 |
+| Customer-visible fixes / hardening | #101, #102, #104 |
 
 **Execution order:**
 1. ~~**#101** — `fix(skill): /sdlc-init smoke test fails on a stranger's first run`~~ ✅ done (`b028c3e`)
    *First: it sets the step order that #104 documents.*
 2. ~~**#102** — `fix(skill): /sdlc-init changes land in the first feature commit`~~ ✅ done (`02ed86d`)
    *Touches `/sdlc-init`'s finish message and Gate 0, after #101.*
-3. **#103** — `fix(guard-hook): the verifier's scratchpad writes show as a breach`
-4. **#104** — `docs(docs): README Quick start matches what a stranger actually does`
+3. **#104** — `docs(docs): README Quick start matches what a stranger actually does`
    *Last: documents the flow #101 and #102 leave behind, and `ACCEPTANCE.md` §4's exact user steps.*
 
 **How 0.1.1 runs** (human decisions, 2026-10-05):
-- #101–#103 each run through `/fix #NN` (human-typed), one per fresh session. #104 (docs) by hand.
+- #101 and #102 each run through `/fix #NN` (human-typed), one per fresh session. #104 (docs) by hand.
 - No eval spend (the procedure is unsound until #99): `/fix` Gate 8 is waived; each fix rests on
   its REPRODUCE test and the final acceptance run.
 - **Before the cut:** host tests (`python3 -m pytest sdlc-lite-plugin -q`) and a green dry run in
-  the dev container on `main` with all four fixes in.
+  the dev container on `main` with all three fixes in.
 - **Cut:** `CHANGELOG.md` `## 0.1.1`, then `release.sh 0.1.1`.
 - **After the cut** (the acceptance container installs only released tags):
   `release-verify.sh --no-evals`, then a fresh acceptance run (`ACCEPTANCE.md` §4–§5). Close the
@@ -88,7 +87,7 @@ the first task when 0.2.0 starts (not before), and each child then runs through 
 | Theme | Issues |
 |---|---|
 | Customer-visible features | #47, #32, #98 |
-| Customer-visible fixes / hardening | #78, #96, #97 |
+| Customer-visible fixes / hardening | #78, #96, #97, #103, #43 |
 | Internal SDLC improvements | #70, #64, #94, #62, #90, #77, #100 |
 | Internal SDLC fixes / hardening | #99, #95 |
 
@@ -126,6 +125,9 @@ the first task when 0.2.0 starts (not before), and each child then runs through 
 8. **#78** — `feat(skill): every terminal STOP ends with one exact command the user can run`
    *Covers `/sdlc-init`'s STOPs too, so after #19.*
 
+**Moved on 2026-10-06:** #103 from 0.1.1 to 0.2.0, with #43 from the backlog — one fix for both
+(a guard-denied write is a blocked attempt, not a breach); place them in the order when 0.2.0 starts.
+
 **Moved on 2026-10-02:** #63, #44 and #19 to 0.1.0; #62 to the backlog (no prose rewrite right
 before a release). **On 2026-10-04** #62 moved to 0.2.0, after #64 and the 0.1.0 baseline; #83 was folded into it and closed.
 Earlier: #45 and #21 to 0.1.0 (2026-09-26).
@@ -140,7 +142,7 @@ time and tokens, loops, waste (epic **#91** `feat(analyzer): retrospective analy
 ## Backlog
 
 Everything else — **open issues with no milestone**, including work that was previously milestoned
-here but isn't committed now (e.g. **#43**, **#74**, parked 2026-10-02; **#79**, filed 2026-10-03). Not tracked here; query GitHub: `gh issue list --state open --search "no:milestone"`.
+here but isn't committed now (e.g. **#74**, parked 2026-10-02; **#79**, filed 2026-10-03). Not tracked here; query GitHub: `gh issue list --state open --search "no:milestone"`.
 Promote an issue into a milestone when it's committed to a release.
 
 ---
