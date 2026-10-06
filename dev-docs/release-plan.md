@@ -10,7 +10,7 @@ Titles can drift — GitHub wins; re-check with `gh issue list --milestone "<tit
 Decision history lives in the issues and the ADRs (`adr/`);
 release conventions live in `RELEASING.md`._
 
-_Last updated: 2026-10-06 (0.1.1 issues all closed; ready to cut)._
+_Last updated: 2026-10-06 (0.1.1 shipped; 0.2.0 is current)._
 
 ---
 
@@ -35,53 +35,12 @@ _Last updated: 2026-10-06 (0.1.1 issues all closed; ready to cut)._
 
 --- 
 
-## Current release — `0.1.1` (first-run fixes from the 0.1.0 acceptance run)
+## Current release — `0.2.0` (the planning suite)
 
-Current milestone: **`0.1.1`** (patch release).
+Current milestone: **`0.2.0`**.
 
-Theme: **a stranger's first run has no red errors on the normal path.** The 0.1.0 acceptance
-run (#100) passed, but a stranger who follows the README saw failures and alarms that read as "the
-plugin is broken". 0.1.1 removes them. Cut it with `release.sh`; accept it with a new acceptance
-run (`ACCEPTANCE.md`).
-
-| Theme | Issues |
-|---|---|
-| Customer-visible fixes / hardening | #101, #102, #104 |
-
-**Execution order:**
-1. ~~**#101** — `fix(skill): /sdlc-init smoke test fails on a stranger's first run`~~ ✅ done (`b028c3e`)
-   *First: it sets the step order that #104 documents.*
-2. ~~**#102** — `fix(skill): /sdlc-init changes land in the first feature commit`~~ ✅ done (`02ed86d`)
-   *Touches `/sdlc-init`'s finish message and Gate 0, after #101.*
-3. ~~**#104** — `docs(docs): README Quick start matches what a stranger actually does`~~ ✅ done (`174b6ac`)
-   *Last: documents the flow #101 and #102 leave behind, and `ACCEPTANCE.md` §4's exact user steps.*
-
-**How 0.1.1 runs** (human decisions, 2026-10-05):
-- #101 and #102 each run through `/fix #NN` (human-typed), one per fresh session. #104 (docs) by hand.
-- No eval spend (the procedure is unsound until #99): `/fix` Gate 8 is waived; each fix rests on
-  its REPRODUCE test and the final acceptance run.
-- **Before the cut:** host tests (`python3 -m pytest sdlc-lite-plugin -q`) and a green dry run in
-  the dev container on `main` with all three fixes in.
-- **Cut:** `CHANGELOG.md` `## 0.1.1`, then `release.sh 0.1.1`.
-- **After the cut** (the acceptance container installs only released tags):
-  `release-verify.sh --no-evals`, then a fresh acceptance run (`ACCEPTANCE.md` §4–§5). Close the
-  milestone only when both pass.
-- **Cut by hand** from `RELEASING.md` §4; log every stall or judgment call to
-  `release-friction.md.tmp`. **At close-out, before deleting this section:** file the `/release` skill issue (0.2.0, Internal
-  SDLC improvements) from that log.
-
-### Closed (feeds the `## 0.1.1` entry in `CHANGELOG.md`)
-
-| Issue | Done | What it settled |
-|---|---|---|
-| **#101** `fix(skill): /sdlc-init smoke test fails on a stranger's first run` | 2026-10-05 (`b028c3e`) | `/sdlc-init` offers `pip install -e .` in its plan when the package won't import; a smoke test with no mutants is a plain skip, not a failure |
-| **#102** `fix(skill): /sdlc-init changes land in the first feature commit` | 2026-10-06 (`02ed86d`) | `/sdlc-init`'s finish prints the commit command for its edits; `/implement-feature` Gate 0 stops on a dirty tree (commit first, or `include`), so setup and feature land in separate commits |
-| **#104** `docs(docs): README Quick start matches what a stranger actually does` | 2026-10-06 (`174b6ac`) | Quick start: venv, read rule before `claude`, in-session install + `/plugin` Installed check, `/sdlc-init` then its commit command; `ACCEPTANCE.md` §4 lists the exact user steps |
-
-_0.1.0 shipped 2026-10-05 (milestone closed); its record is the `## 0.1.0` entry in
+_0.1.1 shipped 2026-10-06 (milestone closed); its record is the `## 0.1.1` entry in
 `CHANGELOG.md`._
-
-## Next release — `0.2.0` (the planning suite)
 
 Theme: **`/design-system` and `/plan-feature` as customer features**, built by dogfooding `/feature`.
 0.2.0 ships only with **both** skills. #47 and #32 are epics; splitting them into child issues is
@@ -91,8 +50,8 @@ the first task when 0.2.0 starts (not before), and each child then runs through 
 | Theme | Issues |
 |---|---|
 | Customer-visible features | #47, #32, #98 |
-| Customer-visible fixes / hardening | #78, #96, #97, #103, #43 |
-| Internal SDLC improvements | #70, #64, #94, #62, #90, #77, #100 |
+| Customer-visible fixes / hardening | #78, #96, #97, #103, #43, #105 |
+| Internal SDLC improvements | #70, #64, #94, #62, #90, #77, #100, #106 |
 | Internal SDLC fixes / hardening | #99, #95 |
 
 **Execution order:**
@@ -128,6 +87,9 @@ the first task when 0.2.0 starts (not before), and each child then runs through 
    *After #47: it decomposes a capability `/design-system` produced. Split, then built the same way.*
 8. **#78** — `feat(skill): every terminal STOP ends with one exact command the user can run`
    *Covers `/sdlc-init`'s STOPs too, so after #19.*
+
+**Filed on 2026-10-06** from the 0.1.1 cut: #106 (`/release` skill, from the friction log) and
+#105 (README read rule, from the acceptance run); place them in the order when 0.2.0 starts.
 
 **Moved on 2026-10-06:** #103 from 0.1.1 to 0.2.0, with #43 from the backlog — one fix for both
 (a guard-denied write is a blocked attempt, not a breach); place them in the order when 0.2.0 starts.
