@@ -66,6 +66,9 @@ run (`ACCEPTANCE.md`).
 - **After the cut** (the acceptance container installs only released tags):
   `release-verify.sh --no-evals`, then a fresh acceptance run (`ACCEPTANCE.md` §4–§5). Close the
   milestone only when both pass.
+- **Cut by hand** from `RELEASING.md` §4; log every stall or judgment call to
+  `release-friction.md.tmp`. **At close-out, before deleting this section:** file the `/release` skill issue (0.2.0, Internal
+  SDLC improvements) from that log.
 
 ### Closed (feeds the `## 0.1.1` entry in `CHANGELOG.md`)
 
