@@ -29,15 +29,39 @@ What that buys you:
 
 ## Quick start
 
-1. Install the plugin from a terminal:
+Your project must be a git repo with Python 3.12 or newer (see [Prerequisites](#prerequisites)).
+
+1. In a terminal, in your project's root, make a virtualenv and activate it:
    ```bash
-   claude plugin marketplace add Sdaas/claude-plugins
-   claude plugin install sdlc-lite@sdaas
+   python3 -m venv .venv
+   source .venv/bin/activate
    ```
-2. In your Claude Code session, type `/reload-plugins` to load it.
-3. Make sure your target project is a git repo.
-4. Run `/sdlc-init` in that repo: it installs the required toolchain, makes your package importable and adds the test/coverage/mutation config (see Prerequisites below). Then commit its changes with the command it prints.
-5. Run `/implement-feature` and point it at a GitHub issue, a file, or a 1-2 line description of the feature.
+   If `.gitignore` does not list `.venv/`, add it and commit. `/implement-feature` stops on
+   untracked files.
+2. Give Claude Code read access to the plugin's files. Add this rule to `~/.claude/settings.json`
+   (make the file if it does not exist; if it has a `permissions.allow` list, add the line to it):
+   ```json
+   {
+     "permissions": {
+       "allow": ["Read(~/.claude/plugins/**)"]
+     }
+   }
+   ```
+   Without it, Claude Code asks "Read outside the working directories" when a gate opens a plugin
+   template under `~/.claude/plugins/`. If you see that prompt, allow the read.
+3. Start Claude Code from the same shell, so it runs commands in the venv: `claude`.
+4. Install the plugin in the session:
+   ```
+   /plugin marketplace add Sdaas/claude-plugins
+   /plugin install sdlc-lite@sdaas
+   /reload-plugins
+   ```
+   You can also install from a terminal instead (see [One-time setup §1](#1-install-the-plugin-from-github)).
+5. Check the install: type `/plugin`, then open the **Installed** tab. It shows `sdlc-lite`.
+6. Run `/sdlc-init`. Read its plan and approve it. It installs the toolchain into the venv, makes
+   your package importable (`pip install -e .`) and adds the test, coverage and mutation config.
+   Then run the commit command it prints.
+7. Run `/implement-feature` and point it at a GitHub issue, a file, or a 1-2 line description of the feature.
 
 To update to a newer release, see [Updating](#updating). What changed in each release:
 [`CHANGELOG.md`](CHANGELOG.md).
@@ -77,7 +101,17 @@ approval, and it never commits on your default branch.
 ### 1. Install the plugin from GitHub
 
 The plugin is published through the **`Sdaas/claude-plugins`** umbrella marketplace, which pins it to
-a released tag. Register that marketplace, then install:
+a released tag. Register that marketplace, then install. Inside a Claude Code session:
+
+```
+/plugin marketplace add Sdaas/claude-plugins
+/plugin install sdlc-lite@sdaas
+/reload-plugins
+```
+
+To verify, type `/plugin` and open the **Installed** tab. It shows `sdlc-lite`.
+
+Or install from a terminal, then type `/reload-plugins` in your session (or start a new one):
 
 ```bash
 # register the umbrella marketplace (the customer/release channel)
@@ -85,29 +119,27 @@ claude plugin marketplace add Sdaas/claude-plugins
 
 # install the plugin from it (version-pinned to the released tag)
 claude plugin install sdlc-lite@sdaas
-```
 
-Then, inside a Claude Code session, activate it in the current session:
-
-```
-/reload-plugins
-```
-
-Verify it's installed and enabled:
-
-```bash
+# verify
 claude plugin list
-claude plugin marketplace list
 ```
 
-> **Tip.** Use the CLI form above (`claude plugin install …`) rather than typing `/plugin install …`
-> as a one-liner inside a session — the interactive one-liner can silently open the manager UI and
-> no-op.
+> **Tip.** If the in-session install does nothing, exit Claude Code, use the terminal form, and
+> start `claude` again.
 
 ### 2. Install the pinned toolchain into your project's environment
 
 The gates rely on these tools being importable in the **same Python environment Claude Code runs
-commands in** (use a virtualenv for your project):
+commands in**. Use a virtualenv for your project, and start `claude` from the shell where it is
+active:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+claude
+```
+
+The tools:
 
 | Tool | Used for | When |
 |---|---|---|

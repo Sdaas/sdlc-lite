@@ -69,26 +69,33 @@ where the README is wrong, unclear or silent.
 **In the acceptance shell.**
 
 3. Open the README on GitHub (`https://github.com/Sdaas/sdlc-lite`) in a browser on the Mac.
-4. Make a virtualenv for the project and activate it, as the README tells you to:
-   `python -m venv .venv && source .venv/bin/activate`.
-5. Start Claude Code: `claude`. Do the first-run setup and log in with `/login`.
-6. Install the plugin **inside the session**:
+4. Make a virtualenv and activate it (README Quick start step 1):
+   `python3 -m venv .venv && source .venv/bin/activate`. The fixture's `.gitignore` already
+   lists `.venv/`.
+5. Add the read rule to `~/.claude/settings.json` (README Quick start step 2). The file does not
+   exist yet, so make it with the JSON from the README.
+6. Start Claude Code from the same shell: `claude`. Do the first-run setup and log in with
+   `/login`.
+7. Install the plugin **inside the session** (README Quick start step 4):
    `/plugin marketplace add Sdaas/claude-plugins`, then `/plugin install sdlc-lite@sdaas`, then
-   `/reload-plugins`. If the install does nothing, exit claude, use the CLI form in the README
-   (One-time setup §1), and start `claude` again. Write down which form worked.
-7. Do the other one-time setup steps in the README (the read permission, `pip install -e .`).
-8. Run `/sdlc-init`. Read the plan and approve it. Then run `/sdlc-init` again. It must change
-   nothing.
-9. Run `/implement-feature <a feature of your choice for mypackage>`. Answer each STOP. Go on
-   until the run commits on a feature branch (Gate 11).
+   `/reload-plugins`. If the install does nothing, exit claude, use the terminal form in the
+   README (One-time setup §1), and start `claude` again. Write down which form worked.
+8. Check the install: `/plugin`, then the **Installed** tab shows `sdlc-lite`.
+9. Run `/sdlc-init`. Read the plan and approve it. The plan must include `pip install -e .`.
+   Then run the commit command it prints, with `!` in front, or in a second shell.
+10. Run `/sdlc-init` again. It must change nothing.
+11. Run `/implement-feature <a feature of your choice for mypackage>`. Answer each STOP. Go on
+    until the run commits on a feature branch (Gate 11).
+12. Exit claude: `/exit`.
+13. Exit the acceptance shell: `exit`.
 
 **Back on the Mac.**
 
-10. Tell the developer agent the result, and your list of README gaps. The agent runs
+14. Tell the developer agent the result, and your list of README gaps. The agent runs
     `./acceptance.sh logs` and reads the evidence.
-11. When the agent has the evidence, remove the container: `./acceptance.sh down`.
+15. When the agent has the evidence, remove the container: `./acceptance.sh down`.
 
-You can exit the shell at any time. The container keeps its state until `down`. Run
+If you exit the shell early, the container keeps its state until `down`. Run
 `./acceptance.sh shell` to go back in.
 
 ## 5. Pass criteria
