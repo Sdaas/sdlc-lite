@@ -14,7 +14,7 @@ claude plugin eval sdlc-lite-plugin --ablation none \
   --scaffold --no-publish --trust-plugin --allow-tools Bash Write Edit
 ```
 
-- `--scaffold` — each case builds its tiny Python repo from `_fixtures/python-starter.sh` (with `[tool.mutmut]` by default; `nomutmut` and `configured` vary it). "Not a git repo" cannot be staged at T1 — the harness's sandbox home above the workspace is itself a git repo; the gate-3/4/6/7 cases add an in-flight run's handoff files from `_fixtures/roman-handoff.sh`.
+- `--scaffold` — each case builds its tiny Python repo from `_fixtures/python-starter.sh` (with `[tool.mutmut]` by default; `nomutmut` and `configured` vary it). "Not a git repo" cannot be staged at T1 — the harness's sandbox home above the workspace is itself a git repo; the harness's home dotfiles land untracked in the workspace, so the fixture hides them in `.git/info/exclude` (a clean case must read clean at Gate 0, #102); the gate-3/4/6/7 cases add an in-flight run's handoff files from `_fixtures/roman-handoff.sh`.
 - `--allow-tools Bash Write Edit` — Gate 0 runs shell commands; keep this flag **last** (it is
   variadic). Bash needs the container's two `--security-opt` flags (`DEVCONTAINER.md`).
 - Narrow a run with `--case '<glob>'` or `--tag <tag>`; pilot with `--runs 1`.
@@ -35,7 +35,8 @@ The recorded per-case pass rates, the regression rule and the re-run rule are in
 | `gate-0-lock-stop` | gate-0 | An existing `.active-run` stops the run before the preflight |
 | `gate-0-not-importable-stop` | gate-0 | An uninstalled src-layout package is a 🔴 stop; the conductor does not `pip install` it |
 | `gate-0-mutmut-unconfigured-stop` | gate-0 | No `[tool.mutmut]` is a 🔴 preflight stop pointing to `/sdlc-init`, before the lock; Gate 0 edits nothing (#19) |
-| `gate-0-model-plan-pins` | gate-0, model-pins | Gate 0's model plan names `claude-opus-5-5` for reviews and `claude-sonnet-5-5` for producers, never `claude-opus-4-8` (#63) |
+| `gate-0-dirty-tree-stop` | gate-0 | Uncommitted changes (what `/sdlc-init` leaves) are a ⚠️ stop before the lock and the branch switch: it names the files, gives a `git commit` command, offers `include`; nothing committed (#102) |
+| `gate-0-model-plan-pins` | gate-0, model-pins | Gate 0's model plan names `claude-opus-5-5` for reviews and `claude-sonnet-5-5` for producers, never `claude-opus-4-8` (#63); its clean tree gets no "Uncommitted changes" stop — a regression guard (#102) |
 | `gate-1-interview-entry` | gate-1 | Resuming after the Gate 0 STOP opens the interview; no requirements file or subagent yet |
 | `gate-3-raises-match` | gate-3 | The test-writer greps its own `pytest.raises` calls and records the output under `## Self-check` in `05-test-intent.md` (#63); none is bare against a documented message contract |
 | `gate-4-raises-match` | gate-4 | The test-reviewer greps for `pytest.raises` and returns CHANGES-REQUESTED on a bare one against a documented message (step order and the no-contract case are not graded) |

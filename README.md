@@ -36,7 +36,7 @@ What that buys you:
    ```
 2. In your Claude Code session, type `/reload-plugins` to load it.
 3. Make sure your target project is a git repo.
-4. Run `/sdlc-init` in that repo: it installs the required toolchain, makes your package importable and adds the test/coverage/mutation config (see Prerequisites below).
+4. Run `/sdlc-init` in that repo: it installs the required toolchain, makes your package importable and adds the test/coverage/mutation config (see Prerequisites below). Then commit its changes with the command it prints.
 5. Run `/implement-feature` and point it at a GitHub issue, a file, or a 1-2 line description of the feature.
 
 To update to a newer release, see [Updating](#updating). What changed in each release:
@@ -122,7 +122,7 @@ commands in** (use a virtualenv for your project):
 **The easy way: run `/sdlc-init` in your repo.** It
 - reads the floors the plugin ships (`toolchain/requirements-dev.txt`) and shows what is installed, what is missing and what is below its floor;
 - after **one approval**, `python -m pip install`s the missing or too-old packages into the active environment (never downgrades, never creates a venv);
-- adds only the *missing* `pyproject.toml` tables (`[tool.mutmut]`, `[tool.pytest.ini_options]`, `[tool.coverage.run]`) and `.gitignore` lines, each shown as a diff first, then smoke-tests `mutmut`. It never commits, and a second run changes nothing.
+- adds only the *missing* `pyproject.toml` tables (`[tool.mutmut]`, `[tool.pytest.ini_options]`, `[tool.coverage.run]`) and `.gitignore` lines, each shown as a diff first, then smoke-tests `mutmut`. It never commits: it prints the `git add … && git commit …` command for you to run. A second run changes nothing.
 
 Manual fallback: the plugin ships the floors at `sdlc-lite-plugin/toolchain/requirements-dev.txt`
 (after `claude plugin install`, under your Claude Code plugins cache, in a directory named for the
@@ -232,6 +232,11 @@ Your source package isn't on `sys.path`, so the test suite would go *falsely* re
 green. Run `/sdlc-init` (its plan offers the install), or run `python -m pip install -e .` in your repo
 root, then re-run. `/implement-feature` deliberately **won't** install it for you. Your environment is
 yours to own.
+
+**"Uncommitted changes — `<path>` · `<path>`."**
+Your working tree has uncommitted or untracked files, often the `pyproject.toml` / `.gitignore`
+edits from `/sdlc-init`. They would land in the feature commit. Commit them with the command shown,
+then re-run. Or reply `include` to put them in the feature commit on purpose.
 
 **"A run is already in flight" (active-run lock).**
 `.implement-feature/.active-run` exists from a previous run that didn't finish (or was interrupted

@@ -66,7 +66,10 @@ approval, then apply it. Idempotent: a second run on a set-up repo changes nothi
    | clean test run fails | the suite itself is red · run `pytest`, fix it first |
 6. **Finish.** Nothing missing and smoke green or skipped → the step-3 table, then "✅ Nothing to change — this repo is set up for
    /implement-feature." (no approval STOP). Otherwise a 2–3 line summary of what changed (uncommitted —
-   the user reviews with `git diff`). Next step: `/implement-feature <feature>`.
+   the user reviews with `git diff`). Then: "Commit these before `/implement-feature` (it stops
+   on a dirty tree): `git add <files> && git commit -m "chore: set up sdlc-lite toolchain config"`",
+   where `<files>` is only what this run wrote — `pyproject.toml`, `.gitignore`, or both. You never
+   run it. Next step: `/implement-feature <feature>`.
 
 ## Rules
 
