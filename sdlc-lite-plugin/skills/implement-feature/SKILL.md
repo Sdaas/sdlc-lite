@@ -202,6 +202,16 @@ Gate 0 below is the first application of this style; later STOP gates follow the
    **If any tool is missing or mutmut is not configured, STOP** — before anything else, in
    particular before step 4's lock — render (a) below, telling the human to run `/sdlc-init`.
    Gate 0 is a pure checker: never install, never edit config. Do not proceed.
+1b. **Working tree (#102).** Run `git status --porcelain`. Empty → say nothing and go on. Any
+   line (modified, staged or untracked — ignored files never show) → **STOP** before anything
+   else, in particular before step 4's lock and step 7's branch: render (c) below with every
+   path (the text after the 2-character status; for a rename `old -> new`, the new path), and end
+   the turn. These changes — typically `/sdlc-init`'s uncommitted `pyproject.toml`
+   / `.gitignore` edits — would otherwise land in the feature commit unannounced. Never commit,
+   stage or stash them yourself. The human replies **`include`** → continue at step 2; record
+   `{"dirty_tree": "included", "files": [<paths>]}` with the Gate 0 run-log entries; they go into the
+   feature commit. Any other reply → the run ends (nothing was created, so there is no lock to
+   clear).
 2. Restate the feature in **one sentence**. Confirm the stack is **Python** (this
    workflow targets Python).
 3. **Detect the code layout, human confirms.** Inspect `pyproject.toml` / `setup.cfg`,
@@ -284,7 +294,7 @@ Gate 0 below is the first application of this style; later STOP gates follow the
    choice is forced/atypical** (e.g. new branch because HEAD is the default) — no rationale
    on the ordinary case.
 
-8. **Render the Gate 0 summary** per the two templates below. Follow the Output-style rules:
+8. **Render the Gate 0 summary** per templates (a) and (b) below ((c) is step 1b's stop). Follow the Output-style rules:
    glyph-led, terse on the happy path, expand only deviations.
 
    **(a) Preflight failed → terminal render (nothing else prints; the run STOPs):**
@@ -312,6 +322,14 @@ Gate 0 below is the first application of this style; later STOP gates follow the
    >   reviewer rows always read `claude-opus-5-5` (pinned) and producer rows `claude-sonnet-5-5` (pinned), never an alias.
    >
    > **STOP — confirm layout, model plan, and branch before I begin.**
+
+   **(c) Uncommitted changes → stop render (step 1b; nothing else prints).** Render it verbatim:
+   every path inline on the headline line (never a list below it), and the command on one line,
+   naming every path — never `git add -A` / `.` or `git commit -a`:
+   > ⚠️ **Uncommitted changes** — `<path>` · `<path>`. They would land in the feature commit.
+   > - Commit them first, then re-run `/implement-feature`:
+   >   `git add <path> <path> && git commit -m "chore: commit pending changes"`; **or**
+   > - reply **include** to carry them into the feature commit knowingly.
 
 **STOP. Do not begin any work until the human confirms the code layout, the model plan,
 and the branch decision.** Record the confirmed plan (with `<code_root>`, `<tests_root>`,

@@ -87,6 +87,25 @@ def test_is_roman_char() -> None:
 EOF
 
   git init -q -b main
+  # The eval harness drops its sandbox-home files into the workspace, untracked. Hide them in the
+  # local exclude file (never committed, never in `git status`) so a clean case reads as a clean
+  # tree to /implement-feature Gate 0 step 1b (#102). List taken from a kept sandbox's
+  # `git status --porcelain`; if the harness adds a file, add it here.
+  cat >> .git/info/exclude <<'EOF'
+/.bash_profile
+/.bashrc
+/.claude/
+/.eval-artifacts
+/.gitconfig
+/.gitmodules
+/.idea
+/.mcp.json
+/.profile
+/.ripgreprc
+/.vscode
+/.zprofile
+/.zshrc
+EOF
   git add -A
   git -c user.name=eval -c user.email=eval@example.invalid commit -q -m "initial romankit"
 }
